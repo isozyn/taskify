@@ -18,15 +18,21 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Send } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, Send, X } from "lucide-react";
 
 interface TaskModalProps {
   task: any;
   open: boolean;
   onClose: () => void;
+  projectMembers: any[];
 }
 
-const TaskModal = ({ task, open, onClose }: TaskModalProps) => {
+const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>(
+    task.assignees || []
+  );
   const [subtasks, setSubtasks] = useState([
     { id: 1, title: "Research design patterns", completed: true },
     { id: 2, title: "Create wireframes", completed: true },
@@ -61,6 +67,16 @@ const TaskModal = ({ task, open, onClose }: TaskModalProps) => {
     setSubtasks(subtasks.filter((st) => st.id !== id));
   };
 
+  const addAssignee = (memberName: string) => {
+    if (!selectedAssignees.includes(memberName)) {
+      setSelectedAssignees([...selectedAssignees, memberName]);
+    }
+  };
+
+  const removeAssignee = (memberName: string) => {
+    setSelectedAssignees(selectedAssignees.filter((name) => name !== memberName));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -75,36 +91,71 @@ const TaskModal = ({ task, open, onClose }: TaskModalProps) => {
             <Input id="task-title" defaultValue={task.title} />
           </div>
 
-          {/* Assignee and Status */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="assignee">Assigned To</Label>
-              <Select defaultValue={task.assignee}>
-                <SelectTrigger id="assignee">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="John Doe">John Doe</SelectItem>
-                  <SelectItem value="Jane Smith">Jane Smith</SelectItem>
-                  <SelectItem value="Mike Johnson">Mike Johnson</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Assignees */}
+          <div className="space-y-2">
+            <Label>Assigned To</Label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {selectedAssignees.map((assignee) => (
+                <Badge key={assignee} variant="secondary" className="gap-1">
+                  <Avatar className="w-4 h-4">
+                    <AvatarFallback className="text-xs">
+                      {assignee
+                        .split(" ")
+                        .map((n: string) => n[0])
+                        .join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  {assignee}
+                  <button
+                    onClick={() => removeAssignee(assignee)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              ))}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select defaultValue={task.status}>
-                <SelectTrigger id="status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="review">Review</SelectItem>
-                  <SelectItem value="complete">Complete</SelectItem>
-                  <SelectItem value="backlog">Backlog</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select onValueChange={addAssignee}>
+              <SelectTrigger>
+                <SelectValue placeholder="Add team member..." />
+              </SelectTrigger>
+              <SelectContent>
+                {projectMembers
+                  .filter((member) => !selectedAssignees.includes(member.name))
+                  .map((member) => (
+                    <SelectItem key={member.id} value={member.name}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-5 h-5">
+                          <AvatarFallback className="text-xs">
+                            {member.name
+                              .split(" ")
+                              .map((n: string) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        {member.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Status */}
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <Select defaultValue={task.status}>
+              <SelectTrigger id="status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="upcoming">Upcoming</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="review">Review</SelectItem>
+                <SelectItem value="complete">Complete</SelectItem>
+                <SelectItem value="backlog">Backlog</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Dates */}

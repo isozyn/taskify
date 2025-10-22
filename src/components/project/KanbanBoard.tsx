@@ -1,20 +1,25 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User, CheckCircle2, Clock, AlertCircle, FileText, Archive } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Calendar, CheckCircle2, Clock, AlertCircle, FileText, Archive } from "lucide-react";
 import TaskModal from "./TaskModal";
 
 interface Task {
   id: number;
   title: string;
-  assignee: string;
+  assignees: string[];
   startDate: string;
   endDate: string;
   status: "upcoming" | "in-progress" | "review" | "complete" | "backlog";
   progress: number;
 }
 
-const KanbanBoard = () => {
+interface KanbanBoardProps {
+  projectMembers: any[];
+}
+
+const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Mock tasks - will be replaced with real data
@@ -22,7 +27,7 @@ const KanbanBoard = () => {
     {
       id: 1,
       title: "Design landing page mockup",
-      assignee: "John Doe",
+      assignees: ["John Doe", "Jane Smith"],
       startDate: "2024-01-15",
       endDate: "2024-01-20",
       status: "complete",
@@ -31,7 +36,7 @@ const KanbanBoard = () => {
     {
       id: 2,
       title: "Implement authentication",
-      assignee: "Jane Smith",
+      assignees: ["Jane Smith", "Mike Johnson"],
       startDate: "2024-01-10",
       endDate: "2024-01-18",
       status: "in-progress",
@@ -40,7 +45,7 @@ const KanbanBoard = () => {
     {
       id: 3,
       title: "Write API documentation",
-      assignee: "Mike Johnson",
+      assignees: ["Mike Johnson"],
       startDate: "2024-01-20",
       endDate: "2024-01-25",
       status: "upcoming",
@@ -49,7 +54,7 @@ const KanbanBoard = () => {
     {
       id: 4,
       title: "Database migration",
-      assignee: "Sarah Wilson",
+      assignees: ["Sarah Wilson", "John Doe"],
       startDate: "2024-01-12",
       endDate: "2024-01-17",
       status: "review",
@@ -58,7 +63,7 @@ const KanbanBoard = () => {
     {
       id: 5,
       title: "Fix payment gateway bug",
-      assignee: "Tom Brown",
+      assignees: ["Jane Smith", "Sarah Wilson", "Mike Johnson"],
       startDate: "2023-12-28",
       endDate: "2024-01-05",
       status: "backlog",
@@ -139,17 +144,34 @@ const KanbanBoard = () => {
                         {task.title}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <User className="w-3 h-3" />
-                        <span className="truncate">{task.assignee}</span>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex -space-x-2">
+                          {task.assignees.slice(0, 3).map((assignee, idx) => (
+                            <Avatar key={idx} className="w-6 h-6 border-2 border-card">
+                              <AvatarFallback className="text-xs">
+                                {assignee
+                                  .split(" ")
+                                  .map((n: string) => n[0])
+                                  .join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))}
+                          {task.assignees.length > 3 && (
+                            <div className="w-6 h-6 rounded-full bg-muted border-2 border-card flex items-center justify-center">
+                              <span className="text-xs font-medium">
+                                +{task.assignees.length - 3}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Calendar className="w-3 h-3" />
                         <span>{task.endDate}</span>
                       </div>
                       {task.progress > 0 && (
-                        <div className="pt-2">
+                        <div className="pt-1">
                           <div className="h-1 bg-secondary rounded-full overflow-hidden">
                             <div
                               className="h-full bg-primary transition-all duration-300"
@@ -172,6 +194,7 @@ const KanbanBoard = () => {
           task={selectedTask}
           open={!!selectedTask}
           onClose={() => setSelectedTask(null)}
+          projectMembers={projectMembers}
         />
       )}
     </>

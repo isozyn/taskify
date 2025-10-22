@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Settings } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import KanbanBoard from "@/components/project/KanbanBoard";
 import TimelineView from "@/components/project/TimelineView";
 import ProjectOverview from "@/components/project/ProjectOverview";
+import ProjectSettings from "@/components/project/ProjectSettings";
 
 const ProjectWorkspace = () => {
   const { id } = useParams();
@@ -19,6 +20,8 @@ const ProjectWorkspace = () => {
     members: [
       { id: 1, name: "John Doe", avatar: "" },
       { id: 2, name: "Jane Smith", avatar: "" },
+      { id: 3, name: "Mike Johnson", avatar: "" },
+      { id: 4, name: "Sarah Wilson", avatar: "" },
     ],
   };
 
@@ -41,9 +44,6 @@ const ProjectWorkspace = () => {
                 <p className="text-sm text-muted-foreground">{project.description}</p>
               </div>
             </div>
-            <Button variant="outline" size="icon">
-              <Settings className="w-5 h-5" />
-            </Button>
           </div>
         </div>
       </header>
@@ -55,6 +55,7 @@ const ProjectWorkspace = () => {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -62,11 +63,15 @@ const ProjectWorkspace = () => {
           </TabsContent>
 
           <TabsContent value="kanban">
-            <KanbanBoard />
+            <KanbanBoard projectMembers={project.members} />
           </TabsContent>
 
           <TabsContent value="timeline">
-            <TimelineView />
+            <TimelineView projectMembers={project.members} />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <ProjectSettings project={project} />
           </TabsContent>
         </Tabs>
       </main>
