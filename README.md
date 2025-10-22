@@ -1,22 +1,14 @@
-# Welcome to your Lovable project
+# CollabTrack - Executive Project Management Suite
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/199cc9d3-a80e-4d5c-91ea-19b70f368903
+A collaborative project management application with Kanban boards and timeline visualization.
 
 ## How can I edit this code?
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/199cc9d3-a80e-4d5c-91ea-19b70f368903) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Clone this repo and push changes to deploy your updates.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -62,12 +54,4 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/199cc9d3-a80e-4d5c-91ea-19b70f368903) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+You can deploy this project using any hosting service that supports React applications, such as Vercel, Netlify, or AWS.

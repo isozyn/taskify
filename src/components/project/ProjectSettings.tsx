@@ -1,18 +1,74 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, UserPlus, Activity } from "lucide-react";
+import { Trash2, UserPlus, Activity, Crown, User, Mail, Copy } from "lucide-react";
 
 interface ProjectSettingsProps {
   project: any;
 }
 
 const ProjectSettings = ({ project }: ProjectSettingsProps) => {
+  const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [newMemberRole, setNewMemberRole] = useState("member");
+  const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
+
+  // Mock data - will be replaced with real data from backend
+  const projectData = {
+    ...project,
+    inviteCode: "WR2024-ABC123",
+    members: [
+      { id: 1, name: "John Doe", email: "john@example.com", role: "owner" },
+      { id: 2, name: "Jane Smith", email: "jane@example.com", role: "admin" },
+      { id: 3, name: "Mike Johnson", email: "mike@example.com", role: "member" },
+      { id: 4, name: "Sarah Wilson", email: "sarah@example.com", role: "member" },
+    ]
+  };
+
+  const handleAddMember = () => {
+    // TODO: Implement add member logic with backend
+    console.log("Adding member:", { email: newMemberEmail, role: newMemberRole });
+    setIsAddMemberDialogOpen(false);
+    setNewMemberEmail("");
+    setNewMemberRole("member");
+    // For now, just show a success message
+  };
+
+  const handleRemoveMember = (memberId: number) => {
+    // TODO: Implement remove member logic with backend
+    console.log("Removing member:", memberId);
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case "owner":
+        return <Crown className="w-4 h-4 text-yellow-500" />;
+      case "admin":
+        return <User className="w-4 h-4 text-blue-500" />;
+      default:
+        return <User className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "owner":
+        return "bg-yellow-100 text-yellow-800";
+      case "admin":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
     <Tabs defaultValue="general" className="w-full">
       <TabsList>
@@ -24,13 +80,27 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
       <TabsContent value="general" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Project Details</CardTitle>
-            <CardDescription>Update your project information</CardDescription>
+            <CardTitle>Project Information</CardTitle>
+            <CardDescription>Basic information about your project</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="project-name">Project Name</Label>
-              <Input id="project-name" defaultValue={project.name} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="project-name">Project Name</Label>
+                <Input id="project-name" defaultValue={project.name} />
+              </div>
+              <div className="space-y-2">
+                <Label>Invitation Code</Label>
+                <div className="flex gap-2">
+                  <Input value={projectData.inviteCode} readOnly />
+                  <Button variant="outline" size="sm">
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Share this code with team members to invite them to the project
+                </p>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="project-description">Description</Label>
@@ -75,44 +145,103 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
       <TabsContent value="team" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Team Members</CardTitle>
-            <CardDescription>Manage who has access to this project</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input placeholder="Enter email address..." />
-              <Button>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Invite
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              {project.members.map((member: any) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback>
-                        {member.name
-                          .split(" ")
-                          .map((n: string) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{member.name}</p>
-                      <p className="text-sm text-muted-foreground">member@example.com</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Team Members</CardTitle>
+                <CardDescription>Manage who has access to this project</CardDescription>
+              </div>
+              <Dialog open={isAddMemberDialogOpen} onOpenChange={setIsAddMemberDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Add Member
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Add Team Member</DialogTitle>
+                    <DialogDescription>
+                      Invite a new member to join this project.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="memberEmail" className="text-right">
+                        Email
+                      </Label>
+                      <Input
+                        id="memberEmail"
+                        type="email"
+                        value={newMemberEmail}
+                        onChange={(e) => setNewMemberEmail(e.target.value)}
+                        placeholder="member@example.com"
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="memberRole" className="text-right">
+                        Role
+                      </Label>
+                      <Select value={newMemberRole} onValueChange={setNewMemberRole}>
+                        <SelectTrigger className="col-span-3">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="member">Member</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">Member</Badge>
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="w-4 h-4 text-destructive" />
+                  <DialogFooter>
+                    <Button 
+                      onClick={handleAddMember}
+                      disabled={!newMemberEmail.trim()}
+                    >
+                      Add Member
                     </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {projectData.members.map((member, index) => (
+                <div key={member.id}>
+                  <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
+                        {member.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{member.name}</p>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
+                            {member.role}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Mail className="w-3 h-3" />
+                          {member.email}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getRoleIcon(member.role)}
+                      {member.role !== "owner" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveMember(member.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                  {index < projectData.members.length - 1 && <Separator />}
                 </div>
               ))}
             </div>

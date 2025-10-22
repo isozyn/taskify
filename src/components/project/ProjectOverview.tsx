@@ -14,7 +14,6 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
     completed: 16,
     inProgress: 5,
     overdue: 2,
-    onTrack: 1,
   };
 
   const progress = (stats.completed / stats.totalTasks) * 100;
@@ -23,7 +22,22 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
     <div className="space-y-6">
       {/* Project Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+       
+
         <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              In Progress
+            </CardTitle>
+            <Clock className="w-4 h-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.inProgress}</div>
+            <p className="text-xs text-muted-foreground mt-1">Active tasks</p>
+          </CardContent>
+        </Card>
+
+         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Completed
@@ -41,19 +55,6 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              In Progress
-            </CardTitle>
-            <Clock className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.inProgress}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active tasks</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
               Overdue
             </CardTitle>
             <AlertCircle className="w-4 h-4 text-destructive" />
@@ -63,19 +64,6 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
             <p className="text-xs text-muted-foreground mt-1">
               Need attention
             </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              On Track
-            </CardTitle>
-            <TrendingUp className="w-4 h-4 text-accent" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.onTrack}</div>
-            <p className="text-xs text-muted-foreground mt-1">Going well</p>
           </CardContent>
         </Card>
       </div>

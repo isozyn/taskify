@@ -60,12 +60,18 @@ export default {
         'gradient-primary': 'var(--gradient-primary)',
         'gradient-accent': 'var(--gradient-accent)',
         'gradient-success': 'var(--gradient-success)',
+        'gradient-premium': 'var(--gradient-premium)',
+        'gradient-glass': 'var(--gradient-glass)',
       },
       boxShadow: {
         'sm': 'var(--shadow-sm)',
         'md': 'var(--shadow-md)',
         'lg': 'var(--shadow-lg)',
         'xl': 'var(--shadow-xl)',
+        'premium': 'var(--shadow-premium)',
+      },
+      gridTemplateColumns: {
+        '18': 'repeat(18, minmax(0, 1fr))',
       },
       transitionProperty: {
         'base': 'var(--transition-base)',

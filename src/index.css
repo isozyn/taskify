@@ -1,96 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Premium Professional Design System */
 
 @layer base {
   :root {
-    --background: 240 10% 98%;
-    --foreground: 240 10% 10%;
+    /* Premium Golden Executive Palette */
+    --background: 45 25% 96%;
+    --foreground: 30 15% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
+    --card: 45 40% 98%;
+    --card-foreground: 30 15% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
+    --popover: 45 40% 98%;
+    --popover-foreground: 30 15% 15%;
 
-    --primary: 239 84% 60%;
-    --primary-foreground: 0 0% 100%;
+    /* Rich Golden Primary */
+    --primary: 35 75% 45%;
+    --primary-foreground: 45 40% 98%;
 
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 10% 10%;
+    /* Warm Golden Tones */
+    --secondary: 45 30% 92%;
+    --secondary-foreground: 30 15% 15%;
 
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
+    --muted: 45 25% 90%;
+    --muted-foreground: 35 15% 40%;
 
-    --accent: 239 84% 67%;
-    --accent-foreground: 0 0% 100%;
+    /* Deep Golden Accent */
+    --accent: 25 85% 55%;
+    --accent-foreground: 45 40% 98%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 76% 36%;
+    --success: 145 65% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 35 85% 55%;
+    --warning-foreground: 30 15% 15%;
 
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 239 84% 60%;
+    --border: 45 20% 85%;
+    --input: 45 20% 85%;
+    --ring: 35 75% 45%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(239 84% 60%) 0%, hsl(250 84% 68%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(200 84% 60%) 100%);
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 46%) 100%);
+    /* Premium Golden Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(35 75% 45%) 0%, hsl(25 85% 55%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(25 85% 55%) 0%, hsl(15 85% 60%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(145 65% 40%) 0%, hsl(145 70% 50%) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(35 75% 45%) 0%, hsl(25 85% 55%) 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(255, 248, 220, 0.4) 0%, rgba(255, 248, 220, 0.2) 100%);
 
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    /* Premium Shadows */
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px 0 rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 25px 0 rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 16px 40px 0 rgba(0, 0, 0, 0.15);
+    --shadow-premium: 0 20px 60px 0 rgba(0, 0, 0, 0.18);
 
+    /* Smooth Transitions */
     --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-premium: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   .dark {
-    --background: 240 10% 8%;
-    --foreground: 240 5% 96%;
+    --background: 30 20% 8%;
+    --foreground: 45 25% 92%;
 
-    --card: 240 10% 12%;
-    --card-foreground: 240 5% 96%;
+    --card: 35 25% 12%;
+    --card-foreground: 45 25% 92%;
 
-    --popover: 240 10% 12%;
-    --popover-foreground: 240 5% 96%;
+    --popover: 35 25% 12%;
+    --popover-foreground: 45 25% 92%;
 
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 35 85% 65%;
+    --primary-foreground: 30 20% 8%;
 
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 240 5% 96%;
+    --secondary: 35 20% 18%;
+    --secondary-foreground: 45 25% 92%;
 
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 64%;
+    --muted: 35 20% 18%;
+    --muted-foreground: 45 15% 65%;
 
-    --accent: 239 84% 67%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 25 90% 65%;
+    --accent-foreground: 30 20% 8%;
 
-    --destructive: 0 63% 50%;
+    --destructive: 0 75% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 76% 46%;
+    --success: 145 70% 50%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 60%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 35 90% 65%;
+    --warning-foreground: 30 20% 8%;
 
-    --border: 240 4% 20%;
-    --input: 240 4% 20%;
-    --ring: 239 84% 67%;
+    --border: 35 20% 22%;
+    --input: 35 20% 22%;
+    --ring: 35 85% 65%;
   }
 }
 
@@ -100,6 +111,98 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Premium Golden Glass Effect */
+  .glass-effect {
+    @apply backdrop-blur-xl border border-amber-200/30;
+    background: linear-gradient(135deg, rgba(255, 248, 220, 0.6) 0%, rgba(255, 248, 220, 0.3) 100%);
+    box-shadow: 0 8px 32px rgba(218, 165, 32, 0.15);
+  }
+
+  .dark .glass-effect {
+    @apply bg-card/80 border-amber-400/20;
+    background: linear-gradient(135deg, rgba(139, 69, 19, 0.4) 0%, rgba(139, 69, 19, 0.2) 100%);
+  }
+
+  /* Premium Card Styles */
+  .premium-card {
+    @apply bg-card border border-border/50 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300;
+    backdrop-filter: blur(10px);
+  }
+
+  .premium-card:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Executive Button Styles */
+  .btn-executive {
+    @apply bg-gradient-to-r from-primary to-primary/90 text-primary-foreground font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
+  }
+
+  .btn-executive:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn-premium {
+    @apply bg-gradient-to-r from-accent to-accent/90 text-accent-foreground font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
+  }
+
+  .btn-premium:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Professional Typography */
+  .heading-executive {
+    @apply text-3xl font-bold tracking-tight text-foreground;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+
+  .heading-premium {
+    @apply text-2xl font-semibold tracking-tight text-foreground;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .text-executive {
+    @apply text-base font-medium text-muted-foreground leading-relaxed;
+  }
+
+  /* Premium Status Indicators */
+  .status-premium {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase;
+  }
+
+  .status-success {
+    @apply bg-success/10 text-success border border-success/20;
+  }
+
+  .status-warning {
+    @apply bg-warning/10 text-warning border border-warning/20;
+  }
+
+  .status-info {
+    @apply bg-primary/10 text-primary border border-primary/20;
+  }
+
+  .status-neutral {
+    @apply bg-muted text-muted-foreground border border-border;
+  }
+}
+
+@layer utilities {
+  .font-inter {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 }
