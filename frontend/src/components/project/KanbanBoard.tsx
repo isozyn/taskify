@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, CheckCircle2, Clock, AlertCircle, FileText, Archive } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, AlertCircle, FileText, Archive, Plus } from "lucide-react";
 import TaskModal from "./TaskModal";
 
 interface Task {
@@ -21,6 +27,32 @@ interface KanbanBoardProps {
 
 const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+    status: "upcoming" as Task["status"],
+    startDate: "",
+    endDate: "",
+    assignees: [] as string[],
+    priority: "medium",
+  });
+
+  const handleCreateTask = () => {
+    // TODO: Implement create task logic with backend
+    console.log("Creating task:", newTask);
+    setIsCreateTaskModalOpen(false);
+    // Reset form
+    setNewTask({
+      title: "",
+      description: "",
+      status: "upcoming",
+      startDate: "",
+      endDate: "",
+      assignees: [],
+      priority: "medium",
+    });
+  };
 
   // Mock tasks - will be replaced with real data (matching TimelineView structure)
   const tasks: Task[] = [
@@ -120,6 +152,21 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
 
   return (
     <>
+      {/* Create Task Button */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Task Board</h2>
+          <p className="text-sm text-muted-foreground mt-1">Manage and track your project tasks</p>
+        </div>
+        <Button 
+          onClick={() => setIsCreateTaskModalOpen(true)}
+          className="btn-executive gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Create Task
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {columns.map((column) => {
           const Icon = column.icon;
@@ -256,6 +303,182 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
           projectMembers={projectMembers}
         />
       )}
+
+      {/* Create Task Modal */}
+      <Dialog open={isCreateTaskModalOpen} onOpenChange={setIsCreateTaskModalOpen}>
+        <DialogContent className="max-w-2xl glass-effect max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="heading-premium flex items-center gap-2">
+              <Plus className="w-5 h-5 text-primary" />
+              Create New Task
+            </DialogTitle>
+            <DialogDescription className="text-executive">
+              Add a new task to your project board
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Task Title */}
+            <div className="space-y-2">
+              <Label htmlFor="task-title" className="text-sm font-semibold text-foreground">
+                Task Title *
+              </Label>
+              <Input
+                id="task-title"
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                placeholder="Enter task title"
+                className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="task-description" className="text-sm font-semibold text-foreground">
+                Description
+              </Label>
+              <Textarea
+                id="task-description"
+                value={newTask.description}
+                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                placeholder="Enter task description"
+                className="min-h-[80px] border-border/50 focus:border-primary/50 transition-all duration-300 resize-none"
+              />
+            </div>
+
+            {/* Status and Priority */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="task-status" className="text-sm font-semibold text-foreground">
+                  Status
+                </Label>
+                <Select value={newTask.status} onValueChange={(value: Task["status"]) => setNewTask({ ...newTask, status: value })}>
+                  <SelectTrigger className="h-11 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="backlog">Backlog</SelectItem>
+                    <SelectItem value="upcoming">Upcoming</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="review">Review</SelectItem>
+                    <SelectItem value="complete">Complete</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="task-priority" className="text-sm font-semibold text-foreground">
+                  Priority
+                </Label>
+                <Select value={newTask.priority} onValueChange={(value) => setNewTask({ ...newTask, priority: value })}>
+                  <SelectTrigger className="h-11 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Date Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start-date" className="text-sm font-semibold text-foreground">
+                  Start Date
+                </Label>
+                <Input
+                  id="start-date"
+                  type="date"
+                  value={newTask.startDate}
+                  onChange={(e) => setNewTask({ ...newTask, startDate: e.target.value })}
+                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="end-date" className="text-sm font-semibold text-foreground">
+                  End Date *
+                </Label>
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={newTask.endDate}
+                  onChange={(e) => setNewTask({ ...newTask, endDate: e.target.value })}
+                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
+                />
+              </div>
+            </div>
+
+            {/* Assignees */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-foreground">
+                Assign To
+              </Label>
+              <div className="flex flex-wrap gap-2 p-3 border border-border/50 rounded-lg bg-muted/20">
+                {projectMembers.map((member: any) => {
+                  const isSelected = newTask.assignees.includes(member.name);
+                  return (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setNewTask({
+                            ...newTask,
+                            assignees: newTask.assignees.filter(name => name !== member.name)
+                          });
+                        } else {
+                          setNewTask({
+                            ...newTask,
+                            assignees: [...newTask.assignees, member.name]
+                          });
+                        }
+                      }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-300 ${
+                        isSelected 
+                          ? 'bg-primary text-primary-foreground border-primary shadow-md' 
+                          : 'bg-background border-border/50 hover:border-primary/50 hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        isSelected 
+                          ? 'bg-white/20 text-white' 
+                          : 'bg-gradient-to-br from-primary to-accent text-white'
+                      }`}>
+                        {member.name.split(' ').map((n: string) => n[0]).join('')}
+                      </div>
+                      <span className="text-sm font-medium">{member.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Select team members to assign to this task
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="border-t border-border/30 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateTaskModalOpen(false)}
+              className="font-semibold"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateTask}
+              disabled={!newTask.title.trim() || !newTask.endDate}
+              className="btn-executive"
+            >
+              Create Task
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

@@ -5,7 +5,9 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import Navbar from "@/components/Navbar";
 import { Plus, Layers, Calendar, Users, BarChart3, UserPlus, ExternalLink, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -14,6 +16,14 @@ const Dashboard = () => {
   const [joinProjectCode, setJoinProjectCode] = useState("");
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [isActiveTasksModalOpen, setIsActiveTasksModalOpen] = useState(false);
+  const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+  const [newProject, setNewProject] = useState({
+    name: "",
+    description: "",
+    startDate: "",
+    endDate: "",
+    visibility: "private",
+  });
 
   // Mock data - will be replaced with real data from backend
   const projects = [
@@ -135,6 +145,21 @@ const Dashboard = () => {
     // For now, just show a success message or navigate
   };
 
+  const handleCreateProject = () => {
+    // TODO: Implement create project logic with backend
+    console.log("Creating project:", newProject);
+    setIsNewProjectModalOpen(false);
+    // Reset form
+    setNewProject({
+      name: "",
+      description: "",
+      startDate: "",
+      endDate: "",
+      visibility: "private",
+    });
+    // For now, just show a success message or navigate
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
@@ -198,29 +223,8 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-amber-50/50 to-amber-100/30">
-      {/* Premium Header */}
-      <header className="glass-effect border-b border-border/30 sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/80 flex items-center justify-center shadow-lg">
-                <Layers className="w-7 h-7 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">Taskify</h1>
-                <p className="text-sm text-muted-foreground font-medium">Executive Project Management</p>
-              </div>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/auth")}
-              className="font-semibold border-border/50 hover:bg-muted/50 transition-all duration-300"
-            >
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Navbar */}
+      <Navbar />
 
       {/* Executive Main Content */}
       <main className="container mx-auto px-6 py-12">
@@ -273,7 +277,10 @@ const Dashboard = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              <Button className="btn-executive gap-2">
+              <Button 
+                className="btn-executive gap-2"
+                onClick={() => setIsNewProjectModalOpen(true)}
+              >
                 <Plus className="w-4 h-4" />
                 New Project
               </Button>
@@ -323,7 +330,7 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Executive Project Portfolio */}
+          {/* Executive Project Portfolio - Board Style */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="heading-premium">Strategic Initiatives</h3>
@@ -336,65 +343,90 @@ const Dashboard = () => {
                 <span>Behind</span>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {projects.map((project) => (
-                <Card
-                  key={project.id}
-                  className="premium-card cursor-pointer group border-0 bg-gradient-to-br from-card via-card to-card/90 hover:shadow-premium transition-all duration-500"
-                  onClick={() => navigate(`/project/${project.id}`)}
-                >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-300">
-                          {project.name}
-                        </CardTitle>
-                        <div className={`w-3 h-3 rounded-full ${
-                          project.progress >= 80 ? 'bg-success' : 
-                          project.progress >= 50 ? 'bg-warning' : 'bg-destructive'
-                        }`}></div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-foreground">{project.progress}%</div>
-                        <div className="text-xs text-muted-foreground font-medium">COMPLETE</div>
-                      </div>
-                    </div>
-                    <CardDescription className="text-executive line-clamp-2 mt-3">
-                      {project.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-muted-foreground">Progress</span>
-                        <span className="font-bold text-foreground">{project.progress}%</span>
-                      </div>
-                      <div className="relative">
-                        <Progress 
-                          value={project.progress} 
-                          className="h-2 bg-muted/50"
-                        />
-                        <div 
-                          className="absolute top-0 left-0 h-2 rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
-                          style={{ width: `${project.progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium text-muted-foreground">
-                          {project.tasks.completed}/{project.tasks.total} tasks
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Users className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium text-muted-foreground">{project.members} members</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            
+            {/* Cork Board Style Container */}
+            <div className="relative bg-gradient-to-br from-amber-100/60 via-amber-50/40 to-amber-100/60 rounded-2xl p-8 shadow-inner border-4 border-amber-200/50">
+              {/* Board texture overlay */}
+              <div className="absolute inset-0 opacity-30 rounded-2xl" style={{
+                backgroundImage: `radial-gradient(circle at 2px 2px, rgba(139, 69, 19, 0.15) 1px, transparent 0)`,
+                backgroundSize: '40px 40px'
+              }}></div>
+              
+              <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {projects.map((project, index) => (
+                  <div key={project.id} className="relative">
+                    
+                    
+                    {/* Card with slight rotation */}
+                    <Card
+                      className="premium-card cursor-pointer group border-2 border-amber-900/10 bg-white hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:rotate-0"
+                      style={{
+                        boxShadow: '4px 4px 12px rgba(0, 0, 0, 0.15), 8px 8px 24px rgba(0, 0, 0, 0.08)'
+                      }}
+                      onClick={() => navigate(`/project/${project.id}`)}
+                    >
+                      
+                      <CardHeader className="pb-4">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <CardTitle className="text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-300">
+                              {project.name}
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${
+                                project.progress >= 80 ? 'bg-success' : 
+                                project.progress >= 50 ? 'bg-warning' : 'bg-destructive'
+                              }`}></div>
+                              <span className="text-xs text-muted-foreground font-medium">
+                                {project.progress >= 80 ? 'On Track' : 
+                                 project.progress >= 50 ? 'At Risk' : 'Behind'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg px-3 py-2">
+                            <div className="text-2xl font-bold text-foreground">{project.progress}%</div>
+                            <div className="text-xs text-muted-foreground font-medium">COMPLETE</div>
+                          </div>
+                        </div>
+                        <CardDescription className="text-executive line-clamp-2 mt-3">
+                          {project.description}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-muted-foreground">Progress</span>
+                            <span className="font-bold text-foreground">{project.progress}%</span>
+                          </div>
+                          <div className="relative">
+                            <Progress 
+                              value={project.progress} 
+                              className="h-2 bg-muted/50"
+                            />
+                            <div 
+                              className="absolute top-0 left-0 h-2 rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
+                              style={{ width: `${project.progress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-border/30">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium text-muted-foreground">
+                              {project.tasks.completed}/{project.tasks.total} tasks
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Users className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium text-muted-foreground">{project.members} members</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                      
+                      </Card>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -569,6 +601,117 @@ const Dashboard = () => {
                 Close
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Project Modal */}
+      <Dialog open={isNewProjectModalOpen} onOpenChange={setIsNewProjectModalOpen}>
+        <DialogContent className="sm:max-w-[550px] glass-effect">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="heading-premium flex items-center gap-2">
+              <Plus className="w-5 h-5 text-primary" />
+              Create New Project
+            </DialogTitle>
+            <DialogDescription className="text-executive">
+              Set up a new project and start collaborating with your team
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Project Name */}
+            <div className="space-y-2">
+              <Label htmlFor="project-name" className="text-sm font-semibold text-foreground">
+                Project Name *
+              </Label>
+              <Input
+                id="project-name"
+                value={newProject.name}
+                onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                placeholder="Enter project name"
+                className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="project-description" className="text-sm font-semibold text-foreground">
+                Description
+              </Label>
+              <Textarea
+                id="project-description"
+                value={newProject.description}
+                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                placeholder="Describe your project goals and objectives"
+                className="min-h-[80px] border-border/50 focus:border-primary/50 transition-all duration-300 resize-none"
+              />
+            </div>
+
+            {/* Date Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="project-start-date" className="text-sm font-semibold text-foreground">
+                  Start Date
+                </Label>
+                <Input
+                  id="project-start-date"
+                  type="date"
+                  value={newProject.startDate}
+                  onChange={(e) => setNewProject({ ...newProject, startDate: e.target.value })}
+                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project-end-date" className="text-sm font-semibold text-foreground">
+                  Target End Date
+                </Label>
+                <Input
+                  id="project-end-date"
+                  type="date"
+                  value={newProject.endDate}
+                  onChange={(e) => setNewProject({ ...newProject, endDate: e.target.value })}
+                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
+                />
+              </div>
+            </div>
+
+            {/* Visibility */}
+            <div className="space-y-2">
+              <Label htmlFor="project-visibility" className="text-sm font-semibold text-foreground">
+                Project Visibility
+              </Label>
+              <select
+                id="project-visibility"
+                value={newProject.visibility}
+                onChange={(e) => setNewProject({ ...newProject, visibility: e.target.value })}
+                className="flex h-11 w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all duration-300"
+              >
+                <option value="private">Private - Only invited members</option>
+                <option value="team">Team - All team members can view</option>
+                <option value="public">Public - Anyone can view</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Control who can view and access this project
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="border-t border-border/30 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsNewProjectModalOpen(false)}
+              className="font-semibold"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateProject}
+              disabled={!newProject.name.trim()}
+              className="btn-executive"
+            >
+              Create Project
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
