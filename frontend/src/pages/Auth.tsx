@@ -114,7 +114,8 @@ const Auth = () => {
                       className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
-                        // Handle forgot password logic
+                        // Navigate to forgot password page
+                        window.location.href = "/forgot-password";
                       }}
                     >
                       Forgot password?
