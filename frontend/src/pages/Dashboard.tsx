@@ -207,7 +207,7 @@ const Dashboard = () => {
                 <Layers className="w-7 h-7 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">CollabTrack</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">Taskify</h1>
                 <p className="text-sm text-muted-foreground font-medium">Executive Project Management</p>
               </div>
             </div>
