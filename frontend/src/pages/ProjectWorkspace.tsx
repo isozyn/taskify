@@ -2,7 +2,16 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, BarChart3, Calendar, Settings, Layers } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowLeft, BarChart3, Calendar, Settings, Layers, User, LogOut } from "lucide-react";
 import KanbanBoard from "@/components/project/KanbanBoard";
 import TimelineView from "@/components/project/TimelineView";
 import ProjectOverview from "@/components/project/ProjectOverview";
@@ -88,7 +97,7 @@ const ProjectWorkspace = () => {
                 <p className="text-executive">{project.description}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <div className="flex -space-x-2">
                 {project.members.slice(0, 4).map((member, idx) => (
                   <div
@@ -104,6 +113,48 @@ const ProjectWorkspace = () => {
                   </div>
                 )}
               </div>
+              
+              {/* User Dropdown Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="relative h-10 w-10 rounded-full ring-2 ring-border/50 hover:ring-primary/50 transition-all duration-300"
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-bold">
+                        JD
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 glass-effect" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">John Doe</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        john.doe@company.com
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="cursor-pointer focus:bg-primary/10"
+                    onClick={() => navigate("/profile")}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="cursor-pointer focus:bg-destructive/10 text-destructive focus:text-destructive"
+                    onClick={() => navigate("/auth")}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
