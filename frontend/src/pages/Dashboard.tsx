@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
-import { Plus, Layers, Calendar, Users, BarChart3, UserPlus, ExternalLink, Clock } from "lucide-react";
+import { Plus, Layers, Calendar, Users, CheckSquare2, TrendingUp, Filter, Search, ChevronRight, Clock, Eye, UserPlus, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [isActiveTasksModalOpen, setIsActiveTasksModalOpen] = useState(false);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [newProject, setNewProject] = useState({
     name: "",
     description: "",
@@ -221,40 +222,52 @@ const Dashboard = () => {
     return Object.values(tasksByProject);
   };
 
+  // Filter projects based on search query
+  const filteredProjects = projects.filter(project =>
+    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    project.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Calculate stats
+  const totalTasks = projects.reduce((sum, p) => sum + p.tasks.total, 0);
+  const completedTasks = projects.reduce((sum, p) => sum + p.tasks.completed, 0);
+  const avgProgress = Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / projects.length);
+  const highPriorityTasks = activeTasks.filter(task => task.priority === "high");
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-amber-50/50 to-amber-100/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       {/* Navbar */}
       <Navbar />
 
-      {/* Executive Main Content */}
-      <main className="container mx-auto px-6 py-12">
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-10">
-            <div className="space-y-2">
-              <h2 className="heading-executive">Portfolio Overview</h2>
-              <p className="text-executive">Strategic project management and performance insights</p>
-            </div>
-            <div className="flex gap-3">
-              <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="gap-2 font-semibold border-border/50 hover:bg-muted/50 transition-all duration-300"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Join Project
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[450px] glass-effect">
-                  <DialogHeader className="space-y-3">
-                    <DialogTitle className="heading-premium">Join Project</DialogTitle>
-                    <DialogDescription className="text-executive">
+      {/* Modern Main Content */}
+      <main className="container mx-auto px-6 py-8 max-w-7xl">
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-1">Dashboard</h1>
+            <p className="text-slate-600">Manage your projects and track progress</p>
+          </div>
+          <div className="flex gap-3">
+            <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="ghost"
+                  className="gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium shadow-sm transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Join Project
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[450px]">
+                <DialogHeader>
+                  <DialogTitle>Join Project</DialogTitle>
+                    <DialogDescription>
                       Enter the project invitation code to join an existing project.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-6 py-6">
                     <div className="space-y-2">
-                      <Label htmlFor="projectCode" className="text-sm font-semibold text-foreground">
+                      <Label htmlFor="projectCode" className="text-sm font-medium">
                         Project Code
                       </Label>
                       <Input
@@ -262,7 +275,7 @@ const Dashboard = () => {
                         value={joinProjectCode}
                         onChange={(e) => setJoinProjectCode(e.target.value)}
                         placeholder="Enter invitation code"
-                        className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
+                        className="h-11"
                       />
                     </div>
                   </div>
@@ -270,7 +283,7 @@ const Dashboard = () => {
                     <Button
                       onClick={handleJoinProject}
                       disabled={!joinProjectCode.trim()}
-                      className="btn-executive w-full"
+                      className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                     >
                       Join Project
                     </Button>
@@ -278,7 +291,8 @@ const Dashboard = () => {
                 </DialogContent>
               </Dialog>
               <Button 
-                className="btn-executive gap-2"
+                variant="ghost"
+                className="gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium shadow-md hover:shadow-lg transition-all"
                 onClick={() => setIsNewProjectModalOpen(true)}
               >
                 <Plus className="w-4 h-4" />
@@ -287,215 +301,291 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Executive KPI Dashboard */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            <Card className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/80">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                  Active Projects
+          {/* KPI Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-all">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-slate-600">
+                  Total Projects
                 </CardTitle>
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Layers className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Layers className="w-5 h-5 text-blue-600" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-foreground mb-1">{projects.length}</div>
-                <p className="text-sm text-success font-medium">+12% from last month</p>
+                <div className="text-2xl font-bold text-slate-900">{projects.length}</div>
+                <p className="text-xs text-green-600 font-medium mt-1">+2 this month</p>
               </CardContent>
             </Card>
-            
-            <Card 
-              className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/80 cursor-pointer hover:shadow-premium transition-all duration-300 group"
-              onClick={() => setIsActiveTasksModalOpen(true)}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+
+            <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-all">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-slate-600">
                   Active Tasks
                 </CardTitle>
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors duration-300">
-                  <BarChart3 className="w-5 h-5 text-accent" />
+                <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                  <CheckSquare2 className="w-5 h-5 text-green-600" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-3xl font-bold text-foreground mb-1">
-                      {activeTasks.length}
-                    </div>
-                    <p className="text-sm text-warning font-medium">3 due this week</p>
-                  </div>
-                  <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors duration-300" />
+                <div className="text-2xl font-bold text-slate-900">{totalTasks}</div>
+                <p className="text-xs text-slate-500 font-medium mt-1">{completedTasks} completed</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-all">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-slate-600">
+                  Avg Progress
+                </CardTitle>
+                <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-purple-600" />
                 </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-slate-900">{avgProgress}%</div>
+                <p className="text-xs text-purple-600 font-medium mt-1">Across all projects</p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="border-0 bg-white shadow-sm hover:shadow-md transition-all cursor-pointer group"
+              onClick={() => setIsActiveTasksModalOpen(true)}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-slate-600">
+                  High Priority
+                </CardTitle>
+                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-red-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-slate-900">{highPriorityTasks.length}</div>
+                <p className="text-xs text-red-600 font-medium mt-1 group-hover:underline">View all tasks</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Executive Project Portfolio - Board Style */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="heading-premium">Strategic Initiatives</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className="w-2 h-2 rounded-full bg-success"></div>
-                <span>On Track</span>
-                <div className="w-2 h-2 rounded-full bg-warning ml-4"></div>
-                <span>At Risk</span>
-                <div className="w-2 h-2 rounded-full bg-destructive ml-4"></div>
-                <span>Behind</span>
+          {/* Projects Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Projects List */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-slate-900">Your Projects</h2>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search projects..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 w-64 h-9 border-slate-200 focus:border-blue-500"
+                    />
+                  </div>
+                  <Button variant="outline" size="sm" className="gap-2 border-slate-200  hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
+                    <Filter className="w-4 h-4" />
+                    Filter
+                  </Button>
+                </div>
               </div>
-            </div>
-            
-            {/* Cork Board Style Container */}
-            <div className="relative bg-gradient-to-br from-amber-100/60 via-amber-50/40 to-amber-100/60 rounded-2xl p-8 shadow-inner border-4 border-amber-200/50">
-              {/* Board texture overlay */}
-              <div className="absolute inset-0 opacity-30 rounded-2xl" style={{
-                backgroundImage: `radial-gradient(circle at 2px 2px, rgba(139, 69, 19, 0.15) 1px, transparent 0)`,
-                backgroundSize: '40px 40px'
-              }}></div>
-              
-              <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {projects.map((project, index) => (
-                  <div key={project.id} className="relative">
-                    
-                    
-                    {/* Card with slight rotation */}
-                    <Card
-                      className="premium-card cursor-pointer group border-2 border-amber-900/10 bg-white hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:rotate-0"
-                      style={{
-                        boxShadow: '4px 4px 12px rgba(0, 0, 0, 0.15), 8px 8px 24px rgba(0, 0, 0, 0.08)'
-                      }}
-                      onClick={() => navigate(`/project/${project.id}`)}
-                    >
-                      
-                      <CardHeader className="pb-4">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <CardTitle className="text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-300">
+
+              <div className="space-y-4">
+                {filteredProjects.map((project) => (
+                  <Card
+                    key={project.id}
+                    className="border-0 bg-white shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                    onClick={() => navigate(`/project/${project.id}`)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0">
+                            <Layers className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <CardTitle className="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
                               {project.name}
                             </CardTitle>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-3 h-3 rounded-full ${
-                                project.progress >= 80 ? 'bg-success' : 
-                                project.progress >= 50 ? 'bg-warning' : 'bg-destructive'
-                              }`}></div>
-                              <span className="text-xs text-muted-foreground font-medium">
-                                {project.progress >= 80 ? 'On Track' : 
-                                 project.progress >= 50 ? 'At Risk' : 'Behind'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-right bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg px-3 py-2">
-                            <div className="text-2xl font-bold text-foreground">{project.progress}%</div>
-                            <div className="text-xs text-muted-foreground font-medium">COMPLETE</div>
+                            <p className="text-sm text-slate-600 mt-1">{project.description}</p>
                           </div>
                         </div>
-                        <CardDescription className="text-executive line-clamp-2 mt-3">
-                          {project.description}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-6">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-muted-foreground">Progress</span>
-                            <span className="font-bold text-foreground">{project.progress}%</span>
-                          </div>
-                          <div className="relative">
-                            <Progress 
-                              value={project.progress} 
-                              className="h-2 bg-muted/50"
-                            />
-                            <div 
-                              className="absolute top-0 left-0 h-2 rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
-                              style={{ width: `${project.progress}%` }}
-                            ></div>
-                          </div>
+                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-600">Progress</span>
+                          <span className="text-xs font-bold text-slate-900">{project.progress}%</span>
                         </div>
-                        <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-medium text-muted-foreground">
-                              {project.tasks.completed}/{project.tasks.total} tasks
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Users className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-medium text-muted-foreground">{project.members} members</span>
-                          </div>
+                        <Progress 
+                          value={project.progress} 
+                          className="h-2 bg-slate-100"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Calendar className="w-4 h-4" />
+                          <span className="font-medium">
+                            {project.tasks.completed}/{project.tasks.total} tasks
+                          </span>
                         </div>
-                      </CardContent>
-                      
-                      </Card>
-                  </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Users className="w-4 h-4" />
+                          <span className="font-medium">{project.members} members</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* High Priority Tasks */}
+              <Card className="border-0 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-slate-900">High Priority</CardTitle>
+                  <CardDescription>Tasks requiring immediate attention</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {highPriorityTasks.slice(0, 5).map((task) => (
+                    <div key={task.id} className="p-3 rounded-lg bg-red-50 border border-red-100 hover:bg-red-100 transition-colors cursor-pointer">
+                      <h4 className="text-sm font-semibold text-slate-900 mb-1">{task.title}</h4>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-600">{task.project}</span>
+                        <div className="flex items-center gap-1 text-xs text-red-600">
+                          <Clock className="w-3 h-3" />
+                          {task.dueDate}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <Button 
+                    variant="ghost"
+                    className="w-full gap-2 border border-slate-200 text-slate-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all"
+                    onClick={() => setIsActiveTasksModalOpen(true)}
+                  >
+                    <Eye className="w-4 h-4" />
+                    View All Tasks
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions
+              <Card className="border-0 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-slate-900">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 border-slate-200 hover:bg-slate-50"
+                    onClick={() => setIsNewProjectModalOpen(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Project
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 border-slate-200 hover:bg-slate-50"
+                    onClick={() => setIsActiveTasksModalOpen(true)}
+                  >
+                    <CheckSquare2 className="w-4 h-4" />
+                    View All Tasks
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 border-slate-200 hover:bg-slate-50"
+                    onClick={() => setIsJoinDialogOpen(true)}
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Invite Team Member
+                  </Button>
+                </CardContent>
+              </Card> */}
+
+              {/* Team Members
+              <Card className="border-0 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-slate-900">Team Members</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {["John Doe", "Jane Smith", "Mike Johnson"].map((member, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+                        {member.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">{member}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card> */}
+            </div>
           </div>
-        </div>
       </main>
 
-      {/* Active Tasks Kanban Modal */}
+      {/* Active Tasks Modal */}
       <Dialog open={isActiveTasksModalOpen} onOpenChange={setIsActiveTasksModalOpen}>
-        <DialogContent className="sm:max-w-[1200px] max-h-[85vh] overflow-hidden glass-effect">
-          <DialogHeader className="space-y-3 pb-4">
-            <DialogTitle className="heading-premium flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-accent" />
-              Active Tasks Portfolio
+        <DialogContent className="sm:max-w-[1200px] max-h-[85vh] overflow-hidden">
+          <DialogHeader className="space-y-2 pb-4">
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              All Active Tasks
             </DialogTitle>
-            <DialogDescription className="text-executive">
-              Kanban view of all active tasks organized by project and priority
+            <DialogDescription>
+              View and manage all active tasks organized by project
             </DialogDescription>
           </DialogHeader>
           
           <div className="overflow-y-auto max-h-[60vh] py-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {getTasksByProject().map((projectGroup) => (
-                <Card key={projectGroup.projectId} className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/90 shadow-lg">
+                <Card key={projectGroup.projectId} className="border-0 bg-white shadow-sm">
                   <CardHeader 
-                    className="bg-gradient-to-r from-primary/10 to-accent/10 border-b border-border/20 pb-4 cursor-pointer hover:from-primary/20 hover:to-accent/20 transition-all duration-300"
+                    className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-100 pb-4 cursor-pointer hover:from-blue-100 hover:to-blue-200 transition-all"
                     onClick={() => navigate(`/project/${projectGroup.projectId}`)}
                   >
                     <div className="space-y-4">
                       {/* Project Header */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
                             <Layers className="w-5 h-5 text-white" />
                           </div>
                           <div>
-                            <CardTitle className="font-bold text-sm text-foreground hover:text-primary transition-colors duration-300">
+                            <CardTitle className="font-semibold text-sm text-slate-900 hover:text-blue-600 transition-colors">
                               {projectGroup.projectName}
                             </CardTitle>
-                            <p className="text-xs text-muted-foreground font-medium">
+                            <p className="text-xs text-slate-600 font-medium">
                               {projectGroup.tasks.length} active task{projectGroup.tasks.length !== 1 ? 's' : ''}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-right">
-                            <div className="text-lg font-bold text-foreground">{projectGroup.progress}%</div>
-                            <div className="text-xs text-muted-foreground font-medium">COMPLETE</div>
+                            <div className="text-lg font-bold text-slate-900">{projectGroup.progress}%</div>
+                            <div className="text-xs text-slate-600 font-medium">Complete</div>
                           </div>
-                          <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors duration-300" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 hover:text-blue-600 transition-colors" />
                         </div>
                       </div>
 
                       {/* Progress Bar */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-medium text-muted-foreground">Project Progress</span>
-                          <span className="font-bold text-foreground">
+                          <span className="font-medium text-slate-600">Project Progress</span>
+                          <span className="font-bold text-slate-900">
                             {projectGroup.completedTasks}/{projectGroup.totalTasks} tasks
                           </span>
                         </div>
-                        <div className="relative">
-                          <Progress 
-                            value={projectGroup.progress} 
-                            className="h-2 bg-muted/50"
-                          />
-                          <div 
-                            className="absolute top-0 left-0 h-2 rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
-                            style={{ width: `${projectGroup.progress}%` }}
-                          />
-                        </div>
+                        <Progress 
+                          value={projectGroup.progress} 
+                          className="h-2 bg-slate-100"
+                        />
                       </div>
                     </div>
                   </CardHeader>
@@ -503,9 +593,9 @@ const Dashboard = () => {
                   <CardContent className="p-4">
                     <div className="space-y-3 min-h-[300px] max-h-[400px] overflow-y-auto">
                       {projectGroup.tasks.length === 0 ? (
-                        <div className="flex items-center justify-center h-32 text-muted-foreground">
+                        <div className="flex items-center justify-center h-32 text-slate-400">
                           <div className="text-center">
-                            <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <CheckSquare2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
                             <p className="text-sm font-medium">No active tasks</p>
                           </div>
                         </div>
@@ -513,14 +603,14 @@ const Dashboard = () => {
                         projectGroup.tasks.map((task) => (
                           <Card
                             key={task.id}
-                            className="premium-card cursor-pointer group border border-border/30 bg-gradient-to-br from-background via-background to-muted/10 hover:shadow-lg hover:border-primary/30 transition-all duration-300"
+                            className="cursor-pointer group border border-slate-200 bg-white hover:shadow-md hover:border-blue-300 transition-all"
                             onClick={() => navigate(`/project/${task.projectId}`)}
                           >
                             <CardContent className="p-3">
                               <div className="space-y-3">
                                 {/* Task Title and Priority */}
                                 <div className="flex items-start justify-between">
-                                  <h4 className="font-bold text-xs text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2 flex-1">
+                                  <h4 className="font-semibold text-xs text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 flex-1">
                                     {task.title}
                                   </h4>
                                   <Badge className={`text-xs px-2 py-1 ml-2 ${getPriorityColor(task.priority)}`}>
@@ -607,13 +697,13 @@ const Dashboard = () => {
 
       {/* New Project Modal */}
       <Dialog open={isNewProjectModalOpen} onOpenChange={setIsNewProjectModalOpen}>
-        <DialogContent className="sm:max-w-[550px] glass-effect">
-          <DialogHeader className="space-y-3">
-            <DialogTitle className="heading-premium flex items-center gap-2">
-              <Plus className="w-5 h-5 text-primary" />
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <Plus className="w-5 h-5 text-blue-600" />
               Create New Project
             </DialogTitle>
-            <DialogDescription className="text-executive">
+            <DialogDescription>
               Set up a new project and start collaborating with your team
             </DialogDescription>
           </DialogHeader>
@@ -621,7 +711,7 @@ const Dashboard = () => {
           <div className="space-y-4 py-4">
             {/* Project Name */}
             <div className="space-y-2">
-              <Label htmlFor="project-name" className="text-sm font-semibold text-foreground">
+              <Label htmlFor="project-name" className="text-sm font-medium">
                 Project Name *
               </Label>
               <Input
@@ -629,13 +719,13 @@ const Dashboard = () => {
                 value={newProject.name}
                 onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
                 placeholder="Enter project name"
-                className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
+                className="h-11"
               />
             </div>
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="project-description" className="text-sm font-semibold text-foreground">
+              <Label htmlFor="project-description" className="text-sm font-medium">
                 Description
               </Label>
               <Textarea
@@ -643,14 +733,14 @@ const Dashboard = () => {
                 value={newProject.description}
                 onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
                 placeholder="Describe your project goals and objectives"
-                className="min-h-[80px] border-border/50 focus:border-primary/50 transition-all duration-300 resize-none"
+                className="min-h-[80px] resize-none"
               />
             </div>
 
             {/* Date Range */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="project-start-date" className="text-sm font-semibold text-foreground">
+                <Label htmlFor="project-start-date" className="text-sm font-medium">
                   Start Date
                 </Label>
                 <Input
@@ -658,12 +748,12 @@ const Dashboard = () => {
                   type="date"
                   value={newProject.startDate}
                   onChange={(e) => setNewProject({ ...newProject, startDate: e.target.value })}
-                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
+                  className="h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="project-end-date" className="text-sm font-semibold text-foreground">
+                <Label htmlFor="project-end-date" className="text-sm font-medium">
                   Target End Date
                 </Label>
                 <Input
@@ -671,44 +761,44 @@ const Dashboard = () => {
                   type="date"
                   value={newProject.endDate}
                   onChange={(e) => setNewProject({ ...newProject, endDate: e.target.value })}
-                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
+                  className="h-11"
                 />
               </div>
             </div>
 
             {/* Visibility */}
             <div className="space-y-2">
-              <Label htmlFor="project-visibility" className="text-sm font-semibold text-foreground">
+              <Label htmlFor="project-visibility" className="text-sm font-medium">
                 Project Visibility
               </Label>
               <select
                 id="project-visibility"
                 value={newProject.visibility}
                 onChange={(e) => setNewProject({ ...newProject, visibility: e.target.value })}
-                className="flex h-11 w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all duration-300"
+                className="flex h-11 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
               >
                 <option value="private">Private - Only invited members</option>
                 <option value="team">Team - All team members can view</option>
                 <option value="public">Public - Anyone can view</option>
               </select>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-slate-500">
                 Control who can view and access this project
               </p>
             </div>
           </div>
 
-          <DialogFooter className="border-t border-border/30 pt-4">
+          <DialogFooter className="border-t border-slate-100 pt-4">
             <Button
               variant="outline"
               onClick={() => setIsNewProjectModalOpen(false)}
-              className="font-semibold"
+              className="border-slate-200 hover:bg-slate-50"
             >
               Cancel
             </Button>
             <Button
               onClick={handleCreateProject}
               disabled={!newProject.name.trim()}
-              className="btn-executive"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
             >
               Create Project
             </Button>
