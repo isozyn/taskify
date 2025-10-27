@@ -1,4 +1,4 @@
-# CollabTrack - Executive Project Management Suite
+# Taskify - Executive Project Management Suite
 
 ## Project info
 
