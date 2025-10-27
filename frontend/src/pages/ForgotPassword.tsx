@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Layers, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { CheckSquare, ArrowLeft, CheckCircle2, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const ForgotPassword = () => {
@@ -17,7 +16,6 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     // Simulate sending reset email
-    // In production, this would call your backend API
     setTimeout(() => {
       setIsLoading(false);
       setIsSubmitted(true);
@@ -25,123 +23,164 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-amber-50/50 to-amber-100/30 p-6 relative">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => navigate("/auth")}
-        className="absolute top-6 left-6 flex items-center gap-2 hover:bg-primary/10 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span className="font-medium">Back to Login</span>
-      </Button>
-
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/80 mb-6 shadow-premium">
-            <Layers className="w-10 h-10 text-primary-foreground" />
-          </div>
-          <h1 className="heading-executive bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Taskify
-          </h1>
-          <p className="text-executive mt-3">Reset Your Password</p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border/40 bg-background/95 backdrop-blur">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <button 
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
+              <CheckSquare className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold">Taskify</span>
+          </button>
+          <button
+            onClick={() => navigate("/auth")}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Login
+          </button>
         </div>
+      </header>
 
-        <Card className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/90 shadow-premium">
-          <CardHeader className="text-center pb-6">
-            {!isSubmitted ? (
-              <>
-                <CardTitle className="heading-premium">Forgot Password?</CardTitle>
-                <CardDescription className="text-executive">
-                  Enter your email address and we'll send you a link to reset your password.
-                </CardDescription>
-              </>
-            ) : (
-              <>
+      {/* Main Content */}
+      <div className="flex items-center justify-center px-4 py-16 sm:py-20">
+        <div className="w-full max-w-[420px]">
+          {!isSubmitted ? (
+            // Form State
+            <div>
+              <div className="text-center mb-8">
                 <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-                    <CheckCircle2 className="w-8 h-8 text-success" />
+                  <div className="w-16 h-16 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
+                    <Mail className="w-8 h-8 text-white" />
                   </div>
                 </div>
-                <CardTitle className="heading-premium">Check Your Email</CardTitle>
-                <CardDescription className="text-executive">
-                  We've sent a password reset link to {email}
-                </CardDescription>
-              </>
-            )}
-          </CardHeader>
-          <CardContent className="px-8 pb-8">
-            {!isSubmitted ? (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="reset-email" className="text-sm font-semibold text-foreground">
-                    Email Address
-                  </Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="executive@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 border-border/50 focus:border-primary/50 transition-all duration-300"
-                    required
-                  />
-                </div>
-                <p className="text-xs text-foreground/60">
-                  You'll receive an email with instructions to reset your password. The link will expire in 1 hour for security.
+                <h1 className="text-3xl font-normal text-foreground mb-2">Forgot your password?</h1>
+                <p className="text-muted-foreground">
+                  No worries! Enter your email and we'll send you a link to reset it.
                 </p>
-                <Button type="submit" className="btn-executive w-full h-12" disabled={isLoading || !email}>
-                  {isLoading ? "Sending..." : "Send Reset Link"}
-                </Button>
-              </form>
-            ) : (
-              <div className="space-y-6">
-                <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 space-y-3">
-                  <p className="text-sm font-medium text-foreground">What happens next:</p>
-                  <ul className="space-y-2 text-sm text-foreground/70">
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold">1.</span>
-                      <span>Check your email (including spam folder)</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold">2.</span>
-                      <span>Click the reset link in the email</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold">3.</span>
-                      <span>Create a new password</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/auth")}
-                  className="w-full h-12 border-border/50 hover:bg-muted/50 transition-all duration-300"
-                >
-                  Return to Login
-                </Button>
+              </div>
 
-                <div className="text-center">
-                  <p className="text-sm text-foreground/60">
-                    Didn't receive the email?{" "}
-                    <button
-                      onClick={() => {
-                        setIsSubmitted(false);
-                        setEmail("");
-                      }}
-                      className="text-primary hover:text-primary/80 font-medium transition-colors"
-                    >
-                      Try again
-                    </button>
+              <div className="bg-card border border-border/50 rounded-md p-6 mb-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email" className="text-sm font-normal text-foreground">
+                      Email address
+                    </Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="h-9 text-sm border-border/60 focus-visible:ring-2 focus-visible:ring-[#0052CC]/20 focus-visible:border-[#0052CC] rounded-md"
+                      required
+                    />
+                  </div>
+
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    We'll send you an email with a secure link to reset your password. The link will expire in 1 hour for your security.
                   </p>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full h-10 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-medium rounded-md shadow-sm mt-6"
+                    disabled={isLoading || !email}
+                  >
+                    {isLoading ? "Sending..." : "Send reset link"}
+                  </Button>
+                </form>
+              </div>
+
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  Remember your password?{" "}
+                  <button
+                    onClick={() => navigate("/auth")}
+                    className="text-[#0052CC] hover:underline font-medium"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              </div>
+            </div>
+          ) : (
+            // Success State
+            <div>
+              <div className="text-center mb-8">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 className="w-8 h-8 text-green-600" />
+                  </div>
+                </div>
+                <h1 className="text-3xl font-normal text-foreground mb-2">Check your email</h1>
+                <p className="text-muted-foreground">
+                  We've sent a password reset link to <span className="font-medium text-foreground">{email}</span>
+                </p>
+              </div>
+
+              <div className="bg-card border border-border/50 rounded-md p-6 mb-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground mb-3">What to do next:</p>
+                    <ol className="space-y-3">
+                      <li className="flex gap-3 text-sm">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0052CC]/10 text-[#0052CC] flex items-center justify-center text-xs font-medium">1</span>
+                        <span className="text-muted-foreground">Check your email inbox (including spam)</span>
+                      </li>
+                      <li className="flex gap-3 text-sm">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0052CC]/10 text-[#0052CC] flex items-center justify-center text-xs font-medium">2</span>
+                        <span className="text-muted-foreground">Click the password reset link</span>
+                      </li>
+                      <li className="flex gap-3 text-sm">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0052CC]/10 text-[#0052CC] flex items-center justify-center text-xs font-medium">3</span>
+                        <span className="text-muted-foreground">Create a new password</span>
+                      </li>
+                    </ol>
+                  </div>
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              <Button
+                onClick={() => navigate("/auth")}
+                className="w-full h-10 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-medium rounded-md shadow-sm mb-3"
+              >
+                Back to sign in
+              </Button>
+
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  Didn't receive the email?{" "}
+                  <button
+                    onClick={() => {
+                      setIsSubmitted(false);
+                      setEmail("");
+                    }}
+                    className="text-[#0052CC] hover:underline font-medium"
+                  >
+                    Try again
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-border/40 py-8 px-4 mt-auto">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+            <a href="#" className="hover:text-[#0052CC] hover:underline">Terms</a>
+            <a href="#" className="hover:text-[#0052CC] hover:underline">Privacy</a>
+            <a href="#" className="hover:text-[#0052CC] hover:underline">Security</a>
+            <a href="#" className="hover:text-[#0052CC] hover:underline">Support</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

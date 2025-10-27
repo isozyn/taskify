@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Layers, ArrowLeft, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { CheckSquare, ArrowLeft, CheckCircle2, AlertCircle, Eye, EyeOff, Lock } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const ResetPassword = () => {
@@ -20,7 +19,6 @@ const ResetPassword = () => {
   const token = searchParams.get("token");
 
   // Simulate token validation
-  // In production, you'd validate the token with your backend
   useEffect(() => {
     if (!token) {
       setTokenValid(false);
@@ -57,8 +55,6 @@ const ResetPassword = () => {
 
     setIsLoading(true);
     
-    // Simulate resetting password
-    // In production, this would call your backend API with the token and new password
     setTimeout(() => {
       setIsLoading(false);
       setIsSubmitted(true);
@@ -67,42 +63,48 @@ const ResetPassword = () => {
 
   if (!tokenValid) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-amber-50/50 to-amber-100/30 p-6 relative">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/")}
-          className="absolute top-6 left-6 flex items-center gap-2 hover:bg-primary/10 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="font-medium">Back to Home</span>
-        </Button>
-
-        <div className="w-full max-w-lg">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-destructive/10 mb-6">
-              <AlertCircle className="w-10 h-10 text-destructive" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground mb-3">Invalid Reset Link</h1>
-            <p className="text-foreground/70">
-              This password reset link is invalid or has expired. Please request a new one.
-            </p>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="border-b border-border/40 bg-background/95 backdrop-blur">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <button 
+              onClick={() => navigate("/")}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
+                <CheckSquare className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold">Taskify</span>
+            </button>
           </div>
+        </header>
 
-          <div className="flex gap-3">
-            <Button
-              onClick={() => navigate("/forgot-password")}
-              className="btn-executive flex-1 h-12"
-            >
-              Request New Link
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/auth")}
-              className="flex-1 h-12 border-border/50 hover:bg-muted/50"
-            >
-              Back to Login
-            </Button>
+        <div className="flex items-center justify-center px-4 py-16 sm:py-20">
+          <div className="w-full max-w-[420px] text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-6">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            
+            <h1 className="text-2xl font-normal text-foreground mb-3">Link expired or invalid</h1>
+            <p className="text-muted-foreground mb-8">
+              This password reset link is no longer valid. It may have expired or was already used. Request a new one to reset your password.
+            </p>
+
+            <div className="space-y-3">
+              <Button
+                onClick={() => navigate("/forgot-password")}
+                className="w-full h-10 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-medium rounded-md shadow-sm"
+              >
+                Request new link
+              </Button>
+              <Button
+                onClick={() => navigate("/auth")}
+                variant="outline"
+                className="w-full h-10 text-sm font-medium border-border/60 hover:bg-accent/50 rounded-md"
+              >
+                Back to login
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -110,164 +112,217 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-amber-50/50 to-amber-100/30 p-6 relative">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => navigate("/auth")}
-        className="absolute top-6 left-6 flex items-center gap-2 hover:bg-primary/10 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span className="font-medium">Back to Login</span>
-      </Button>
-
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/80 mb-6 shadow-premium">
-            <Layers className="w-10 h-10 text-primary-foreground" />
-          </div>
-          <h1 className="heading-executive bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Taskify
-          </h1>
-          <p className="text-executive mt-3">Create New Password</p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border/40 bg-background/95 backdrop-blur">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <button 
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
+              <CheckSquare className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold">Taskify</span>
+          </button>
+          <button
+            onClick={() => navigate("/auth")}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Login
+          </button>
         </div>
+      </header>
 
-        <Card className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/90 shadow-premium">
-          <CardHeader className="text-center pb-6">
-            {!isSubmitted ? (
-              <>
-                <CardTitle className="heading-premium">Reset Password</CardTitle>
-                <CardDescription className="text-executive">
-                  Enter a new password for your account
-                </CardDescription>
-              </>
-            ) : (
-              <>
+      {/* Main Content */}
+      <div className="flex items-center justify-center px-4 py-16 sm:py-20">
+        <div className="w-full max-w-[420px]">
+          {!isSubmitted ? (
+            // Form State
+            <div>
+              <div className="text-center mb-8">
                 <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-                    <CheckCircle2 className="w-8 h-8 text-success" />
+                  <div className="w-16 h-16 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
+                    <Lock className="w-8 h-8 text-white" />
                   </div>
                 </div>
-                <CardTitle className="heading-premium">Password Reset Successful</CardTitle>
-                <CardDescription className="text-executive">
-                  Your password has been successfully reset
-                </CardDescription>
-              </>
-            )}
-          </CardHeader>
-          <CardContent className="px-8 pb-8">
-            {!isSubmitted ? (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {error && (
-                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex gap-3">
-                    <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-destructive font-medium">{error}</p>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <Label htmlFor="new-password" className="text-sm font-semibold text-foreground">
-                    New Password
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="new-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-12 border-border/50 focus:border-primary/50 transition-all duration-300 pr-10"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="confirm-new-password" className="text-sm font-semibold text-foreground">
-                    Confirm Password
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="confirm-new-password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="h-12 border-border/50 focus:border-primary/50 transition-all duration-300 pr-10"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground transition-colors"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 space-y-2">
-                  <p className="text-xs font-semibold text-foreground">Password requirements:</p>
-                  <ul className="space-y-1 text-xs text-foreground/70">
-                    <li className="flex items-center gap-2">
-                      <span className={password.length >= 8 ? "text-success" : "text-foreground/50"}>✓</span>
-                      At least 8 characters
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className={/[A-Z]/.test(password) ? "text-success" : "text-foreground/50"}>✓</span>
-                      At least one uppercase letter
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className={/[0-9]/.test(password) ? "text-success" : "text-foreground/50"}>✓</span>
-                      At least one number
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className={password === confirmPassword && password.length > 0 ? "text-success" : "text-foreground/50"}>✓</span>
-                      Passwords match
-                    </li>
-                  </ul>
-                </div>
-
-                <Button type="submit" className="btn-executive w-full h-12" disabled={isLoading}>
-                  {isLoading ? "Resetting..." : "Reset Password"}
-                </Button>
-              </form>
-            ) : (
-              <div className="space-y-6">
-                <div className="bg-success/5 border border-success/10 rounded-lg p-4 space-y-3">
-                  <p className="text-sm font-medium text-foreground">Your password has been updated successfully!</p>
-                  <p className="text-sm text-foreground/70">
-                    You can now log in with your new password.
-                  </p>
-                </div>
-
-                <Button
-                  onClick={() => navigate("/auth")}
-                  className="btn-executive w-full h-12"
-                >
-                  Back to Login
-                </Button>
+                <h1 className="text-3xl font-normal text-foreground mb-2">Create new password</h1>
+                <p className="text-muted-foreground">
+                  Create a strong password for your account. Make sure it's different from your previous password.
+                </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              <div className="bg-card border border-border/50 rounded-md p-6 mb-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3 flex gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password" className="text-sm font-normal text-foreground">
+                      New password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="new-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="h-9 text-sm border-border/60 focus-visible:ring-2 focus-visible:ring-[#0052CC]/20 focus-visible:border-[#0052CC] rounded-md pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-new-password" className="text-sm font-normal text-foreground">
+                      Confirm password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="confirm-new-password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Confirm password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="h-9 text-sm border-border/60 focus-visible:ring-2 focus-visible:ring-[#0052CC]/20 focus-visible:border-[#0052CC] rounded-md pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Password Requirements */}
+                  <div className="bg-muted/50 border border-border/40 rounded-md p-4 space-y-3 mt-6">
+                    <p className="text-xs font-semibold text-foreground">Password requirements:</p>
+                    <ul className="space-y-2">
+                      <li className="flex items-center gap-2 text-xs">
+                        <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-xs font-medium ${password.length >= 8 ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"}`}>
+                          {password.length >= 8 ? "✓" : "○"}
+                        </span>
+                        <span className={password.length >= 8 ? "text-foreground" : "text-muted-foreground"}>
+                          At least 8 characters
+                        </span>
+                      </li>
+                      <li className="flex items-center gap-2 text-xs">
+                        <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-xs font-medium ${/[A-Z]/.test(password) ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"}`}>
+                          {/[A-Z]/.test(password) ? "✓" : "○"}
+                        </span>
+                        <span className={/[A-Z]/.test(password) ? "text-foreground" : "text-muted-foreground"}>
+                          At least one uppercase letter
+                        </span>
+                      </li>
+                      <li className="flex items-center gap-2 text-xs">
+                        <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-xs font-medium ${/[0-9]/.test(password) ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"}`}>
+                          {/[0-9]/.test(password) ? "✓" : "○"}
+                        </span>
+                        <span className={/[0-9]/.test(password) ? "text-foreground" : "text-muted-foreground"}>
+                          At least one number
+                        </span>
+                      </li>
+                      <li className="flex items-center gap-2 text-xs">
+                        <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-xs font-medium ${password === confirmPassword && password.length > 0 ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"}`}>
+                          {password === confirmPassword && password.length > 0 ? "✓" : "○"}
+                        </span>
+                        <span className={password === confirmPassword && password.length > 0 ? "text-foreground" : "text-muted-foreground"}>
+                          Passwords match
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full h-10 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-medium rounded-md shadow-sm mt-6"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Resetting password..." : "Reset password"}
+                  </Button>
+                </form>
+              </div>
+            </div>
+          ) : (
+            // Success State
+            <div>
+              <div className="text-center mb-8">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 className="w-8 h-8 text-green-600" />
+                  </div>
+                </div>
+                <h1 className="text-3xl font-normal text-foreground mb-2">Password updated</h1>
+                <p className="text-muted-foreground">
+                  Your password has been successfully reset. You can now sign in with your new password.
+                </p>
+              </div>
+
+              <div className="bg-card border border-border/50 rounded-md p-6 mb-6">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">Password changed</p>
+                      <p className="text-xs text-muted-foreground">Your old password is no longer valid</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">Ready to sign in</p>
+                      <p className="text-xs text-muted-foreground">Use your new password to log in</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => navigate("/auth")}
+                className="w-full h-10 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-medium rounded-md shadow-sm"
+              >
+                Back to sign in
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-border/40 py-8 px-4 mt-auto">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+            <a href="#" className="hover:text-[#0052CC] hover:underline">Terms</a>
+            <a href="#" className="hover:text-[#0052CC] hover:underline">Privacy</a>
+            <a href="#" className="hover:text-[#0052CC] hover:underline">Security</a>
+            <a href="#" className="hover:text-[#0052CC] hover:underline">Support</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -17,7 +17,7 @@ interface NavbarProps {
   subtitle?: string;
 }
 
-const Navbar = ({ showBackButton = false, backButtonPath = "/dashboard", subtitle = "Executive Project Management" }: NavbarProps) => {
+const Navbar = ({ showBackButton = false, backButtonPath = "/dashboard", /*subtitle = "Executive Project Management"*/ }: NavbarProps) => {
   const navigate = useNavigate();
 
   // Mock user data - will be replaced with real data from backend/context
@@ -47,7 +47,7 @@ const Navbar = ({ showBackButton = false, backButtonPath = "/dashboard", subtitl
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Taskify</h1>
-              <p className="text-sm text-muted-foreground font-medium">{subtitle}</p>
+              {/* <p className="text-sm text-muted-foreground font-medium">{subtitle}</p> */}
             </div>
           </div>
           
