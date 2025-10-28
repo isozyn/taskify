@@ -592,7 +592,7 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <h3 className="text-base font-semibold text-slate-900">
-                          Calendar-Synced Board
+                          Automated Workflow Board
                         </h3>
                         <p className="text-xs text-slate-600 mt-0.5">
                           Automated time-based workflow
@@ -819,7 +819,7 @@ const Dashboard = () => {
                   }
                 >
                   {selectedTemplate 
-                    ? `Continue with ${selectedTemplate === "auto-sync" ? "Calendar-Synced" : "Custom Workflow"}`
+                    ? `Continue with ${selectedTemplate === "auto-sync" ? "Automated Workflow" : "Custom Workflow"}`
                     : "Select a Template"
                   }
                 </Button>
@@ -839,7 +839,7 @@ const Dashboard = () => {
             </DialogTitle>
             <DialogDescription>
               {selectedTemplate === "auto-sync" 
-                ? "📅 Calendar-Synced Template - Tasks move automatically based on dates"
+                ? "📅 Automated Workflow Template - Tasks move automatically based on dates"
                 : selectedTemplate === "custom"
                 ? "🎯 Custom Workflow Template - Create your own columns and workflow"
                 : "Set up a new project and start collaborating with your team"
