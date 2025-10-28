@@ -757,16 +757,6 @@ const Dashboard = () => {
                         <Check className="w-2.5 h-2.5 text-purple-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900">Quick Task Creation</p>
-                        <p className="text-xs text-slate-600">Trello-style quick add cards in any column</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-purple-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 text-purple-600" />
-                      </div>
-                      <div>
                         <p className="text-sm font-medium text-slate-900">Customizable Stages</p>
                         <p className="text-xs text-slate-600">Rename, reorder, add, or remove columns</p>
                       </div>
