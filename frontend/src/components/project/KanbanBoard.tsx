@@ -26,7 +26,7 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
             }
           >
             <Calendar className="w-4 h-4 mr-2" />
-            Calendar-Synced
+            Automated Workflow
           </Button>
           <Button
             variant={boardTemplate === "custom" ? "default" : "outline"}

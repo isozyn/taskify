@@ -302,7 +302,8 @@ const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
                         key={task.id}
                         draggable
                         onDragStart={(e) => handleDragStart(e, task.id)}
-                        className="cursor-move group bg-white border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200"
+                        onClick={() => setSelectedTask(task)}
+                        className="cursor-pointer group bg-white border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200"
                       >
                         <CardContent className="p-3 space-y-3">
                           {/* Drag Handle & Title */}
@@ -310,7 +311,6 @@ const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
                             <GripVertical className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
                             <h4 
                               className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 flex-1"
-                              onClick={() => setSelectedTask(task)}
                             >
                               {task.title}
                             </h4>
