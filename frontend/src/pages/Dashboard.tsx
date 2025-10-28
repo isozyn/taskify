@@ -27,7 +27,9 @@ import {
   Grid3x3,
   List,
   FolderOpen,
-  Settings
+  Settings,
+  GripVertical,
+  Check
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -36,6 +38,8 @@ const Dashboard = () => {
   const [joinProjectCode, setJoinProjectCode] = useState("");
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+  const [isTemplateSelectionOpen, setIsTemplateSelectionOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<"auto-sync" | "custom" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [activeTab, setActiveTab] = useState("recent");
@@ -173,9 +177,15 @@ const Dashboard = () => {
     // For now, just show a success message or navigate
   };
 
+  const handleTemplateSelect = (template: "auto-sync" | "custom") => {
+    setSelectedTemplate(template);
+    setIsTemplateSelectionOpen(false);
+    setIsNewProjectModalOpen(true);
+  };
+
   const handleCreateProject = () => {
     // TODO: Implement create project logic with backend
-    console.log("Creating project:", newProject);
+    console.log("Creating project with template:", selectedTemplate, newProject);
     setIsNewProjectModalOpen(false);
     // Reset form
     setNewProject({
@@ -185,6 +195,7 @@ const Dashboard = () => {
       endDate: "",
       visibility: "private",
     });
+    setSelectedTemplate(null);
     // For now, just show a success message or navigate
   };
 
@@ -280,7 +291,7 @@ const Dashboard = () => {
           <p className="text-sm text-slate-500 mb-4">Get started by creating your first project</p>
           <Button 
             className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => setIsNewProjectModalOpen(true)}
+            onClick={() => setIsTemplateSelectionOpen(true)}
           >
             <Plus className="w-4 h-4" />
             Create Project
@@ -450,7 +461,7 @@ const Dashboard = () => {
               {/* Create Project Button */}
               <Button 
                 className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-9 shadow-sm"
-                onClick={() => setIsNewProjectModalOpen(true)}
+                onClick={() => setIsTemplateSelectionOpen(true)}
               >
                 <Plus className="w-4 h-4" />
                 Create
@@ -540,6 +551,181 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Template Selection Modal */}
+      <Dialog open={isTemplateSelectionOpen} onOpenChange={setIsTemplateSelectionOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-white border-2 border-blue-200 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-3xl font-bold text-blue-900">
+              Choose Your Project Template
+            </DialogTitle>
+            <DialogDescription className="text-slate-600 text-base">
+              Select the workflow that best fits your team's needs
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            {/* Calendar-Synced Template */}
+            <div 
+              className="border-2 border-blue-200 rounded-xl p-6 hover:shadow-lg transition-all bg-gradient-to-br from-blue-50/50 to-white relative group cursor-pointer hover:border-blue-400"
+              onClick={() => handleTemplateSelect("auto-sync")}
+            >
+              <div className="absolute top-4 right-4">
+                <span className="bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
+                  RECOMMENDED
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                  <Calendar className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-blue-900">Calendar-Synced</h3>
+                  <p className="text-sm text-blue-600 font-medium">Automated workflow</p>
+                </div>
+              </div>
+
+              <p className="text-slate-700 mb-6 leading-relaxed">
+                Perfect for deadline-driven teams and time-sensitive projects
+              </p>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <Check className="w-3 h-3 text-blue-600 font-bold" />
+                  </div>
+                  <span className="text-sm text-slate-700">Tasks move automatically based on dates</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <Check className="w-3 h-3 text-blue-600 font-bold" />
+                  </div>
+                  <span className="text-sm text-slate-700">Fixed workflow stages (Backlog → Complete)</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <Check className="w-3 h-3 text-blue-600 font-bold" />
+                  </div>
+                  <span className="text-sm text-slate-700">Perfect for sprints and milestones</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <Check className="w-3 h-3 text-blue-600 font-bold" />
+                  </div>
+                  <span className="text-sm text-slate-700">Integrated timeline & calendar views</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <Check className="w-3 h-3 text-blue-600 font-bold" />
+                  </div>
+                  <span className="text-sm text-slate-700">Great for executive oversight</span>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-blue-200">
+                <p className="text-xs text-slate-500 font-medium mb-3">Best for:</p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-blue-100 text-blue-700 text-xs font-medium px-3 py-1.5 rounded-full">Product Launches</span>
+                  <span className="bg-blue-100 text-blue-700 text-xs font-medium px-3 py-1.5 rounded-full">Marketing Campaigns</span>
+                  <span className="bg-blue-100 text-blue-700 text-xs font-medium px-3 py-1.5 rounded-full">Agile Teams</span>
+                </div>
+              </div>
+
+              <Button 
+                className="w-full mt-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white h-11 font-semibold shadow-md"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTemplateSelect("auto-sync");
+                }}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Choose Calendar-Synced
+              </Button>
+            </div>
+
+            {/* Custom Workflow Template */}
+            <div 
+              className="border-2 border-purple-200 rounded-xl p-6 hover:shadow-lg transition-all bg-gradient-to-br from-purple-50/50 to-white relative group cursor-pointer hover:border-purple-400"
+              onClick={() => handleTemplateSelect("custom")}
+            >
+              
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                  <GripVertical className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-purple-900">Custom Workflow</h3>
+                  <p className="text-sm text-purple-600 font-medium">Flexible & adaptable</p>
+                </div>
+              </div>
+
+              <p className="text-slate-700 mb-6 leading-relaxed">
+                Ideal for creative teams with unique processes and flexible timelines
+              </p>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <Check className="w-3 h-3 text-purple-600 font-bold" />
+                  </div>
+                  <span className="text-sm text-slate-700">Create unlimited custom columns</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <Check className="w-3 h-3 text-purple-600 font-bold" />
+                  </div>
+                  <span className="text-sm text-slate-700">Drag & drop tasks between stages</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <Check className="w-3 h-3 text-purple-600 font-bold" />
+                  </div>
+                  <span className="text-sm text-slate-700">Design your own workflow stages</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <Check className="w-3 h-3 text-purple-600 font-bold" />
+                  </div>
+                  <span className="text-sm text-slate-700">No date restrictions or automation</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <Check className="w-3 h-3 text-purple-600 font-bold" />
+                  </div>
+                  <span className="text-sm text-slate-700">Trello-style board experience</span>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-purple-200">
+                <p className="text-xs text-slate-500 font-medium mb-3">Best for:</p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-purple-100 text-purple-700 text-xs font-medium px-3 py-1.5 rounded-full">Design Projects</span>
+                  <span className="bg-purple-100 text-purple-700 text-xs font-medium px-3 py-1.5 rounded-full">Content Creation</span>
+                  <span className="bg-purple-100 text-purple-700 text-xs font-medium px-3 py-1.5 rounded-full">Creative Teams</span>
+                </div>
+              </div>
+
+              <Button 
+                className="w-full mt-6 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white h-11 font-semibold shadow-md"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTemplateSelect("custom");
+                }}
+              >
+                <GripVertical className="w-4 h-4 mr-2" />
+                Choose Custom Workflow
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <p className="text-sm text-slate-600 text-center">
+              <strong className="text-slate-900">Note:</strong> You can switch templates later in Project Settings
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* New Project Modal */}
       <Dialog open={isNewProjectModalOpen} onOpenChange={setIsNewProjectModalOpen}>
         <DialogContent className="sm:max-w-[550px]">
@@ -549,7 +735,12 @@ const Dashboard = () => {
               Create New Project
             </DialogTitle>
             <DialogDescription>
-              Set up a new project and start collaborating with your team
+              {selectedTemplate === "auto-sync" 
+                ? "📅 Calendar-Synced Template - Tasks move automatically based on dates"
+                : selectedTemplate === "custom"
+                ? "🎯 Custom Workflow Template - Create your own columns and workflow"
+                : "Set up a new project and start collaborating with your team"
+              }
             </DialogDescription>
           </DialogHeader>
           
@@ -635,7 +826,10 @@ const Dashboard = () => {
           <DialogFooter className="border-t border-slate-100 pt-4">
             <Button
               variant="outline"
-              onClick={() => setIsNewProjectModalOpen(false)}
+              onClick={() => {
+                setIsNewProjectModalOpen(false);
+                setSelectedTemplate(null);
+              }}
               className="border-slate-200 hover:bg-slate-50"
             >
               Cancel
