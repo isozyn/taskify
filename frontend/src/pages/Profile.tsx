@@ -51,7 +51,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-amber-50/50 to-amber-100/30">
       {/* Navbar */}
-      <Navbar showBackButton={true} subtitle="Profile Settings" />
+  <Navbar />
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12">

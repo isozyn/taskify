@@ -503,39 +503,326 @@ const Dashboard = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
+      </main>              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-slate-900">Your Projects</h2>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search projects..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 w-64 h-9 border-slate-200 focus:border-blue-500"
+                    />
+                  </div>
+                  <Button variant="outline" size="sm" className="gap-2 border-slate-200  hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
+                    <Filter className="w-4 h-4" />
+                    Filter
+                  </Button>
+                </div>
+              </div>
 
-      {/* Join Project Modal */}
-      <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>Join Project</DialogTitle>
-            <DialogDescription>
-              Enter the project invitation code to join an existing project.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-6 py-6">
-            <div className="space-y-2">
-              <Label htmlFor="projectCode" className="text-sm font-medium">
-                Project Code
-              </Label>
-              <Input
-                id="projectCode"
-                value={joinProjectCode}
-                onChange={(e) => setJoinProjectCode(e.target.value)}
-                placeholder="Enter invitation code"
-                className="h-11"
-              />
+              <div className="space-y-4">
+                {filteredProjects.map((project) => (
+                  <Card
+                    key={project.id}
+                    className="border-0 bg-white shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                    onClick={() => navigate(`/project/${project.id}`)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0">
+                            <Layers className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <CardTitle className="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
+                              {project.name}
+                            </CardTitle>
+                            <p className="text-sm text-slate-600 mt-1">{project.description}</p>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-600">Progress</span>
+                          <span className="text-xs font-bold text-slate-900">{project.progress}%</span>
+                        </div>
+                        <Progress 
+                          value={project.progress} 
+                          className="h-2 bg-slate-100"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Calendar className="w-4 h-4" />
+                          <span className="font-medium">
+                            {project.tasks.completed}/{project.tasks.total} tasks
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Users className="w-4 h-4" />
+                          <span className="font-medium">{project.members} members</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* High Priority Tasks */}
+              <Card className="border-0 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-slate-900">High Priority</CardTitle>
+                  <CardDescription>Tasks requiring immediate attention</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {highPriorityTasks.slice(0, 5).map((task) => (
+                    <div key={task.id} className="p-3 rounded-lg bg-red-50 border border-red-100 hover:bg-red-100 transition-colors cursor-pointer">
+                      <h4 className="text-sm font-semibold text-slate-900 mb-1">{task.title}</h4>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-600">{task.project}</span>
+                        <div className="flex items-center gap-1 text-xs text-red-600">
+                          <Clock className="w-3 h-3" />
+                          {task.dueDate}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <Button 
+                    variant="ghost"
+                    className="w-full gap-2 border border-slate-200 text-slate-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all"
+                    onClick={() => setIsActiveTasksModalOpen(true)}
+                  >
+                    <Eye className="w-4 h-4" />
+                    View All Tasks
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions
+              <Card className="border-0 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-slate-900">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 border-slate-200 hover:bg-slate-50"
+                    onClick={() => setIsNewProjectModalOpen(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Project
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 border-slate-200 hover:bg-slate-50"
+                    onClick={() => setIsActiveTasksModalOpen(true)}
+                  >
+                    <CheckSquare2 className="w-4 h-4" />
+                    View All Tasks
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 border-slate-200 hover:bg-slate-50"
+                    onClick={() => setIsJoinDialogOpen(true)}
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Invite Team Member
+                  </Button>
+                </CardContent>
+              </Card> */}
+
+              {/* Team Members
+              <Card className="border-0 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-slate-900">Team Members</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {["John Doe", "Jane Smith", "Mike Johnson"].map((member, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+                        {member.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">{member}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card> */}
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              onClick={handleJoinProject}
-              disabled={!joinProjectCode.trim()}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-            >
-              Join Project
-            </Button>
+      </main>
+
+      {/* Active Tasks Modal */}
+      <Dialog open={isActiveTasksModalOpen} onOpenChange={setIsActiveTasksModalOpen}>
+        <DialogContent className="sm:max-w-[1200px] max-h-[85vh] overflow-hidden">
+          <DialogHeader className="space-y-2 pb-4">
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              All Active Tasks
+            </DialogTitle>
+            <DialogDescription>
+              View and manage all active tasks organized by project
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="overflow-y-auto max-h-[60vh] py-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {getTasksByProject().map((projectGroup) => (
+                <Card key={projectGroup.projectId} className="border-0 bg-white shadow-sm">
+                  <CardHeader 
+                    className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-100 pb-4 cursor-pointer hover:from-blue-100 hover:to-blue-200 transition-all"
+                    onClick={() => navigate(`/project/${projectGroup.projectId}`)}
+                  >
+                    <div className="space-y-4">
+                      {/* Project Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                            <Layers className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <CardTitle className="font-semibold text-sm text-slate-900 hover:text-blue-600 transition-colors">
+                              {projectGroup.projectName}
+                            </CardTitle>
+                            <p className="text-xs text-slate-600 font-medium">
+                              {projectGroup.tasks.length} active task{projectGroup.tasks.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-slate-900">{projectGroup.progress}%</div>
+                            <div className="text-xs text-slate-600 font-medium">Complete</div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-400 hover:text-blue-600 transition-colors" />
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-slate-600">Project Progress</span>
+                          <span className="font-bold text-slate-900">
+                            {projectGroup.completedTasks}/{projectGroup.totalTasks} tasks
+                          </span>
+                        </div>
+                        <Progress 
+                          value={projectGroup.progress} 
+                          className="h-2 bg-slate-100"
+                        />
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-4">
+                    <div className="space-y-3 min-h-[300px] max-h-[400px] overflow-y-auto">
+                      {projectGroup.tasks.length === 0 ? (
+                        <div className="flex items-center justify-center h-32 text-slate-400">
+                          <div className="text-center">
+                            <CheckSquare2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm font-medium">No active tasks</p>
+                          </div>
+                        </div>
+                      ) : (
+                        projectGroup.tasks.map((task) => (
+                          <Card
+                            key={task.id}
+                            className="cursor-pointer group border border-slate-200 bg-white hover:shadow-md hover:border-blue-300 transition-all"
+                            onClick={() => navigate(`/project/${task.projectId}`)}
+                          >
+                            <CardContent className="p-3">
+                              <div className="space-y-3">
+                                {/* Task Title and Priority */}
+                                <div className="flex items-start justify-between">
+                                  <h4 className="font-semibold text-xs text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 flex-1">
+                                    {task.title}
+                                  </h4>
+                                  <Badge className={`text-xs px-2 py-1 ml-2 ${getPriorityColor(task.priority)}`}>
+                                    {task.priority.charAt(0).toUpperCase()}
+                                  </Badge>
+                                </div>
+
+                                {/* Status and Due Date */}
+                                <div className="flex items-center justify-between">
+                                  <Badge className={`text-xs px-2 py-1 ${getStatusColor(task.status)}`}>
+                                    {task.status.replace('-', ' ').toUpperCase()}
+                                  </Badge>
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Clock className="w-3 h-3" />
+                                    <span className="font-medium">{new Date(task.dueDate).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+
+                                {/* Assignees */}
+                                <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                                  <div className="flex -space-x-1">
+                                    {task.assignees.slice(0, 3).map((assignee, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold border border-background shadow-sm"
+                                      >
+                                        {assignee.split(" ").map((n: string) => n[0]).join("")[0]}
+                                      </div>
+                                    ))}
+                                    {task.assignees.length > 3 && (
+                                      <div className="w-5 h-5 rounded-full bg-muted border border-background flex items-center justify-center shadow-sm">
+                                        <span className="text-xs font-bold text-muted-foreground">
+                                          +{task.assignees.length - 3}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground font-medium">
+                                    {task.assignees.length} member{task.assignees.length !== 1 ? 's' : ''}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+          
+          <DialogFooter className="border-t border-border/30 pt-4">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span>Showing {activeTasks.length} active tasks across {projects.length} projects</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                    <span className="text-xs">High Priority</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                    <span className="text-xs">Medium Priority</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-xs">Low Priority</span>
+                  </div>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsActiveTasksModalOpen(false)}
+                className="font-semibold"
+              >
+                Close
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
