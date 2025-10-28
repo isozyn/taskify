@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, CheckCircle2, Clock, AlertCircle, FileText, Archive, Plus } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, AlertCircle, FileText, Archive, Plus, X } from "lucide-react";
 import TaskModal from "./TaskModal";
 
 interface Task {
@@ -25,9 +25,20 @@ interface KanbanBoardProps {
   projectMembers: any[];
 }
 
+interface CustomColumn {
+  id: string;
+  title: string;
+  isCustom: boolean;
+}
+
 const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const [addingCardInColumn, setAddingCardInColumn] = useState<string | null>(null);
+  const [newCardTitle, setNewCardTitle] = useState("");
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
+  const [newColumnTitle, setNewColumnTitle] = useState("");
+  const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -52,6 +63,45 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
       assignees: [],
       priority: "medium",
     });
+  };
+
+  const handleQuickAddCard = (columnId: string) => {
+    if (newCardTitle.trim()) {
+      // TODO: Implement quick add task logic with backend
+      console.log("Quick adding task:", {
+        title: newCardTitle,
+        status: columnId,
+      });
+      // Reset
+      setNewCardTitle("");
+      setAddingCardInColumn(null);
+    }
+  };
+
+  const handleCancelAddCard = () => {
+    setNewCardTitle("");
+    setAddingCardInColumn(null);
+  };
+
+  const handleAddColumn = () => {
+    if (newColumnTitle.trim()) {
+      const newColumn: CustomColumn = {
+        id: `custom-${Date.now()}`,
+        title: newColumnTitle,
+        isCustom: true,
+      };
+      setCustomColumns([...customColumns, newColumn]);
+      setNewColumnTitle("");
+      setIsAddingColumn(false);
+      // TODO: Save to backend
+      console.log("Column added:", newColumn);
+    }
+  };
+
+  const handleDeleteColumn = (columnId: string) => {
+    setCustomColumns(customColumns.filter(col => col.id !== columnId));
+    // TODO: Remove from backend
+    console.log("Column deleted:", columnId);
   };
 
   // Mock tasks - will be replaced with real data (matching TimelineView structure)
@@ -111,6 +161,7 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
       color: "text-primary",
       bgColor: "bg-gradient-to-br from-primary/10 to-primary/5",
       borderColor: "border-primary/20",
+      isCustom: false,
     },
     {
       id: "in-progress",
@@ -119,6 +170,7 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
       color: "text-accent",
       bgColor: "bg-gradient-to-br from-accent/10 to-accent/5",
       borderColor: "border-accent/20",
+      isCustom: false,
     },
     {
       id: "review",
@@ -127,6 +179,7 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
       color: "text-warning",
       bgColor: "bg-gradient-to-br from-warning/10 to-warning/5",
       borderColor: "border-warning/20",
+      isCustom: false,
     },
     {
       id: "complete",
@@ -135,6 +188,7 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
       color: "text-success",
       bgColor: "bg-gradient-to-br from-success/10 to-success/5",
       borderColor: "border-success/20",
+      isCustom: false,
     },
     {
       id: "backlog",
@@ -143,7 +197,17 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
       color: "text-muted-foreground",
       bgColor: "bg-gradient-to-br from-muted/20 to-muted/10",
       borderColor: "border-muted/30",
+      isCustom: false,
     },
+    ...customColumns.map(col => ({
+      id: col.id,
+      title: col.title,
+      icon: FileText,
+      color: "text-slate-600",
+      bgColor: "bg-gradient-to-br from-slate-100/50 to-slate-50/50",
+      borderColor: "border-slate-300",
+      isCustom: true,
+    })),
   ];
 
   const getTasksByStatus = (status: string) => {
@@ -152,147 +216,228 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
 
   return (
     <>
-      {/* Create Task Button */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Task Board</h2>
-          <p className="text-sm text-muted-foreground mt-1">Manage and track your project tasks</p>
-        </div>
-        <Button 
-          onClick={() => setIsCreateTaskModalOpen(true)}
-          className="btn-executive gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Create Task
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      {/* Kanban Board - Clean Jira-Inspired Design */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {columns.map((column) => {
           const Icon = column.icon;
           const columnTasks = getTasksByStatus(column.id);
 
           return (
-            <Card key={column.id} className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/90 shadow-lg">
-              <CardHeader className={`${column.bgColor} ${column.borderColor} rounded-t-lg border-b border-border/20 pb-4`}>
+            <div key={column.id} className="bg-slate-50 rounded-lg border border-slate-200">
+              {/* Column Header */}
+              <div className="p-3 border-b border-slate-200">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${column.bgColor} border ${column.borderColor} flex items-center justify-center shadow-md`}>
-                      <Icon className={`w-5 h-5 ${column.color}`} />
-                    </div>
-                    <div>
-                      <CardTitle className="font-bold text-sm text-foreground uppercase tracking-wider">
-                        {column.title}
-                      </CardTitle>
-                      <p className="text-xs text-muted-foreground font-medium">{columnTasks.length} tasks</p>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-xs text-slate-700 uppercase tracking-wide">
+                      {column.title}
+                    </h3>
+                    <span className="text-xs text-slate-500 font-medium bg-slate-200 px-2 py-0.5 rounded-full">
+                      {columnTasks.length}
+                    </span>
                   </div>
-                  <Badge
-                    variant="secondary"
-                    className={`${column.bgColor} ${column.color} border-0 font-bold shadow-sm`}
-                  >
-                    {columnTasks.length}
-                  </Badge>
+                  {column.isCustom && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteColumn(column.id)}
+                      className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600 transition-colors"
+                      title="Delete column"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
-              </CardHeader>
+              </div>
 
-              <CardContent className="p-4">
-                {/* Executive Task Cards */}
-                <div className="space-y-4 min-h-[400px]">
+              {/* Column Content */}
+              <div className="p-2">
+                <div className="space-y-2 min-h-[500px]">
                   {columnTasks.length === 0 ? (
-                    <div className="flex items-center justify-center h-32 text-muted-foreground">
+                    <div className="flex items-center justify-center h-24 text-slate-400">
                       <div className="text-center">
-                        <Icon className={`w-8 h-8 ${column.color} mx-auto mb-2 opacity-50`} />
-                        <p className="text-sm font-medium">No tasks</p>
+                        <Icon className="w-5 h-5 mx-auto mb-1.5 opacity-40" />
+                        <p className="text-xs">No tasks yet</p>
                       </div>
                     </div>
                   ) : (
                     columnTasks.map((task) => (
                       <Card
                         key={task.id}
-                        className="premium-card cursor-pointer group border border-border/30 bg-gradient-to-br from-background via-background to-muted/10 hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden"
+                        className="cursor-pointer group bg-white border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200"
                         onClick={() => setSelectedTask(task)}
                       >
-                        {/* Progress Bar at Top */}
-                        <div className="relative h-1 bg-muted/30">
-                          <div
-                            className="absolute top-0 left-0 h-1 bg-gradient-to-r from-primary to-accent transition-all duration-700"
-                            style={{ width: `${task.progress}%` }}
-                          />
-                        </div>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <CardTitle className="text-sm font-bold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2 flex-1">
-                              {task.title}
-                            </CardTitle>
-                            <div className="text-right ml-2">
-                              <div className="text-xs font-bold text-foreground">{task.progress}%</div>
-                              <div className="text-xs text-muted-foreground font-medium">DONE</div>
+                        <CardContent className="p-3 space-y-3">
+                          {/* Task Title */}
+                          <h4 className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                            {task.title}
+                          </h4>
+
+                          {/* Progress Bar */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-slate-500">Progress</span>
+                              <span className="font-semibold text-slate-700">{task.progress}%</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all duration-500 ${
+                                  task.status === 'complete' ? 'bg-green-500' :
+                                  task.status === 'in-progress' ? 'bg-blue-500' :
+                                  task.status === 'review' ? 'bg-amber-500' :
+                                  'bg-slate-400'
+                                }`}
+                                style={{ width: `${task.progress}%` }}
+                              />
                             </div>
                           </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+
                           {/* Team Avatars */}
                           <div className="flex items-center justify-between">
-                            <div className="flex -space-x-2">
+                            <div className="flex -space-x-1.5">
                               {task.assignees.slice(0, 3).map((assignee, idx) => (
                                 <div
                                   key={idx}
-                                  className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold border-2 border-background shadow-sm"
+                                  className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-[10px] font-semibold border-2 border-white shadow-sm"
+                                  title={assignee}
                                 >
                                   {assignee.split(" ").map((n: string) => n[0]).join("")}
                                 </div>
                               ))}
                               {task.assignees.length > 3 && (
-                                <div className="w-7 h-7 rounded-full bg-muted border-2 border-background flex items-center justify-center shadow-sm">
-                                  <span className="text-xs font-bold text-muted-foreground">
+                                <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center shadow-sm">
+                                  <span className="text-[10px] font-semibold text-slate-600">
                                     +{task.assignees.length - 3}
                                   </span>
                                 </div>
                               )}
                             </div>
-                            <div className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${task.status === 'complete' ? 'bg-success/20 text-success' :
-                              task.status === 'in-progress' ? 'bg-accent/20 text-accent' :
-                                task.status === 'review' ? 'bg-warning/20 text-warning' :
-                                  task.status === 'upcoming' ? 'bg-primary/20 text-primary' :
-                                    'bg-muted/50 text-muted-foreground'
-                              }`}>
-                              {task.status.replace('-', ' ')}
+
+                            {/* Status Badge */}
+                            <div className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
+                              task.status === 'complete' ? 'bg-green-100 text-green-700' :
+                              task.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
+                              task.status === 'review' ? 'bg-amber-100 text-amber-700' :
+                              task.status === 'upcoming' ? 'bg-slate-100 text-slate-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {task.status === 'in-progress' ? 'IN PROGRESS' : task.status.replace('-', ' ')}
                             </div>
                           </div>
 
                           {/* Due Date */}
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 pt-1 border-t border-slate-100">
                             <Calendar className="w-3 h-3" />
-                            <span className="font-medium">{new Date(task.endDate).toLocaleDateString()}</span>
-                          </div>
-
-                          {/* Priority Indicator */}
-                          <div className="flex items-center justify-between pt-2 border-t border-border/20">
-                            <div className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${task.status === 'complete' ? 'bg-success/20 text-success' :
-                              task.status === 'in-progress' ? 'bg-accent/20 text-accent' :
-                                task.status === 'review' ? 'bg-warning/20 text-warning' :
-                                  task.status === 'upcoming' ? 'bg-primary/20 text-primary' :
-                                    'bg-muted/50 text-muted-foreground'
-                              }`}>
-                              {task.status.replace('-', ' ')}
-                            </div>
-                            <div className={`w-2 h-2 rounded-full ${task.status === 'complete' ? 'bg-success' :
-                              task.status === 'in-progress' ? 'bg-accent' :
-                                task.status === 'review' ? 'bg-warning' :
-                                  task.status === 'upcoming' ? 'bg-primary' :
-                                    'bg-muted-foreground'
-                              } shadow-sm`}></div>
+                            <span>{new Date(task.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                           </div>
                         </CardContent>
                       </Card>
                     ))
                   )}
+                  
+                  {/* Add Card Section - Trello Style */}
+                  {addingCardInColumn === column.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        autoFocus
+                        placeholder="Enter a title for this card..."
+                        value={newCardTitle}
+                        onChange={(e) => setNewCardTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleQuickAddCard(column.id);
+                          } else if (e.key === 'Escape') {
+                            handleCancelAddCard();
+                          }
+                        }}
+                        className="min-h-[60px] resize-none bg-white border-slate-300 text-sm"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleQuickAddCard(column.id)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white h-8"
+                        >
+                          Add card
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleCancelAddCard}
+                          className="h-8 hover:bg-slate-100 text-slate-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      onClick={() => setAddingCardInColumn(column.id)}
+                      className="w-full justify-start text-slate-600 hover:bg-slate-100 hover:text-slate-900 h-9 transition-colors"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add a card
+                    </Button>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
         })}
+
+        {/* Add Column Button */}
+        {!isAddingColumn ? (
+          <div className="bg-slate-50 rounded-lg border border-dashed border-slate-300 p-4 flex items-center justify-center min-h-[200px]">
+            <Button
+              variant="ghost"
+              onClick={() => setIsAddingColumn(true)}
+              className="w-full flex flex-col items-center justify-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 h-auto py-6 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="text-sm font-medium">Add list</span>
+            </Button>
+          </div>
+        ) : (
+          <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 flex flex-col gap-2">
+            <Input
+              autoFocus
+              placeholder="Enter list name..."
+              value={newColumnTitle}
+              onChange={(e) => setNewColumnTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddColumn();
+                } else if (e.key === 'Escape') {
+                  setNewColumnTitle("");
+                  setIsAddingColumn(false);
+                }
+              }}
+              className="h-10 border-slate-300 text-sm"
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleAddColumn}
+                className="bg-blue-600 hover:bg-blue-700 text-white h-8 flex-1"
+              >
+                Add
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setNewColumnTitle("");
+                  setIsAddingColumn(false);
+                }}
+                className="h-8 hover:bg-slate-100 text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {selectedTask && (
