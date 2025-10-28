@@ -166,17 +166,6 @@ const ProjectWorkspace = () => {
                   Invite
                 </Button>
               </div>
-
-              <div className="h-6 w-px bg-slate-200" />
-
-              {/* Primary Action */}
-              <Button
-                size="sm"
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white h-8 px-4 shadow-sm"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Create Task
-              </Button>
             </div>
           </div>
         </div>
