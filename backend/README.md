@@ -21,6 +21,7 @@ This document outlines the architecture, setup instructions, and implementation 
 
 ### Core Dependencies
 - **Node.js** - JavaScript runtime
+- **TypeScript** - Type-safe JavaScript
 - **Express.js** - Web framework
 - **PostgreSQL** - Relational database
 - **Prisma ORM** - Database toolkit with type safety
@@ -34,7 +35,7 @@ This document outlines the architecture, setup instructions, and implementation 
 - **cors** - Cross-origin resource sharing
 - **morgan** - HTTP request logger
 - **dotenv** - Environment variables
-- **nodemon** - Development auto-reload
+- **tsx** - TypeScript execution and watch mode
 
 ---
 
@@ -44,56 +45,57 @@ This document outlines the architecture, setup instructions, and implementation 
 backend/
  ├── src/
  │   ├── config/
- │   │   └── db.js                 # Prisma client initialization
+ │   │   └── db.ts                 # Prisma client initialization
  │   │
  │   ├── models/                   # (Optional) TypeScript interfaces
  │   │
  │   ├── services/
- │   │   ├── userService.js        # User business logic & DB operations
- │   │   ├── authService.js        # Authentication logic
- │   │   ├── projectService.js     # Project business logic
- │   │   ├── taskService.js        # Task business logic
- │   │   └── emailService.js       # Email operations (password reset, etc.)
+ │   │   ├── userService.ts        # User business logic & DB operations
+ │   │   ├── authService.ts        # Authentication logic
+ │   │   ├── projectService.ts     # Project business logic
+ │   │   ├── taskService.ts        # Task business logic
+ │   │   └── emailService.ts       # Email operations (password reset, etc.)
  │   │
  │   ├── controllers/
- │   │   ├── authController.js     # Login, register, password reset
- │   │   ├── userController.js     # User CRUD operations
- │   │   ├── projectController.js  # Project CRUD operations
- │   │   └── taskController.js     # Task CRUD operations
+ │   │   ├── authController.ts     # Login, register, password reset
+ │   │   ├── userController.ts     # User CRUD operations
+ │   │   ├── projectController.ts  # Project CRUD operations
+ │   │   └── taskController.ts     # Task CRUD operations
  │   │
  │   ├── routes/
- │   │   ├── authRoutes.js         # /api/v1/auth/*
- │   │   ├── userRoutes.js         # /api/v1/users/*
- │   │   ├── projectRoutes.js      # /api/v1/projects/*
- │   │   └── taskRoutes.js         # /api/v1/tasks/*
+ │   │   ├── authRoutes.ts         # /api/v1/auth/*
+ │   │   ├── userRoutes.ts         # /api/v1/users/*
+ │   │   ├── projectRoutes.ts      # /api/v1/projects/*
+ │   │   └── taskRoutes.ts         # /api/v1/tasks/*
  │   │
  │   ├── middleware/
- │   │   ├── authMiddleware.js     # JWT verification
- │   │   ├── validateRequest.js    # Input validation
- │   │   ├── errorHandler.js       # Centralized error handling
- │   │   └── rateLimiter.js        # Rate limiting
+ │   │   ├── authMiddleware.ts     # JWT verification
+ │   │   ├── validateRequest.ts    # Input validation
+ │   │   ├── errorHandler.ts       # Centralized error handling
+ │   │   └── rateLimiter.ts        # Rate limiting
  │   │
  │   ├── utils/
- │   │   ├── tokenGenerator.js     # JWT and reset token generation
- │   │   ├── emailTemplates.js     # Email HTML templates
- │   │   └── logger.js             # Custom logging utility
+ │   │   ├── tokenGenerator.ts     # JWT and reset token generation
+ │   │   ├── emailTemplates.ts     # Email HTML templates
+ │   │   └── logger.ts             # Custom logging utility
  │   │
- │   └── server.js                 # Application entry point
+ │   └── server.ts                 # Application entry point
  │
  ├── prisma/
  │   ├── schema.prisma             # Database schema
- │   ├── seed.js                   # Database seeding script
+ │   ├── seed.ts                   # Database seeding script
  │   └── migrations/               # Migration history
  │
  ├── tests/
  │   ├── unit/                     # Unit tests
  │   ├── integration/              # Integration tests
- │   └── setup.js                  # Test configuration
+ │   └── setup.ts                  # Test configuration
  │
  ├── .env                          # Environment variables (gitignored)
  ├── .env.example                  # Environment template
  ├── .gitignore
  ├── package.json
+ ├── tsconfig.json                 # TypeScript configuration
  ├── README.md
  └── docker-compose.yml            # (Optional) Docker setup
 ```
@@ -245,14 +247,16 @@ npm init -y
 ```bash
 # Core dependencies
 npm install express @prisma/client dotenv bcrypt jsonwebtoken
-npm install cors morgan helmet compression express-validator
-npm install nodemon prisma --save-dev
+npm install cors morgan helmet compression express-validator nodemailer
+
+# TypeScript and development dependencies
+npm install --save-dev typescript tsx @types/node @types/express
+npm install --save-dev @types/bcrypt @types/jsonwebtoken @types/cors
+npm install --save-dev @types/morgan @types/compression @types/nodemailer
+npm install --save-dev prisma
 
 # Optional: Testing
-npm install jest supertest --save-dev
-
-# Optional: Email service
-npm install nodemailer
+npm install --save-dev jest supertest @types/jest @types/supertest
 ```
 
 ### 3. Initialize Prisma
@@ -433,12 +437,12 @@ npm run test:coverage # Coverage report
 
 ## 📝 Code Examples
 
-### Example Service (`src/services/userService.js`)
-```javascript
+### Example Service (`src/services/userService.ts`)
+```typescript
 import prisma from '../config/db.js';
 import bcrypt from 'bcrypt';
 
-export const createUser = async (userData) => {
+export const createUser = async (userData: any) => {
   const hashedPassword = await bcrypt.hash(userData.password, 10);
   
   return await prisma.user.create({
@@ -456,19 +460,20 @@ export const createUser = async (userData) => {
   });
 };
 
-export const getUserByEmail = async (email) => {
+export const getUserByEmail = async (email: string) => {
   return await prisma.user.findUnique({
     where: { email },
   });
 };
 ```
 
-### Example Controller (`src/controllers/authController.js`)
-```javascript
+### Example Controller (`src/controllers/authController.ts`)
+```typescript
 import * as authService from '../services/authService.js';
 import { validationResult } from 'express-validator';
+import { Request, Response, NextFunction } from 'express';
 
-export const register = async (req, res, next) => {
+export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -488,14 +493,15 @@ export const register = async (req, res, next) => {
 };
 ```
 
-### Example Middleware (`src/middleware/authMiddleware.js`)
-```javascript
+### Example Middleware (`src/middleware/authMiddleware.ts`)
+```typescript
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db.js';
+import { Request, Response, NextFunction } from 'express';
 
-export const protect = async (req, res, next) => {
+export const protect = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let token;
+    let token: string | undefined;
 
     if (req.headers.authorization?.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
@@ -508,7 +514,7 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number };
     req.user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: { id: true, name: true, email: true, role: true },
@@ -565,11 +571,12 @@ Add to `package.json`:
 ```json
 {
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
     "migrate": "npx prisma migrate dev",
     "migrate:prod": "npx prisma migrate deploy",
-    "seed": "node prisma/seed.js",
+    "seed": "tsx prisma/seed.ts",
     "prisma:generate": "npx prisma generate",
     "prisma:studio": "npx prisma studio",
     "test": "jest --detectOpenHandles",
