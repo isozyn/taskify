@@ -146,8 +146,7 @@ const ProjectWorkspace = () => {
                       className="w-7 h-7 border-2 border-white hover:z-10 transition-all cursor-pointer"
                     >
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xs font-medium">
-                        {member.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
+                        {member.name?.split(' ').map(n => n[0]).join('') || '??'}                      </AvatarFallback>
                     </Avatar>
                   ))}
                   {project.members.length > 3 && (
