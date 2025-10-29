@@ -83,12 +83,6 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
   // Fixed columns for auto-sync mode
   const columns = [
     {
-      id: "backlog",
-      title: "Backlog",
-      icon: Archive,
-      description: "Postponed or archived tasks",
-    },
-    {
       id: "upcoming",
       title: "Upcoming",
       icon: Clock,
@@ -112,6 +106,12 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
       icon: CheckCircle2,
       description: "Finished tasks",
     },
+    {
+      id: "backlog",
+      title: "Backlog",
+      icon: Archive,
+      description: "Postponed or archived tasks",
+    },
   ];
 
   const getTasksByStatus = (status: string) => {
@@ -123,7 +123,7 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold text-slate-900">Calendar-Synced Board</h2>
+            <h2 className="text-xl font-semibold text-slate-900">Automated Workflow Board</h2>
             <Badge variant="outline" className="text-xs font-normal border-blue-300 text-blue-700 bg-blue-50">
               <Calendar className="w-3 h-3 mr-1" />
               Auto-Sync
