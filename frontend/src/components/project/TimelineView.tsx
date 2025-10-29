@@ -213,7 +213,7 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
           {viewMode === 'detailed' ? (
             <div className="relative bg-gradient-to-r from-muted/20 to-transparent rounded-xl p-6">
               {/* Premium Week Headers */}
-              <div className="flex mb-6 pl-80">
+              <div className="flex mb-6 pl-[280px]">
                 {weeks.map((week, idx) => (
                   <div
                     key={week}
@@ -227,11 +227,11 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
               </div>
 
               {/* Executive Task Rows */}
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {tasks.map((task, taskIdx) => (
                   <div key={task.id} className="flex items-center gap-6 group">
                     {/* Executive Task Info Panel */}
-                    <div className="w-72 premium-card border-0 bg-gradient-to-r from-card to-card/80 overflow-hidden">
+                    <div className="w-64 premium-card border-0 bg-gradient-to-r from-card to-card/80 overflow-hidden">
                       {/* Progress Bar at Top */}
                       <div className="relative h-1 bg-muted/30">
                         <div
@@ -240,42 +240,22 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                         />
                       </div>
                       
-                      <div className="p-4">
-                        <div className="flex items-center justify-between mb-3">
+                      <div className="p-2.5">
+                        <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-sm text-foreground truncate">{task.title}</h4>
-                            <p className="text-xs text-muted-foreground font-medium mt-1">
+                            <h4 className="text-sm font-semibold text-foreground truncate">{task.title}</h4>
+                            <p className="text-[9px] text-muted-foreground font-medium tracking-wide mt-0.5">
                               {task.priority.toUpperCase()} PRIORITY
                             </p>
                           </div>
                           <div className="text-right">
-                            <div className="text-lg font-bold text-foreground">{task.progress}%</div>
-                            <div className="text-xs text-muted-foreground font-medium">COMPLETE</div>
+                            <div className="text-sm font-semibold text-foreground">{task.progress}%</div>
+                            <div className={`w-2.5 h-2.5 rounded-full mt-0.5 mx-auto ${
+                              task.status === 'complete' ? 'bg-success' : 
+                              task.status === 'in-progress' ? 'bg-accent' : 
+                              task.status === 'review' ? 'bg-warning' : 'bg-primary'
+                            } shadow-md`}></div>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex -space-x-2">
-                            {task.assignees.slice(0, 3).map((assignee, idx) => (
-                              <div
-                                key={idx}
-                                className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold border-2 border-card shadow-md"
-                              >
-                                {assignee.split(" ").map((n: string) => n[0]).join("")}
-                              </div>
-                            ))}
-                            {task.assignees.length > 3 && (
-                              <div className="w-7 h-7 rounded-full bg-muted border-2 border-card flex items-center justify-center shadow-md">
-                                <span className="text-xs font-bold text-muted-foreground">
-                                  +{task.assignees.length - 3}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className={`w-3 h-3 rounded-full ${
-                            task.status === 'complete' ? 'bg-success' : 
-                            task.status === 'in-progress' ? 'bg-accent' : 
-                            task.status === 'review' ? 'bg-warning' : 'bg-primary'
-                          } shadow-md`}></div>
                         </div>
                       </div>
                     </div>
@@ -287,9 +267,9 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                         {weeks.map((week, idx) => (
                           <div
                             key={week}
-                            className={`border-r border-border/10 ${
+                            className={`border-r ${
                               idx === 0 ? "border-l" : ""
-                            } ${idx % 4 === 0 ? 'border-border/30' : ''}`}
+                            } ${idx % 4 === 0 ? 'border-slate-300' : 'border-slate-200'}`}
                           />
                         ))}
                       </div>
@@ -327,7 +307,7 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
             /* Fit to Screen View */
             <div className="relative bg-gradient-to-r from-muted/20 to-transparent rounded-xl p-6 overflow-hidden">
               {/* Compact Week Headers */}
-              <div className="flex mb-4 pl-48">
+              <div className="flex mb-4 pl-[176px]">
                 {weeks.map((week, idx) => (
                   <div
                     key={week}
@@ -341,11 +321,11 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
               </div>
 
               {/* Compact Task Rows */}
-              <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                 {tasks.map((task, taskIdx) => (
                   <div key={task.id} className="flex items-center gap-4 group">
                     {/* Compact Task Info Panel */}
-                    <div className="w-44 premium-card border-0 bg-gradient-to-r from-card to-card/80 overflow-hidden">
+                    <div className="w-40 premium-card border-0 bg-gradient-to-r from-card to-card/80 overflow-hidden">
                       {/* Progress Bar at Top */}
                       <div className="relative h-1 bg-muted/30">
                         <div
@@ -354,14 +334,14 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                         />
                       </div>
                       
-                      <div className="p-3">
-                        <div className="flex items-center justify-between mb-2">
+                      <div className="p-1.5">
+                        <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-xs text-foreground truncate">{task.title}</h4>
-                            <div className="flex items-center gap-2 mt-1">
+                            <h4 className="text-xs font-semibold text-foreground truncate">{task.title}</h4>
+                            <div className="flex items-center gap-1.5 mt-0.5">
                               <Badge 
                                 variant="outline" 
-                                className={`text-xs px-1 py-0 h-4 ${
+                                className={`text-[9px] px-1 py-0 h-3.5 font-medium ${
                                   task.priority === 'high' ? 'border-red-300 text-red-600' :
                                   task.priority === 'medium' ? 'border-yellow-300 text-yellow-600' :
                                   'border-green-300 text-green-600'
@@ -369,33 +349,14 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                               >
                                 {task.priority.charAt(0).toUpperCase()}
                               </Badge>
-                              <span className="text-xs font-bold text-foreground">{task.progress}%</span>
+                              <span className="text-xs font-semibold text-foreground">{task.progress}%</span>
+                              <div className={`w-1.5 h-1.5 rounded-full ${
+                                task.status === 'complete' ? 'bg-success' : 
+                                task.status === 'in-progress' ? 'bg-accent' : 
+                                task.status === 'review' ? 'bg-warning' : 'bg-primary'
+                              } shadow-sm`}></div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex -space-x-1">
-                            {task.assignees.slice(0, 2).map((assignee, idx) => (
-                              <div
-                                key={idx}
-                                className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold border border-card shadow-sm"
-                              >
-                                {assignee.split(" ").map((n: string) => n[0]).join("")[0]}
-                              </div>
-                            ))}
-                            {task.assignees.length > 2 && (
-                              <div className="w-5 h-5 rounded-full bg-muted border border-card flex items-center justify-center shadow-sm">
-                                <span className="text-xs font-bold text-muted-foreground">
-                                  +{task.assignees.length - 2}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className={`w-2 h-2 rounded-full ${
-                            task.status === 'complete' ? 'bg-success' : 
-                            task.status === 'in-progress' ? 'bg-accent' : 
-                            task.status === 'review' ? 'bg-warning' : 'bg-primary'
-                          } shadow-sm`}></div>
                         </div>
                       </div>
                     </div>
@@ -407,9 +368,9 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                         {weeks.map((week, idx) => (
                           <div
                             key={week}
-                            className={`border-r border-border/10 ${
+                            className={`border-r ${
                               idx === 0 ? "border-l" : ""
-                            } ${idx % 6 === 0 ? 'border-border/30' : ''}`}
+                            } ${idx % 6 === 0 ? 'border-slate-300' : 'border-slate-200'}`}
                           />
                         ))}
                       </div>

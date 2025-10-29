@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import MemberDetailModal from "./MemberDetailModal";
 
 interface ProjectOverviewProps {
   project: any;
+  workflowType?: "auto-sync" | "custom";
 }
 
 interface TeamMember {
@@ -26,9 +26,23 @@ interface TeamMember {
   }>;
 }
 
-const ProjectOverview = ({ project }: ProjectOverviewProps) => {
+const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOverviewProps) => {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+
+  // Determine theme colors based on workflow type
+  const themeColors = {
+    primary: workflowType === "custom" ? "purple" : "blue",
+    gradientFrom: workflowType === "custom" ? "from-purple-500" : "from-blue-500",
+    gradientTo: workflowType === "custom" ? "to-purple-600" : "to-blue-600",
+    text: workflowType === "custom" ? "text-purple-600" : "text-blue-600",
+    hover: workflowType === "custom" ? "hover:border-purple-300" : "hover:border-blue-300",
+    ring: workflowType === "custom" ? "group-hover:ring-purple-300" : "group-hover:ring-blue-300",
+    hoverText: workflowType === "custom" ? "group-hover:text-purple-600" : "group-hover:text-blue-600",
+    bg: workflowType === "custom" ? "bg-purple-600" : "bg-blue-600",
+    progressFrom: workflowType === "custom" ? "from-purple-500" : "from-blue-500",
+    progressTo: workflowType === "custom" ? "to-purple-600" : "to-blue-600",
+  };
 
   // Mock detailed member data - will be replaced with real data from backend
   const detailedMembers: TeamMember[] = [
@@ -168,7 +182,12 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
                 {stats.completed} / {stats.totalTasks} tasks
               </span>
             </div>
-            <Progress value={progress} className="h-3" />
+            <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200">
+              <div 
+                className={`h-full bg-gradient-to-r ${themeColors.progressFrom} ${themeColors.progressTo} transition-all`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
             Great progress! Keep up the momentum to reach your project goals.
@@ -186,11 +205,11 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
             {project.members.map((member: any) => (
               <div
                 key={member.id}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-accent/5 hover:border-primary/30 transition-all cursor-pointer group"
+                className={`flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-accent/5 ${themeColors.hover} transition-all cursor-pointer group`}
                 onClick={() => handleMemberClick(member.id)}
               >
-                <Avatar className="group-hover:ring-2 group-hover:ring-primary/30 transition-all">
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
+                <Avatar className={`${themeColors.ring} transition-all`}>
+                  <AvatarFallback className={`bg-gradient-to-br ${themeColors.gradientFrom} ${themeColors.gradientTo} text-white font-semibold`}>
                     {member.name
                       .split(" ")
                       .map((n: string) => n[0])
@@ -198,7 +217,7 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-sm font-medium group-hover:text-primary transition-colors">{member.name}</p>
+                  <p className={`text-sm font-medium ${themeColors.hoverText} transition-colors`}>{member.name}</p>
                   <p className="text-xs text-muted-foreground">Member</p>
                 </div>
               </div>
@@ -232,7 +251,7 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+              <div className={`w-2 h-2 rounded-full ${themeColors.bg} mt-2`} />
               <div>
                 <p className="text-sm">
                   <span className="font-medium">Jane Smith</span> updated task
@@ -242,7 +261,7 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-accent mt-2" />
+              <div className={`w-2 h-2 rounded-full ${themeColors.bg} mt-2`} />
               <div>
                 <p className="text-sm">
                   <span className="font-medium">Mike Johnson</span> added a

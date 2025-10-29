@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
 import { 
   GripVertical, 
   Plus, 
@@ -310,7 +309,7 @@ const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
                           <div className="flex items-start gap-2">
                             <GripVertical className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
                             <h4 
-                              className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 flex-1"
+                              className="text-sm font-medium text-slate-900 group-hover:text-purple-600 transition-colors line-clamp-2 flex-1"
                             >
                               {task.title}
                             </h4>
@@ -323,7 +322,12 @@ const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
                                 <span className="text-xs text-slate-500 font-medium">Progress</span>
                                 <span className="text-xs font-semibold text-slate-700">{task.progress}%</span>
                               </div>
-                              <Progress value={task.progress} className="h-1.5" />
+                              <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all"
+                                  style={{ width: `${task.progress}%` }}
+                                />
+                              </div>
                             </div>
                           )}
 
@@ -341,7 +345,7 @@ const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
                                 {task.assignees.slice(0, 3).map((assignee, idx) => (
                                   <div
                                     key={idx}
-                                    className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 border-2 border-white flex items-center justify-center text-white text-[10px] font-bold shadow-sm"
+                                    className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 border-2 border-white flex items-center justify-center text-white text-[10px] font-bold shadow-sm"
                                     title={assignee}
                                   >
                                     {assignee.split(" ").map((n: string) => n[0]).join("")}
@@ -382,7 +386,7 @@ const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
                         <Button
                           size="sm"
                           onClick={() => handleQuickAddCard(column.id)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white h-8 flex-1"
+                          className="bg-purple-600 hover:bg-purple-700 text-white h-8 flex-1"
                         >
                           Add card
                         </Button>
@@ -446,7 +450,7 @@ const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
               <Button
                 size="sm"
                 onClick={handleAddColumn}
-                className="bg-blue-600 hover:bg-blue-700 text-white h-8 flex-1"
+                className="bg-purple-600 hover:bg-purple-700 text-white h-8 flex-1"
               >
                 Add list
               </Button>
