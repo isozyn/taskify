@@ -42,10 +42,13 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
 
   // Editable field states
+  const [editableTitle, setEditableTitle] = useState(task.title || "");
   const [editableStatus, setEditableStatus] = useState(task.status || "upcoming");
   const [editableStartDate, setEditableStartDate] = useState(task.startDate || "");
   const [editableEndDate, setEditableEndDate] = useState(task.endDate || "");
   const [editableDescription, setEditableDescription] = useState("");
+  const [editableTags, setEditableTags] = useState<string[]>(task.tags || []);
+  const [newTag, setNewTag] = useState("");
 
   const completedSubtasks = subtasks.filter((st) => st.completed).length;
   const progress = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0;
@@ -82,6 +85,17 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
     setSelectedAssignees(selectedAssignees.filter((name) => name !== memberName));
   };
 
+  const addTag = () => {
+    if (newTag.trim() && !editableTags.includes(newTag.trim())) {
+      setEditableTags([...editableTags, newTag.trim()]);
+      setNewTag("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setEditableTags(editableTags.filter((tag) => tag !== tagToRemove));
+  };
+
   const handleSaveEdit = () => {
     // TODO: Save the edited values to backend
     setIsEditing(false);
@@ -89,10 +103,13 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
 
   const handleCancelEdit = () => {
     // Reset to original values
+    setEditableTitle(task.title || "");
     setEditableStatus(task.status || "upcoming");
     setEditableStartDate(task.startDate || "");
     setEditableEndDate(task.endDate || "");
     setEditableDescription("");
+    setEditableTags(task.tags || []);
+    setNewTag("");
     setIsEditing(false);
   };
 
@@ -115,60 +132,99 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden glass-effect">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden bg-white border border-slate-200 shadow-2xl">
         {/* Progress Bar at Top */}
-        <div className="relative h-2 bg-muted/30 -mx-6 -mt-6 mb-6">
+        <div className="relative h-1 bg-slate-100 -mx-6 -mt-6 mb-4">
           <div
-            className="absolute top-0 left-0 h-2 bg-gradient-to-r from-primary to-accent transition-all duration-700"
+            className="absolute top-0 left-0 h-1 bg-blue-500 transition-all duration-500"
             style={{ width: `${task.progress || progress}%` }}
           />
         </div>
 
         <div className="overflow-y-auto max-h-[80vh] px-1">
-          <DialogHeader className="mb-6">
-            <DialogTitle className="heading-premium flex items-center justify-between">
-              <span>{task.title}</span>
-              <div className="text-right">
-                <div className="text-lg font-bold text-foreground">{task.progress || progress}%</div>
-                <div className="text-xs text-muted-foreground font-medium">COMPLETE</div>
+          <DialogHeader className="mb-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                {isEditing ? (
+                  <Input
+                    value={editableTitle}
+                    onChange={(e) => setEditableTitle(e.target.value)}
+                    className="text-lg font-semibold border-slate-200 focus:border-blue-500"
+                  />
+                ) : (
+                  <DialogTitle className="text-lg font-semibold text-slate-900">{editableTitle}</DialogTitle>
+                )}
+                {/* Tags next to title */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {editableTags.map((tag) => (
+                    <Badge 
+                      key={tag} 
+                      variant="secondary" 
+                      className="gap-1.5 px-2 py-0.5 bg-purple-100 text-purple-700 border border-purple-200 text-[10px]"
+                    >
+                      {tag}
+                      {isEditing && (
+                        <button
+                          onClick={() => removeTag(tag)}
+                          className="ml-1 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-2 h-2" />
+                        </button>
+                      )}
+                    </Badge>
+                  ))}
+                </div>
+                {/* Add tag input in edit mode */}
+                {isEditing && (
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      placeholder="Add tag..."
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addTag();
+                        }
+                      }}
+                      className="h-8 text-xs border-slate-200 focus:border-blue-500"
+                    />
+                    <Button onClick={addTag} className="bg-purple-500 hover:bg-purple-600 text-white h-8 px-3">
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
-            </DialogTitle>
+              <div className="text-right flex-shrink-0">
+                <div className="text-base font-semibold text-blue-600">{task.progress || progress}%</div>
+                <div className="text-[10px] text-slate-500 font-medium tracking-wide">COMPLETE</div>
+              </div>
+            </div>
           </DialogHeader>
 
-          <div className="space-y-6">
-            {/* Task Title */}
-            <div className="space-y-2">
-              <Label htmlFor="task-title" className="text-sm font-semibold text-foreground">Title</Label>
-              <Input
-                id="task-title"
-                defaultValue={task.title}
-                className="h-11 border-border/50 focus:border-primary/50 transition-all duration-300"
-              />
-            </div>
-
-
+          <div className="space-y-5">
             {/* Subtasks */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold text-foreground">Subtasks</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Subtasks</Label>
+                <span className="text-xs text-slate-500 font-medium">{completedSubtasks}/{subtasks.length}</span>
               </div>
 
-
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {subtasks.map((subtask) => (
                   <div
                     key={subtask.id}
-                    className="premium-card flex items-center gap-3 p-4 border border-border/30 bg-gradient-to-br from-background via-background to-muted/10"
+                    className="flex items-center gap-2 p-2.5 border border-slate-200 rounded-md bg-white hover:bg-slate-50 transition-colors"
                   >
                     <Checkbox
                       checked={subtask.completed}
                       onCheckedChange={() => toggleSubtask(subtask.id)}
-                      className="border-border/50"
+                      className="border-slate-300 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                     />
                     <span
-                      className={`flex-1 text-sm font-medium ${subtask.completed
-                        ? "line-through text-muted-foreground"
-                        : "text-foreground"
+                      className={`flex-1 text-xs ${subtask.completed
+                        ? "line-through text-slate-400"
+                        : "text-slate-700"
                         }`}
                     >
                       {subtask.title}
@@ -177,50 +233,50 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
                       variant="ghost"
                       size="icon"
                       onClick={() => deleteSubtask(subtask.id)}
-                      className="hover:bg-destructive/10 hover:text-destructive"
+                      className="h-7 w-7 hover:bg-red-50 hover:text-red-500"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 ))}
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <Input
                   placeholder="Add new subtask..."
                   value={newSubtask}
                   onChange={(e) => setNewSubtask(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addSubtask()}
-                  className="h-11 border-border/50 focus:border-primary/50"
+                  className="h-9 text-xs border-slate-200 focus:border-blue-500"
                 />
-                <Button onClick={addSubtask} className="btn-executive">
-                  <Plus className="w-4 h-4" />
+                <Button onClick={addSubtask} className="bg-blue-500 hover:bg-blue-600 text-white h-9 px-3">
+                  <Plus className="w-3 h-3" />
                 </Button>
               </div>
             </div>
 
 
             {/* Assignees */}
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold text-foreground">Assigned To</Label>
-              <div className="flex flex-wrap gap-2 mb-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Assigned To</Label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
                 {selectedAssignees.map((assignee) => (
-                  <Badge key={assignee} variant="secondary" className="gap-2 px-3 py-1">
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold">
+                  <Badge key={assignee} variant="secondary" className="gap-1.5 px-2 py-1 bg-slate-100 text-slate-700 border border-slate-200 text-xs">
+                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
                       {assignee.split(" ").map((n: string) => n[0]).join("")}
                     </div>
                     {assignee}
                     <button
                       onClick={() => removeAssignee(assignee)}
-                      className="ml-1 hover:text-destructive transition-colors duration-200"
+                      className="ml-1 hover:text-red-500 transition-colors"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-2.5 h-2.5" />
                     </button>
                   </Badge>
                 ))}
               </div>
               <Select onValueChange={addAssignee}>
-                <SelectTrigger className="h-11 border-border/50 focus:border-primary/50">
+                <SelectTrigger className="h-9 text-xs border-slate-200 focus:border-blue-500">
                   <SelectValue placeholder="Add team member..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -229,10 +285,10 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
                     .map((member) => (
                       <SelectItem key={member.id} value={member.name}>
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold">
+                          <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
                             {member.name.split(" ").map((n: string) => n[0]).join("")}
                           </div>
-                          {member.name}
+                          <span className="text-xs">{member.name}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -241,11 +297,11 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
             </div>
 
             {/* Status */}
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold text-foreground">Status</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Status</Label>
               {isEditing ? (
                 <Select value={editableStatus} onValueChange={setEditableStatus}>
-                  <SelectTrigger className="h-11 border-border/50 focus:border-primary/50">
+                  <SelectTrigger className="h-9 text-xs border-slate-200 focus:border-blue-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -257,8 +313,8 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="premium-card p-4 border border-border/30 bg-gradient-to-br from-background via-background to-muted/10">
-                  <Badge className={`${getStatusColor(editableStatus)} font-semibold uppercase tracking-wide`}>
+                <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
+                  <Badge className={`${getStatusColor(editableStatus)} text-[10px] font-semibold uppercase tracking-wide`}>
                     {editableStatus.replace('-', ' ')}
                   </Badge>
                 </div>
@@ -266,41 +322,41 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
             </div>
 
             {/* Dates */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <Label className="text-sm font-semibold text-foreground">Start Date</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Start Date</Label>
                 {isEditing ? (
                   <Input
                     type="date"
                     value={editableStartDate}
                     onChange={(e) => setEditableStartDate(e.target.value)}
-                    className="h-11 border-border/50 focus:border-primary/50"
+                    className="h-9 text-xs border-slate-200 focus:border-blue-500"
                   />
                 ) : (
-                  <div className="premium-card p-4 border border-border/30 bg-gradient-to-br from-background via-background to-muted/10">
+                  <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-foreground">
+                      <Calendar className="w-3 h-3 text-blue-500" />
+                      <span className="text-xs text-slate-700">
                         {editableStartDate ? new Date(editableStartDate).toLocaleDateString() : "Not set"}
                       </span>
                     </div>
                   </div>
                 )}
               </div>
-              <div className="space-y-3">
-                <Label className="text-sm font-semibold text-foreground">End Date</Label>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">End Date</Label>
                 {isEditing ? (
                   <Input
                     type="date"
                     value={editableEndDate}
                     onChange={(e) => setEditableEndDate(e.target.value)}
-                    className="h-11 border-border/50 focus:border-primary/50"
+                    className="h-9 text-xs border-slate-200 focus:border-blue-500"
                   />
                 ) : (
-                  <div className="premium-card p-4 border border-border/30 bg-gradient-to-br from-background via-background to-muted/10">
+                  <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-accent" />
-                      <span className="font-medium text-foreground">
+                      <Clock className="w-3 h-3 text-blue-500" />
+                      <span className="text-xs text-slate-700">
                         {editableEndDate ? new Date(editableEndDate).toLocaleDateString() : "Not set"}
                       </span>
                     </div>
@@ -310,19 +366,19 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
             </div>
 
             {/* Description */}
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold text-foreground">Description</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Description</Label>
               {isEditing ? (
                 <Textarea
                   value={editableDescription}
                   onChange={(e) => setEditableDescription(e.target.value)}
                   placeholder="Add task description..."
                   rows={4}
-                  className="border-border/50 focus:border-primary/50 resize-none"
+                  className="text-xs border-slate-200 focus:border-blue-500 resize-none"
                 />
               ) : (
-                <div className="premium-card p-4 border border-border/30 bg-gradient-to-br from-background via-background to-muted/10 min-h-[100px]">
-                  <p className="text-sm text-foreground leading-relaxed">
+                <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50 min-h-[80px]">
+                  <p className="text-xs text-slate-600 leading-relaxed">
                     {editableDescription || "No description provided"}
                   </p>
                 </div>
@@ -330,61 +386,61 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
             </div>
 
             {/* Comments */}
-            <div className="space-y-4">
-              <Label className="text-sm font-semibold text-foreground">Comments</Label>
-              <div className="space-y-3 max-h-48 overflow-y-auto">
-                <div className="premium-card p-4 border border-border/30 bg-gradient-to-br from-background via-background to-muted/10">
-                  <div className="flex items-start justify-between mb-3">
+            <div className="space-y-3">
+              <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Comments</Label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
+                  <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold">
+                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
                         JD
                       </div>
-                      <span className="font-semibold text-sm text-foreground">John Doe</span>
+                      <span className="font-semibold text-xs text-slate-700">John Doe</span>
                     </div>
-                    <span className="text-xs text-muted-foreground font-medium">2h ago</span>
+                    <span className="text-[10px] text-slate-400 font-medium">2h ago</span>
                   </div>
-                  <p className="text-sm text-foreground leading-relaxed">
+                  <p className="text-xs text-slate-600 leading-relaxed">
                     Looking good! Just a few minor tweaks needed on the layout.
                   </p>
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <Input
                   placeholder="Add a comment..."
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  className="h-11 border-border/50 focus:border-primary/50"
+                  className="h-9 text-xs border-slate-200 focus:border-blue-500"
                 />
-                <Button className="btn-executive">
-                  <Send className="w-4 h-4" />
+                <Button className="bg-blue-500 hover:bg-blue-600 text-white h-9 px-3">
+                  <Send className="w-3 h-3" />
                 </Button>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex justify-between pt-6 border-t border-border/30">
-              <Button variant="destructive" onClick={onClose} className="font-semibold">
+            <div className="flex justify-between pt-4 border-t border-slate-200">
+              <Button variant="destructive" onClick={onClose} className="text-xs font-semibold h-9 px-4">
                 Delete Task
               </Button>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 {isEditing ? (
                   <>
-                    <Button variant="outline" onClick={handleCancelEdit} className="font-semibold">
-                      Cancel Edit
+                    <Button variant="outline" onClick={handleCancelEdit} className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4">
+                      Cancel
                     </Button>
-                    <Button onClick={handleSaveEdit} className="btn-executive">
-                      <Save className="w-4 h-4 mr-2" />
+                    <Button onClick={handleSaveEdit} className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold h-9 px-4">
+                      <Save className="w-3 h-3 mr-1.5" />
                       Save Changes
                     </Button>
                   </>
                 ) : (
                   <>
-                    <Button variant="outline" onClick={onClose} className="font-semibold">
+                    <Button variant="outline" onClick={onClose} className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4">
                       Close
                     </Button>
-                    <Button onClick={() => setIsEditing(true)} className="btn-executive">
-                      <Edit3 className="w-4 h-4 mr-2" />
+                    <Button onClick={() => setIsEditing(true)} className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold h-9 px-4">
+                      <Edit3 className="w-3 h-3 mr-1.5" />
                       Edit Task
                     </Button>
                   </>

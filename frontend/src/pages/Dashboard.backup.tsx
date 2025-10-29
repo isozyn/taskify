@@ -27,11 +27,7 @@ import {
   Grid3x3,
   List,
   FolderOpen,
-  Settings,
-  GripVertical,
-  Check,
-  Sparkles,
-  ArrowLeft
+  Settings
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -40,8 +36,6 @@ const Dashboard = () => {
   const [joinProjectCode, setJoinProjectCode] = useState("");
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
-  const [isTemplateSelectionOpen, setIsTemplateSelectionOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<"auto-sync" | "custom" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [activeTab, setActiveTab] = useState("recent");
@@ -179,20 +173,9 @@ const Dashboard = () => {
     // For now, just show a success message or navigate
   };
 
-  const handleTemplateSelect = (template: "auto-sync" | "custom") => {
-    setSelectedTemplate(template);
-  };
-
-  const handleConfirmTemplate = () => {
-    if (selectedTemplate) {
-      setIsTemplateSelectionOpen(false);
-      setIsNewProjectModalOpen(true);
-    }
-  };
-
   const handleCreateProject = () => {
     // TODO: Implement create project logic with backend
-    console.log("Creating project with template:", selectedTemplate, newProject);
+    console.log("Creating project:", newProject);
     setIsNewProjectModalOpen(false);
     // Reset form
     setNewProject({
@@ -202,7 +185,6 @@ const Dashboard = () => {
       endDate: "",
       visibility: "private",
     });
-    setSelectedTemplate(null);
     // For now, just show a success message or navigate
   };
 
@@ -298,7 +280,7 @@ const Dashboard = () => {
           <p className="text-sm text-slate-500 mb-4">Get started by creating your first project</p>
           <Button 
             className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => setIsTemplateSelectionOpen(true)}
+            onClick={() => setIsNewProjectModalOpen(true)}
           >
             <Plus className="w-4 h-4" />
             Create Project
@@ -468,7 +450,7 @@ const Dashboard = () => {
               {/* Create Project Button */}
               <Button 
                 className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-9 shadow-sm"
-                onClick={() => setIsTemplateSelectionOpen(true)}
+                onClick={() => setIsNewProjectModalOpen(true)}
               >
                 <Plus className="w-4 h-4" />
                 Create
@@ -521,301 +503,327 @@ const Dashboard = () => {
             </TabsContent>
           </Tabs>
         </div>
+      </main>              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-slate-900">Your Projects</h2>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search projects..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 w-64 h-9 border-slate-200 focus:border-blue-500"
+                    />
+                  </div>
+                  <Button variant="outline" size="sm" className="gap-2 border-slate-200  hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
+                    <Filter className="w-4 h-4" />
+                    Filter
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {filteredProjects.map((project) => (
+                  <Card
+                    key={project.id}
+                    className="border-0 bg-white shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                    onClick={() => navigate(`/project/${project.id}`)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0">
+                            <Layers className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <CardTitle className="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
+                              {project.name}
+                            </CardTitle>
+                            <p className="text-sm text-slate-600 mt-1">{project.description}</p>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-600">Progress</span>
+                          <span className="text-xs font-bold text-slate-900">{project.progress}%</span>
+                        </div>
+                        <Progress 
+                          value={project.progress} 
+                          className="h-2 bg-slate-100"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Calendar className="w-4 h-4" />
+                          <span className="font-medium">
+                            {project.tasks.completed}/{project.tasks.total} tasks
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Users className="w-4 h-4" />
+                          <span className="font-medium">{project.members} members</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* High Priority Tasks */}
+              <Card className="border-0 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-slate-900">High Priority</CardTitle>
+                  <CardDescription>Tasks requiring immediate attention</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {highPriorityTasks.slice(0, 5).map((task) => (
+                    <div key={task.id} className="p-3 rounded-lg bg-red-50 border border-red-100 hover:bg-red-100 transition-colors cursor-pointer">
+                      <h4 className="text-sm font-semibold text-slate-900 mb-1">{task.title}</h4>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-600">{task.project}</span>
+                        <div className="flex items-center gap-1 text-xs text-red-600">
+                          <Clock className="w-3 h-3" />
+                          {task.dueDate}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <Button 
+                    variant="ghost"
+                    className="w-full gap-2 border border-slate-200 text-slate-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all"
+                    onClick={() => setIsActiveTasksModalOpen(true)}
+                  >
+                    <Eye className="w-4 h-4" />
+                    View All Tasks
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions
+              <Card className="border-0 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-slate-900">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 border-slate-200 hover:bg-slate-50"
+                    onClick={() => setIsNewProjectModalOpen(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Project
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 border-slate-200 hover:bg-slate-50"
+                    onClick={() => setIsActiveTasksModalOpen(true)}
+                  >
+                    <CheckSquare2 className="w-4 h-4" />
+                    View All Tasks
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 border-slate-200 hover:bg-slate-50"
+                    onClick={() => setIsJoinDialogOpen(true)}
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Invite Team Member
+                  </Button>
+                </CardContent>
+              </Card> */}
+
+              {/* Team Members
+              <Card className="border-0 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-slate-900">Team Members</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {["John Doe", "Jane Smith", "Mike Johnson"].map((member, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+                        {member.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">{member}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card> */}
+            </div>
+          </div>
       </main>
 
-      {/* Join Project Modal */}
-      <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>Join Project</DialogTitle>
+      {/* Active Tasks Modal */}
+      <Dialog open={isActiveTasksModalOpen} onOpenChange={setIsActiveTasksModalOpen}>
+        <DialogContent className="sm:max-w-[1200px] max-h-[85vh] overflow-hidden">
+          <DialogHeader className="space-y-2 pb-4">
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              All Active Tasks
+            </DialogTitle>
             <DialogDescription>
-              Enter the project invitation code to join an existing project.
+              View and manage all active tasks organized by project
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-6 py-6">
-            <div className="space-y-2">
-              <Label htmlFor="projectCode" className="text-sm font-medium">
-                Project Code
-              </Label>
-              <Input
-                id="projectCode"
-                value={joinProjectCode}
-                onChange={(e) => setJoinProjectCode(e.target.value)}
-                placeholder="Enter invitation code"
-                className="h-11"
-              />
+          
+          <div className="overflow-y-auto max-h-[60vh] py-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {getTasksByProject().map((projectGroup) => (
+                <Card key={projectGroup.projectId} className="border-0 bg-white shadow-sm">
+                  <CardHeader 
+                    className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-100 pb-4 cursor-pointer hover:from-blue-100 hover:to-blue-200 transition-all"
+                    onClick={() => navigate(`/project/${projectGroup.projectId}`)}
+                  >
+                    <div className="space-y-4">
+                      {/* Project Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                            <Layers className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <CardTitle className="font-semibold text-sm text-slate-900 hover:text-blue-600 transition-colors">
+                              {projectGroup.projectName}
+                            </CardTitle>
+                            <p className="text-xs text-slate-600 font-medium">
+                              {projectGroup.tasks.length} active task{projectGroup.tasks.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-slate-900">{projectGroup.progress}%</div>
+                            <div className="text-xs text-slate-600 font-medium">Complete</div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-400 hover:text-blue-600 transition-colors" />
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-slate-600">Project Progress</span>
+                          <span className="font-bold text-slate-900">
+                            {projectGroup.completedTasks}/{projectGroup.totalTasks} tasks
+                          </span>
+                        </div>
+                        <Progress 
+                          value={projectGroup.progress} 
+                          className="h-2 bg-slate-100"
+                        />
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-4">
+                    <div className="space-y-3 min-h-[300px] max-h-[400px] overflow-y-auto">
+                      {projectGroup.tasks.length === 0 ? (
+                        <div className="flex items-center justify-center h-32 text-slate-400">
+                          <div className="text-center">
+                            <CheckSquare2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm font-medium">No active tasks</p>
+                          </div>
+                        </div>
+                      ) : (
+                        projectGroup.tasks.map((task) => (
+                          <Card
+                            key={task.id}
+                            className="cursor-pointer group border border-slate-200 bg-white hover:shadow-md hover:border-blue-300 transition-all"
+                            onClick={() => navigate(`/project/${task.projectId}`)}
+                          >
+                            <CardContent className="p-3">
+                              <div className="space-y-3">
+                                {/* Task Title and Priority */}
+                                <div className="flex items-start justify-between">
+                                  <h4 className="font-semibold text-xs text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 flex-1">
+                                    {task.title}
+                                  </h4>
+                                  <Badge className={`text-xs px-2 py-1 ml-2 ${getPriorityColor(task.priority)}`}>
+                                    {task.priority.charAt(0).toUpperCase()}
+                                  </Badge>
+                                </div>
+
+                                {/* Status and Due Date */}
+                                <div className="flex items-center justify-between">
+                                  <Badge className={`text-xs px-2 py-1 ${getStatusColor(task.status)}`}>
+                                    {task.status.replace('-', ' ').toUpperCase()}
+                                  </Badge>
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Clock className="w-3 h-3" />
+                                    <span className="font-medium">{new Date(task.dueDate).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+
+                                {/* Assignees */}
+                                <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                                  <div className="flex -space-x-1">
+                                    {task.assignees.slice(0, 3).map((assignee, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold border border-background shadow-sm"
+                                      >
+                                        {assignee.split(" ").map((n: string) => n[0]).join("")[0]}
+                                      </div>
+                                    ))}
+                                    {task.assignees.length > 3 && (
+                                      <div className="w-5 h-5 rounded-full bg-muted border border-background flex items-center justify-center shadow-sm">
+                                        <span className="text-xs font-bold text-muted-foreground">
+                                          +{task.assignees.length - 3}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground font-medium">
+                                    {task.assignees.length} member{task.assignees.length !== 1 ? 's' : ''}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              onClick={handleJoinProject}
-              disabled={!joinProjectCode.trim()}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-            >
-              Join Project
-            </Button>
+          
+          <DialogFooter className="border-t border-border/30 pt-4">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span>Showing {activeTasks.length} active tasks across {projects.length} projects</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                    <span className="text-xs">High Priority</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                    <span className="text-xs">Medium Priority</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-xs">Low Priority</span>
+                  </div>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsActiveTasksModalOpen(false)}
+                className="font-semibold"
+              >
+                Close
+              </Button>
+            </div>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Template Selection Modal */}
-      <Dialog open={isTemplateSelectionOpen} onOpenChange={setIsTemplateSelectionOpen}>
-        <DialogContent className="max-w-5xl max-h-[100vh] overflow-hidden bg-white border border-slate-200 p-0">
-          {/* Header */}
-          <div className="border-b border-slate-200 bg-white px-6 py-4">
-            <DialogTitle className="text-xl font-semibold text-slate-900 mb-1">
-              Choose your project template
-            </DialogTitle>
-            <DialogDescription className="text-sm text-slate-600">
-              Select the workflow that best fits your team's needs
-            </DialogDescription>
-          </div>
-
-          {/* Content */}
-          <div className="px-6 py-5 overflow-y-auto max-h-[calc(100vh-140px)]">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
-              {/* Calendar-Synced Template */}
-              <div
-                className={`relative border rounded-lg overflow-hidden transition-all duration-200 cursor-pointer bg-white ${
-                  selectedTemplate === "auto-sync"
-                    ? "border-blue-500 shadow-lg ring-2 ring-blue-100"
-                    : "border-slate-200 hover:border-blue-300 hover:shadow-md"
-                }`}
-                onClick={() => handleTemplateSelect("auto-sync")}
-              >
-                {/* Header */}
-                <div className="px-5 py-4 border-b border-slate-100 bg-gradient-to-br from-blue-50/50 to-white">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Calendar className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-semibold text-slate-900">
-                          Automated Workflow Board
-                        </h3>
-                        <p className="text-xs text-slate-600 mt-0.5">
-                          Automated time-based workflow
-                        </p>
-                      </div>
-                    </div>
-                    {selectedTemplate === "auto-sync" && (
-                      <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="px-5 py-4">
-                  <p className="text-sm text-slate-700 mb-4 leading-relaxed">
-                    Perfect for deadline-driven teams. Tasks automatically move between stages based on their dates.
-                  </p>
-
-                  <div className="space-y-2.5 mb-4">
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Automatic Task Movement</p>
-                        <p className="text-xs text-slate-600">Tasks transition based on start and due dates</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Fixed Workflow Stages</p>
-                        <p className="text-xs text-slate-600">Backlog → Upcoming → In Progress → Review → Complete</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Timeline & Calendar Views</p>
-                        <p className="text-xs text-slate-600">Visualize project progress across time</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Sprint & Milestone Support</p>
-                        <p className="text-xs text-slate-600">Built-in agile methodology support</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Progress Tracking</p>
-                        <p className="text-xs text-slate-600">Visual progress bars and completion metrics</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100">
-                    <p className="text-xs text-slate-500 font-medium mb-2">BEST FOR:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-md">
-                        Product Launches
-                      </span>
-                      <span className="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-md">
-                        Marketing Campaigns
-                      </span>
-                      <span className="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-md">
-                        Agile Teams
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Custom Workflow Template */}
-              <div
-                className={`relative border rounded-lg overflow-hidden transition-all duration-200 cursor-pointer bg-white ${
-                  selectedTemplate === "custom"
-                    ? "border-purple-500 shadow-lg ring-2 ring-purple-100"
-                    : "border-slate-200 hover:border-purple-300 hover:shadow-md"
-                }`}
-                onClick={() => handleTemplateSelect("custom")}
-              >
-                {/* Header */}
-                <div className="px-5 py-4 border-b border-slate-100 bg-gradient-to-br from-purple-50/50 to-white">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <GripVertical className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-semibold text-slate-900">
-                          Custom Workflow Board
-                        </h3>
-                        <p className="text-xs text-slate-600 mt-0.5">
-                          Flexible drag-and-drop workflow
-                        </p>
-                      </div>
-                    </div>
-                    {selectedTemplate === "custom" && (
-                      <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="px-5 py-4">
-                  <p className="text-sm text-slate-700 mb-4 leading-relaxed">
-                    Ideal for creative teams with unique processes. Design your own workflow stages and move tasks manually.
-                  </p>
-
-                  <div className="space-y-2.5 mb-4">
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-purple-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Unlimited Custom Columns</p>
-                        <p className="text-xs text-slate-600">Create as many workflow stages as you need</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-purple-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Drag & Drop Interface</p>
-                        <p className="text-xs text-slate-600">Intuitive task movement between columns</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-purple-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Complete Control</p>
-                        <p className="text-xs text-slate-600">No automatic task movement - you decide</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-purple-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Customizable Stages</p>
-                        <p className="text-xs text-slate-600">Rename, reorder, add, or remove columns</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100">
-                    <p className="text-xs text-slate-500 font-medium mb-2">BEST FOR:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="bg-purple-50 text-purple-700 text-xs px-2.5 py-1 rounded-md">
-                        Design Projects
-                      </span>
-                      <span className="bg-purple-50 text-purple-700 text-xs px-2.5 py-1 rounded-md">
-                        Content Creation
-                      </span>
-                      <span className="bg-purple-50 text-purple-700 text-xs px-2.5 py-1 rounded-md">
-                        Creative Teams
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Additional info and action buttons */}
-            <div className="mt-4 space-y-3">
-              
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsTemplateSelectionOpen(false);
-                    setSelectedTemplate(null);
-                  }}
-                  className="border-slate-300"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  disabled={!selectedTemplate}
-                  onClick={handleConfirmTemplate}
-                  className={
-                    selectedTemplate === "auto-sync"
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : selectedTemplate === "custom"
-                      ? "bg-purple-600 hover:bg-purple-700 text-white"
-                      : ""
-                  }
-                >
-                  {selectedTemplate 
-                    ? `Continue with ${selectedTemplate === "auto-sync" ? "Automated Workflow" : "Custom Workflow"}`
-                    : "Select a Template"
-                  }
-                </Button>
-              </div>
-            </div>
-          </div>
         </DialogContent>
       </Dialog>
 
@@ -828,12 +836,7 @@ const Dashboard = () => {
               Create New Project
             </DialogTitle>
             <DialogDescription>
-              {selectedTemplate === "auto-sync" 
-                ? "📅 Automated Workflow Template - Tasks move automatically based on dates"
-                : selectedTemplate === "custom"
-                ? "🎯 Custom Workflow Template - Create your own columns and workflow"
-                : "Set up a new project and start collaborating with your team"
-              }
+              Set up a new project and start collaborating with your team
             </DialogDescription>
           </DialogHeader>
           
@@ -919,10 +922,7 @@ const Dashboard = () => {
           <DialogFooter className="border-t border-slate-100 pt-4">
             <Button
               variant="outline"
-              onClick={() => {
-                setIsNewProjectModalOpen(false);
-                setSelectedTemplate(null);
-              }}
+              onClick={() => setIsNewProjectModalOpen(false)}
               className="border-slate-200 hover:bg-slate-50"
             >
               Cancel

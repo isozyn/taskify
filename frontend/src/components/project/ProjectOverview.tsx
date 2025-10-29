@@ -1,10 +1,22 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, AlertCircle, TrendingUp, Mail, Calendar, Target, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  CheckCircle2, 
+  Clock, 
+  AlertCircle, 
+  TrendingUp,
+  Users,
+  Calendar,
+  BarChart3,
+  Activity,
+  Target,
+  ArrowUpRight
+} from "lucide-react";
+import MemberDetailModal from "./MemberDetailModal";
 
 interface ProjectOverviewProps {
   project: any;
@@ -94,33 +106,6 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "complete":
-        return "bg-success/20 text-success border-success/30";
-      case "in-progress":
-        return "bg-accent/20 text-accent border-accent/30";
-      case "review":
-        return "bg-warning/20 text-warning border-warning/30";
-      case "upcoming":
-        return "bg-primary/20 text-primary border-primary/30";
-      default:
-        return "bg-muted/50 text-muted-foreground border-muted/50";
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low":
-        return "bg-green-100 text-green-800 border-green-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
   // Mock stats
   const stats = {
     totalTasks: 24,
@@ -131,321 +116,333 @@ const ProjectOverview = ({ project }: ProjectOverviewProps) => {
 
   const progress = (stats.completed / stats.totalTasks) * 100;
 
+  // Mock activity data with more details
+  const recentActivities = [
+    {
+      id: 1,
+      user: "John Doe",
+      action: "completed task",
+      target: "Design landing page mockup",
+      time: "2 hours ago",
+      type: "completed"
+    },
+    {
+      id: 2,
+      user: "Jane Smith",
+      action: "updated task",
+      target: "Implement authentication",
+      time: "5 hours ago",
+      type: "updated"
+    },
+    {
+      id: 3,
+      user: "Mike Johnson",
+      action: "added a comment on",
+      target: "Write API documentation",
+      time: "1 day ago",
+      type: "comment"
+    }
+  ];
+
+  // Mock work items stats
+  const workItemsStats = [
+    { type: "Epic", count: 3, color: "bg-purple-500" },
+    { type: "Feature", count: 8, color: "bg-green-500" },
+    { type: "Bug", count: 4, color: "bg-red-500" },
+    { type: "Story", count: 9, color: "bg-blue-500" }
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Project Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-       
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              In Progress
-            </CardTitle>
-            <Clock className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.inProgress}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active tasks</p>
+    <div className="space-y-6 pb-8">
+      {/* Quick Stats Grid - Jira Style */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-600">In Progress</p>
+                <p className="text-3xl font-bold text-slate-900">{stats.inProgress}</p>
+                <p className="text-xs text-slate-500">Active tasks</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Completed
-            </CardTitle>
-            <CheckCircle2 className="w-4 h-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.completed}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {Math.round(progress)}% of total
-            </p>
+        <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-600">Completed</p>
+                <p className="text-3xl font-bold text-slate-900">{stats.completed}</p>
+                <p className="text-xs text-slate-500">{Math.round(progress)}% of total</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Overdue
-            </CardTitle>
-            <AlertCircle className="w-4 h-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.overdue}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Need attention
-            </p>
+        <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-600">Overdue</p>
+                <p className="text-3xl font-bold text-slate-900">{stats.overdue}</p>
+                <p className="text-xs text-slate-500">Need attention</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-600">Total Tasks</p>
+                <p className="text-3xl font-bold text-slate-900">{stats.totalTasks}</p>
+                <p className="text-xs text-slate-500">All work items</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center">
+                <Target className="w-5 h-5 text-slate-600" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Overall Progress */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Overall Progress</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">
-                Project Completion
-              </span>
-              <span className="text-sm font-medium">
-                {stats.completed} / {stats.totalTasks} tasks
-              </span>
-            </div>
-            <Progress value={progress} className="h-3" />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Great progress! Keep up the momentum to reach your project goals.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Team Members */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Members</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4 flex-wrap">
-            {project.members.map((member: any) => (
-              <div
-                key={member.id}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-accent/5 hover:border-primary/30 transition-all cursor-pointer group"
-                onClick={() => handleMemberClick(member.id)}
-              >
-                <Avatar className="group-hover:ring-2 group-hover:ring-primary/30 transition-all">
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
-                    {member.name
-                      .split(" ")
-                      .map((n: string) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - 2/3 width */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Overall Progress Card */}
+          <Card className="border-0 bg-white shadow-sm">
+            <CardHeader className="border-b border-slate-100 pb-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium group-hover:text-primary transition-colors">{member.name}</p>
-                  <p className="text-xs text-muted-foreground">Member</p>
+                  <CardTitle className="text-lg font-semibold text-slate-900">Overall Progress</CardTitle>
+                  <CardDescription className="text-sm text-slate-600 mt-1">
+                    Project Completion
+                  </CardDescription>
+                </div>
+                <Badge className="bg-blue-50 text-blue-700 border-blue-200 font-semibold">
+                  {stats.completed} / {stats.totalTasks} tasks
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-3">
+                <Progress value={progress} className="h-3 rounded-full" />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 font-medium">
+                    {Math.round(progress)}% Complete
+                  </span>
+                  <span className="text-slate-500">
+                    {stats.totalTasks - stats.completed} remaining
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Member Detail Modal */}
-      <Dialog open={isMemberModalOpen} onOpenChange={setIsMemberModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden glass-effect">
-          {selectedMember && (
-            <div className="overflow-y-auto max-h-[80vh] px-1">
-              <DialogHeader className="mb-6">
-                <div className="flex items-start gap-4">
-                  <Avatar className="w-16 h-16 ring-2 ring-primary/30">
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-bold text-xl">
-                      {selectedMember.name
-                        .split(" ")
-                        .map((n: string) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <DialogTitle className="heading-premium text-2xl mb-1">
-                      {selectedMember.name}
-                    </DialogTitle>
-                    <p className="text-executive text-primary font-semibold">{selectedMember.role}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                      <a href={`mailto:${selectedMember.email}`} className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                        {selectedMember.email}
-                      </a>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        Joined {new Date(selectedMember.joinDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                      </span>
-                    </div>
+              <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Great progress!</p>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Keep up the momentum to reach your project goals. The team is on track for completion.
+                    </p>
                   </div>
                 </div>
-              </DialogHeader>
+              </div>
+            </CardContent>
+          </Card>
 
-              <div className="space-y-6">
-                {/* About Section */}
-                <Card className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/90">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                      About
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-foreground leading-relaxed">{selectedMember.description}</p>
-                  </CardContent>
-                </Card>
-
-                {/* Task Statistics */}
-                <div className="grid grid-cols-3 gap-3">
-                  <Card className="premium-card border-0 bg-gradient-to-br from-primary/10 to-primary/5">
-                    <CardContent className="pt-6 text-center">
-                      <Target className="w-6 h-6 text-primary mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-foreground">{selectedMember.assignedTasks.length}</div>
-                      <p className="text-xs text-muted-foreground font-medium">Total Tasks</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="premium-card border-0 bg-gradient-to-br from-success/10 to-success/5">
-                    <CardContent className="pt-6 text-center">
-                      <CheckCircle2 className="w-6 h-6 text-success mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-foreground">
-                        {selectedMember.assignedTasks.filter(t => t.status === 'complete').length}
-                      </div>
-                      <p className="text-xs text-muted-foreground font-medium">Completed</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="premium-card border-0 bg-gradient-to-br from-accent/10 to-accent/5">
-                    <CardContent className="pt-6 text-center">
-                      <Clock className="w-6 h-6 text-accent mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-foreground">
-                        {selectedMember.assignedTasks.filter(t => t.status === 'in-progress').length}
-                      </div>
-                      <p className="text-xs text-muted-foreground font-medium">Active</p>
-                    </CardContent>
-                  </Card>
+          {/* Types of Work Card */}
+          <Card className="border-0 bg-white shadow-sm">
+            <CardHeader className="border-b border-slate-100 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-semibold text-slate-900">Types of Work</CardTitle>
+                  <CardDescription className="text-sm text-slate-600 mt-1">
+                    Get a breakdown of work items by their types
+                  </CardDescription>
                 </div>
-
-                {/* Assigned Tasks */}
-                <Card className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/90">
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-primary" />
-                      <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                        Assigned Tasks
-                      </CardTitle>
+                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                  View all items
+                  <ArrowUpRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                {workItemsStats.map((item, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 w-32">
+                      <div className={`w-3 h-3 rounded-sm ${item.color}`} />
+                      <span className="text-sm font-medium text-slate-700">{item.type}</span>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {selectedMember.assignedTasks.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-sm font-medium">No tasks assigned</p>
-                        </div>
-                      ) : (
-                        selectedMember.assignedTasks.map((task) => (
-                          <Card
-                            key={task.id}
-                            className="premium-card border border-border/30 bg-gradient-to-br from-background via-background to-muted/10 hover:shadow-md hover:border-primary/30 transition-all duration-300"
-                          >
-                            <CardContent className="p-4">
-                              <div className="space-y-3">
-                                {/* Task Title and Priority */}
-                                <div className="flex items-start justify-between gap-2">
-                                  <h4 className="font-bold text-sm text-foreground flex-1 line-clamp-2">
-                                    {task.title}
-                                  </h4>
-                                  <Badge className={`text-xs px-2 py-1 ${getPriorityColor(task.priority)}`}>
-                                    {task.priority.toUpperCase()}
-                                  </Badge>
-                                </div>
+                    <div className="flex-1">
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${item.color}`}
+                          style={{ width: `${(item.count / 24) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-900 w-8 text-right">{item.count}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-                                {/* Status and Due Date */}
-                                <div className="flex items-center justify-between gap-2">
-                                  <Badge className={`text-xs px-2 py-1 ${getStatusColor(task.status)}`}>
-                                    {task.status.replace('-', ' ').toUpperCase()}
-                                  </Badge>
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Calendar className="w-3 h-3" />
-                                    <span className="font-medium">
-                                      Due {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))
+          {/* Recent Activity Card */}
+          <Card className="border-0 bg-white shadow-sm">
+            <CardHeader className="border-b border-slate-100 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-semibold text-slate-900">Recent Activity</CardTitle>
+                  <CardDescription className="text-sm text-slate-600 mt-1">
+                    Stay up to date with what's happening across the space
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                {recentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs font-semibold">
+                        {activity.user.split(" ").map(n => n[0]).join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-900">
+                        <span className="font-semibold">{activity.user}</span>{" "}
+                        <span className="text-slate-600">{activity.action}</span>{" "}
+                        <span className="font-medium text-blue-600 cursor-pointer hover:underline">
+                          "{activity.target}"
+                        </span>
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
+                    </div>
+                    <div>
+                      {activity.type === "completed" && (
+                        <Badge className="bg-green-50 text-green-700 border-0 font-medium">
+                          Completed
+                        </Badge>
+                      )}
+                      {activity.type === "updated" && (
+                        <Badge className="bg-blue-50 text-blue-700 border-0 font-medium">
+                          Updated
+                        </Badge>
+                      )}
+                      {activity.type === "comment" && (
+                        <Badge className="bg-slate-100 text-slate-700 border-0 font-medium">
+                          Comment
+                        </Badge>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-                {/* Task Completion Progress */}
-                <Card className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/90">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                      Task Completion Rate
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Overall Progress</span>
-                        <span className="text-sm font-bold text-foreground">
-                          {selectedMember.assignedTasks.filter(t => t.status === 'complete').length} / {selectedMember.assignedTasks.length} tasks
-                        </span>
-                      </div>
-                      <div className="relative">
-                        <Progress 
-                          value={(selectedMember.assignedTasks.filter(t => t.status === 'complete').length / selectedMember.assignedTasks.length) * 100} 
-                          className="h-3 bg-muted/50"
-                        />
-                        <div 
-                          className="absolute top-0 left-0 h-3 rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
-                          style={{ width: `${(selectedMember.assignedTasks.filter(t => t.status === 'complete').length / selectedMember.assignedTasks.length) * 100}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {Math.round((selectedMember.assignedTasks.filter(t => t.status === 'complete').length / selectedMember.assignedTasks.length) * 100)}% of assigned tasks completed
+        {/* Right Column - 1/3 width */}
+        <div className="space-y-6">
+          {/* Team Members Card */}
+          <Card className="border-0 bg-white shadow-sm">
+            <CardHeader className="border-b border-slate-100 pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold text-slate-900">Team Members</CardTitle>
+                <Users className="w-5 h-5 text-slate-400" />
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                {project.members.map((member: any) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-all cursor-pointer group border border-transparent hover:border-slate-200"
+                    onClick={() => handleMemberClick(member.id)}
+                  >
+                    <Avatar className="w-10 h-10 group-hover:ring-2 group-hover:ring-blue-500/20 transition-all">
+                      <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-semibold">
+                        {member.name
+                          .split(" ")
+                          .map((n: string) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
+                        {member.name}
                       </p>
+                      <p className="text-xs text-slate-500">Member</p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                ))}
               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-success mt-2" />
-              <div>
-                <p className="text-sm">
-                  <span className="font-medium">John Doe</span> completed task
-                  "Design landing page mockup"
-                </p>
-                <p className="text-xs text-muted-foreground">2 hours ago</p>
+          {/* Project Insights Card */}
+          <Card className="border-0 bg-gradient-to-br from-slate-50 to-blue-50 shadow-sm">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-blue-600" />
+                </div>
+                <CardTitle className="text-base font-semibold text-slate-900">Project Insights</CardTitle>
               </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-              <div>
-                <p className="text-sm">
-                  <span className="font-medium">Jane Smith</span> updated task
-                  "Implement authentication"
-                </p>
-                <p className="text-xs text-muted-foreground">5 hours ago</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-slate-600">Completion Rate</span>
+                  <span className="text-xs font-bold text-green-600">↑ 12%</span>
+                </div>
+                <p className="text-2xl font-bold text-slate-900">{Math.round(progress)}%</p>
               </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-accent mt-2" />
-              <div>
-                <p className="text-sm">
-                  <span className="font-medium">Mike Johnson</span> added a
-                  comment on "Write API documentation"
-                </p>
-                <p className="text-xs text-muted-foreground">1 day ago</p>
+              
+              <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-slate-600">Team Velocity</span>
+                  <span className="text-xs font-bold text-green-600">↑ 8%</span>
+                </div>
+                <p className="text-2xl font-bold text-slate-900">4.2</p>
+                <p className="text-xs text-slate-500 mt-1">tasks/day average</p>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
+              <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-slate-600">Est. Completion</span>
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+                <p className="text-base font-bold text-slate-900">Feb 15, 2025</p>
+                <p className="text-xs text-slate-500 mt-1">Based on current pace</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Member Detail Modal */}
+      <MemberDetailModal
+        member={selectedMember}
+        isOpen={isMemberModalOpen}
+        onOpenChange={setIsMemberModalOpen}
+      />
     </div>
   );
 };
