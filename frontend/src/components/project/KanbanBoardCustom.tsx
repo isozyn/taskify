@@ -204,24 +204,15 @@ const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold text-slate-900">Custom Workflow Board</h2>
-            <Badge variant="outline" className="text-xs font-normal border-purple-300 text-purple-700 bg-purple-50">
-              <GripVertical className="w-3 h-3 mr-1" />
-              Drag & Drop
-            </Badge>
-          </div>
-          <p className="text-sm text-slate-500 mt-1">Create custom columns and move tasks manually</p>
+      <div className="mb-4">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-slate-900">Custom Workflow Board</h2>
+          <Badge variant="outline" className="text-xs font-normal border-purple-300 text-purple-700 bg-purple-50">
+            <GripVertical className="w-3 h-3 mr-1" />
+            Drag & Drop
+          </Badge>
         </div>
-        <Button
-          onClick={() => setIsCreateTaskModalOpen(true)}
-          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Task
-        </Button>
+        <p className="text-sm text-slate-500 mt-1">Create custom columns and move tasks manually</p>
       </div>
 
       {/* Kanban Board with Drag & Drop */}
@@ -311,7 +302,8 @@ const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
                         key={task.id}
                         draggable
                         onDragStart={(e) => handleDragStart(e, task.id)}
-                        className="cursor-move group bg-white border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200"
+                        onClick={() => setSelectedTask(task)}
+                        className="cursor-pointer group bg-white border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200"
                       >
                         <CardContent className="p-3 space-y-3">
                           {/* Drag Handle & Title */}
@@ -319,7 +311,6 @@ const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
                             <GripVertical className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
                             <h4 
                               className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 flex-1"
-                              onClick={() => setSelectedTask(task)}
                             >
                               {task.title}
                             </h4>
