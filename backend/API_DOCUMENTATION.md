@@ -105,7 +105,7 @@ Content-Type: application/json
 ```json
 {
   "id": 1,
-  "name": "My New Project",
+  "title": "My New Project",
   "description": "Project description",
   "workflowType": "CUSTOM",
   "ownerId": 1,
