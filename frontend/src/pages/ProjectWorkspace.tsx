@@ -19,6 +19,8 @@ import KanbanBoard from "@/components/project/KanbanBoard";
 import TimelineView from "@/components/project/TimelineView";
 import ProjectOverview from "@/components/project/ProjectOverview";
 import ProjectSettings from "@/components/project/ProjectSettings";
+import { ProfileDropdown } from "@/components/ProfileDropdown";
+import { useUser } from "@/contexts/UserContext";
 
 const ProjectWorkspace = () => {
   const { id } = useParams();
@@ -177,6 +179,11 @@ const ProjectWorkspace = () => {
                   Invite
                 </Button>
               </div>
+
+              <div className="h-6 w-px bg-slate-200" />
+
+              {/* User Profile */}
+              <ProfileDropdown />
             </div>
           </div>
         </div>

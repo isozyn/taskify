@@ -31,7 +31,7 @@ export const sendVerificationEmail = async (
     });
 
     // Build verification link
-    const verificationLink = `${process.env.FRONTEND_URL}/auth/verify-email?token=${token}`;
+    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
     // Email HTML content
     const htmlContent = `
@@ -99,7 +99,7 @@ export const sendPasswordResetEmail = async (
 ): Promise<void> => {
   try {
     // Build reset link
-    const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     // Email HTML content
     const htmlContent = `
