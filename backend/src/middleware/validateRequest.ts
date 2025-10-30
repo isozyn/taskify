@@ -28,6 +28,13 @@ export const validateRegister = [
     .isLength({ min: 2, max: 100 })
     .withMessage('Name must be between 2 and 100 characters'),
   
+  body('username')
+    .trim()
+    .isLength({ min: 3, max: 30 })
+    .withMessage('Username must be between 3 and 30 characters')
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage('Username may only contain alphanumeric characters, underscores, and hyphens'),
+  
   body('email')
     .trim()
     .isEmail()

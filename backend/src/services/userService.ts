@@ -2,25 +2,7 @@
 
 import prisma from '../config/db';
 import { User } from '@prisma/client';
-
-interface UserCreateInput {
-  name: string;
-  email: string;
-  password: string;
-  avatar?: string;
-  role?: 'USER' | 'ADMIN';
-}
-
-interface UserResponse {
-  id: number;
-  name: string;
-  email: string;
-  avatar: string | null;
-  role: string;
-  isEmailVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { UserCreateInput, UserResponse } from '../models/User';
 
 /**
  * Create a new user
@@ -29,6 +11,7 @@ export const createUser = async (data: UserCreateInput): Promise<User> => {
   const user = await prisma.user.create({
     data: {
       name: data.name,
+      username: data.username,
       email: data.email,
       password: data.password,
       avatar: data.avatar,
@@ -44,6 +27,16 @@ export const createUser = async (data: UserCreateInput): Promise<User> => {
 export const findUserByEmail = async (email: string): Promise<User | null> => {
   const user = await prisma.user.findUnique({
     where: { email },
+  });
+  return user;
+};
+
+/**
+ * Find user by username
+ */
+export const findUserByUsername = async (username: string): Promise<User | null> => {
+  const user = await prisma.user.findUnique({
+    where: { username },
   });
   return user;
 };
@@ -74,7 +67,7 @@ export const updateUser = async (id: number, data: Partial<User>): Promise<User>
  */
 export const toUserResponse = (user: User): UserResponse => {
   const { password, resetToken, resetTokenExpiry, ...userResponse } = user;
-  return userResponse;
+  return userResponse as UserResponse;
 };
 
 /**

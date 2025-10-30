@@ -15,12 +15,19 @@ export const register = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, email, password } = req.body;
 
-    // Check if user already exists
-    const existingUser = await userService.findUserByEmail(email);
-    if (existingUser) {
+    // Check if user already exists by email
+    const existingEmail = await userService.findUserByEmail(email);
+    if (existingEmail) {
       res.status(400).json({ message: 'User with this email already exists' });
+      return;
+    }
+
+    // Check if username already exists
+    const existingUsername = await userService.findUserByUsername(username);
+    if (existingUsername) {
+      res.status(400).json({ message: 'Username already taken' });
       return;
     }
 
@@ -30,6 +37,7 @@ export const register = async (
     // Create user
     const user = await userService.createUser({
       name,
+      username,
       email,
       password: hashedPassword,
     });

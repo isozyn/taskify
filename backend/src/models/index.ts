@@ -1,6 +1,7 @@
 // Export all models from a single entry point
 
 export * from './User';
+export * from './Auth';
 export * from './Project';
 export * from './ProjectMember';
 export * from './Task';
