@@ -75,17 +75,17 @@ export const login = async (
   try {
     const { email, password, rememberMe } = req.body;
 
-    // Find user by email
-    const user = await userService.findUserByEmail(email);
+    // Find user by email or username
+    const user = await userService.findUserByEmailOrUsername(email);
     if (!user) {
-      res.status(401).json({ message: 'Invalid email or password' });
+      res.status(401).json({ message: 'Invalid email, username or password' });
       return;
     }
 
     // Compare passwords
     const isPasswordValid = await authService.comparePassword(password, user.password);
     if (!isPasswordValid) {
-      res.status(401).json({ message: 'Invalid email or password' });
+      res.status(401).json({ message: 'Invalid email, username or password' });
       return;
     }
 
@@ -248,18 +248,67 @@ export const verifyEmail = async (
 
     // Check if already verified
     if (user.isEmailVerified) {
-      res.status(200).json({ message: 'Email already verified' });
+      // If already verified, generate tokens and return user data
+      const tokenPayload = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      };
+
+      const accessToken = authService.generateAccessToken(tokenPayload);
+      const refreshToken = authService.generateRefreshToken(tokenPayload);
+
+      // Store refresh token in database
+      const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+      await userService.addRefreshToken(user.id, refreshToken, refreshExpiresAt);
+
+      // Set refresh token as HTTP-only cookie
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+
+      res.status(200).json({ 
+        message: 'Email already verified',
+        accessToken,
+        user: userService.toUserResponse(user),
+      });
       return;
     }
 
     // Update user to mark email as verified
-    await userService.updateUser(user.id, {
+    const updatedUser = await userService.updateUser(user.id, {
       isEmailVerified: true,
+    });
+
+    // Generate tokens after verification
+    const tokenPayload = {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      role: updatedUser.role,
+    };
+
+    const accessToken = authService.generateAccessToken(tokenPayload);
+    const refreshToken = authService.generateRefreshToken(tokenPayload);
+
+    // Store refresh token in database
+    const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    await userService.addRefreshToken(updatedUser.id, refreshToken, refreshExpiresAt);
+
+    // Set refresh token as HTTP-only cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
     res.status(200).json({
       message: 'Email verified successfully',
-      user: userService.toUserResponse(user),
+      accessToken,
+      user: userService.toUserResponse(updatedUser),
     });
   } catch (error) {
     if (error instanceof Error && error.message.includes('Invalid or expired')) {

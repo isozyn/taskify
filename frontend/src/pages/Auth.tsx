@@ -83,9 +83,8 @@ const Auth = () => {
         description: response.message || "Account created successfully. Please check your email to verify your account.",
       });
 
-      // Switch to login view
-      setIsSignup(false);
-      setLoginEmail(signupEmail);
+      // Redirect to check email page with email in state
+      navigate("/check-email", { state: { email: signupEmail } });
     } catch (error: any) {
       const errorMessage = error.errors?.length 
         ? error.errors.map((e: any) => e.msg).join(", ")
@@ -241,7 +240,7 @@ const Auth = () => {
           {/* Back Button - Signup Page (White) */}
           <div className="absolute top-4 left-4 z-20">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => setIsSignup(false)}
               className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity"
             >
               <ArrowLeft className="w-5 h-5" />

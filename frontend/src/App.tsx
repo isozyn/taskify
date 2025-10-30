@@ -12,6 +12,7 @@ import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
+import CheckEmail from "./pages/CheckEmail";
 import TemplateSelection from "./pages/TemplateSelection";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/check-email" element={<CheckEmail />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/template-selection" element={<TemplateSelection />} />
             <Route path="/project/:id" element={<ProjectWorkspace />} />

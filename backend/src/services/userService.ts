@@ -42,6 +42,21 @@ export const findUserByUsername = async (username: string): Promise<User | null>
 };
 
 /**
+ * Find user by email OR username
+ */
+export const findUserByEmailOrUsername = async (emailOrUsername: string): Promise<User | null> => {
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: emailOrUsername },
+        { username: emailOrUsername },
+      ],
+    },
+  });
+  return user;
+};
+
+/**
  * Find user by ID
  */
 export const findUserById = async (id: number): Promise<User | null> => {

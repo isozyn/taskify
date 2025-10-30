@@ -2,14 +2,16 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckSquare, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
+import { api, type AuthResponse } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/UserContext";
 import Navbar from "@/components/Navbar";
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setUser } = useUser();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
   const token = searchParams.get("token");
@@ -23,9 +25,19 @@ const VerifyEmail = () => {
       }
 
       try {
-        const response = await api.verifyEmail(token) as any;
+        const response = await api.verifyEmail(token) as AuthResponse;
         setStatus("success");
         setMessage(response.message || "Email verified successfully!");
+        
+        // Store access token in localStorage
+        if (response.accessToken) {
+          localStorage.setItem("accessToken", response.accessToken);
+        }
+
+        // Store user data in context
+        if (response.user) {
+          setUser(response.user);
+        }
         
         toast({
           title: "Success",
@@ -49,7 +61,7 @@ const VerifyEmail = () => {
     };
 
     verifyEmail();
-  }, [token, navigate, toast]);
+  }, [token, navigate, toast, setUser]);
 
   return (
     <div className="min-h-screen bg-background">
