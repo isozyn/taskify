@@ -13,6 +13,7 @@ dotenv.config();
 
 // Import routes
 import authRoutes from "./routes/authRoutes";
+import customColumnRoutes from "./routes/customColumnRoutes";
 
 // Create Express app
 const app: Express = express();
@@ -58,6 +59,9 @@ app.get("/api/v1/health", (_req: Request, res: Response) => {
 
 // Auth routes
 app.use("/api/v1/auth", authRoutes);
+
+// Custom Column routes
+app.use("/api/v1", customColumnRoutes);
 
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);
