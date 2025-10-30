@@ -114,3 +114,50 @@ export const revokeAllRefreshTokens = async (userId: number): Promise<void> => {
     where: { userId },
   });
 };
+
+/**
+ * Set reset token for a user
+ */
+export const setResetToken = async (
+  userId: number,
+  resetToken: string,
+  resetTokenExpiry: Date
+): Promise<User> => {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      resetToken,
+      resetTokenExpiry,
+    },
+  });
+  return user;
+};
+
+/**
+ * Find user by reset token
+ */
+export const findUserByResetToken = async (resetToken: string): Promise<User | null> => {
+  const user = await prisma.user.findFirst({
+    where: {
+      resetToken,
+      resetTokenExpiry: {
+        gte: new Date(), // Token must not be expired
+      },
+    },
+  });
+  return user;
+};
+
+/**
+ * Clear reset token after use
+ */
+export const clearResetToken = async (userId: number): Promise<User> => {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      resetToken: null,
+      resetTokenExpiry: null,
+    },
+  });
+  return user;
+};

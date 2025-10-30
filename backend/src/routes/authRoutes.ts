@@ -2,7 +2,12 @@
 
 import express from 'express';
 import * as authController from '../controllers/authController';
-import { validateRegister, validateLogin } from '../middleware/validateRequest';
+import { 
+  validateRegister, 
+  validateLogin, 
+  validateForgotPassword, 
+  validateResetPassword 
+} from '../middleware/validateRequest';
 
 const router = express.Router();
 
@@ -41,5 +46,19 @@ router.post('/logout', authController.logout);
  * @query   token - Email verification token
  */
 router.get('/verify-email', authController.verifyEmail);
+
+/**
+ * @route   POST /api/v1/auth/forgot-password
+ * @desc    Send password reset link to user's email
+ * @access  Public
+ */
+router.post('/forgot-password', validateForgotPassword, authController.forgotPassword);
+
+/**
+ * @route   POST /api/v1/auth/reset-password
+ * @desc    Reset user password using reset token
+ * @access  Public
+ */
+router.post('/reset-password', validateResetPassword, authController.resetPassword);
 
 export default router;

@@ -1,6 +1,7 @@
 // Login, register, password reset
 
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import * as userService from '../services/userService';
 import * as authService from '../services/authService';
 import * as emailService from '../services/emailService';
@@ -266,5 +267,100 @@ export const verifyEmail = async (
     } else {
       next(error);
     }
+  }
+};
+
+/**
+ * Forgot password - Send reset link
+ * POST /api/v1/auth/forgot-password
+ */
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    // Find user by email
+    const user = await userService.findUserByEmail(email);
+
+    // Always return success message (don't reveal if email exists for security)
+    if (!user) {
+      res.status(200).json({
+        message: 'If that email exists in our system, a password reset link has been sent.',
+      });
+      return;
+    }
+
+    // Generate secure reset token using crypto
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Set token expiry to 1 hour from now
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Save reset token to database
+    await userService.setResetToken(user.id, resetToken, resetTokenExpiry);
+
+    // Send password reset email
+    try {
+      await emailService.sendPasswordResetEmail(user.email, resetToken, user.name);
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+      // Clear the token if email fails
+      await userService.clearResetToken(user.id);
+      res.status(500).json({ message: 'Failed to send password reset email' });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'If that email exists in our system, a password reset link has been sent.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Reset password using token
+ * POST /api/v1/auth/reset-password
+ */
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { token, password } = req.body;
+
+    // Find user by reset token
+    const user = await userService.findUserByResetToken(token);
+
+    if (!user) {
+      res.status(400).json({
+        message: 'Invalid or expired reset token',
+      });
+      return;
+    }
+
+    // Hash the new password
+    const hashedPassword = await authService.hashPassword(password);
+
+    // Update user password
+    await userService.updateUser(user.id, {
+      password: hashedPassword,
+    });
+
+    // Clear reset token
+    await userService.clearResetToken(user.id);
+
+    // Optionally: Revoke all refresh tokens to force re-login on all devices
+    await userService.revokeAllRefreshTokens(user.id);
+
+    res.status(200).json({
+      message: 'Password reset successful. You can now log in with your new password.',
+    });
+  } catch (error) {
+    next(error);
   }
 };
