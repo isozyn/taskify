@@ -4,6 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckSquare, ArrowLeft, CheckCircle2, AlertCircle, Eye, EyeOff, Lock } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { api, type MessageResponse } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import Navbar from "@/components/Navbar";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -17,8 +20,9 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
+  const { toast } = useToast();
 
-  // Simulate token validation
+  // Validate token exists
   useEffect(() => {
     if (!token) {
       setTokenValid(false);
@@ -53,33 +57,44 @@ const ResetPassword = () => {
       return;
     }
 
+    if (!token) {
+      setError("Invalid reset token");
+      return;
+    }
+
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const response = await api.resetPassword(token, password) as MessageResponse;
       setIsSubmitted(true);
-    }, 1500);
+      toast({
+        title: "Success",
+        description: response.message || "Password reset successfully",
+      });
+    } catch (error: any) {
+      const errorMessage = error.message || "Failed to reset password";
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // If token is invalid/expired, mark as invalid
+      if (errorMessage.includes("Invalid") || errorMessage.includes("expired")) {
+        setTokenValid(false);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!tokenValid) {
     return (
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="border-b border-border/40 bg-background/95 backdrop-blur">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <button 
-              onClick={() => navigate("/")}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-            >
-              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
-                <CheckSquare className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">Taskify</span>
-            </button>
-          </div>
-        </header>
+        <Navbar />
 
-        <div className="flex items-center justify-center px-4 py-16 sm:py-20">
+        <div className="flex items-center justify-center px-4 py-16 sm:py-20 mt-16">
           <div className="w-full max-w-[420px] text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-6">
               <AlertCircle className="w-8 h-8 text-red-600" />
@@ -113,30 +128,10 @@ const ResetPassword = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/40 bg-background/95 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <button 
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
-              <CheckSquare className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">Taskify</span>
-          </button>
-          <button
-            onClick={() => navigate("/auth")}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Login
-          </button>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Content */}
-      <div className="flex items-center justify-center px-4 py-16 sm:py-20">
+      <div className="flex items-center justify-center px-4 py-16 sm:py-20 mt-16">
         <div className="w-full max-w-[420px]">
           {!isSubmitted ? (
             // Form State

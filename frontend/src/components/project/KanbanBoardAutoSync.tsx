@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Calendar, CheckCircle2, Clock, AlertCircle, FileText, Archive, Plus } from "lucide-react";
 import TaskModal from "./TaskModal";
 import TaskFormModal from "./TaskFormModal";
@@ -191,7 +190,12 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
                               <span className="text-xs text-slate-500 font-medium">Progress</span>
                               <span className="text-xs font-semibold text-slate-700">{task.progress}%</span>
                             </div>
-                            <Progress value={task.progress} className="h-1.5" />
+                            <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                              <div 
+                                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all"
+                                style={{ width: `${task.progress}%` }}
+                              />
+                            </div>
                           </div>
 
                           {/* Dates */}

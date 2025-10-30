@@ -3,6 +3,7 @@
 export interface User {
   id: number;
   name: string;
+  username: string;
   email: string;
   password: string;
   avatar?: string | null;
@@ -21,6 +22,7 @@ export enum Role {
 
 export interface UserCreateInput {
   name: string;
+  username: string;
   email: string;
   password: string;
   avatar?: string;
@@ -39,6 +41,7 @@ export interface UserUpdateInput {
 export interface UserResponse {
   id: number;
   name: string;
+  username: string;
   email: string;
   avatar?: string | null;
   role: Role;

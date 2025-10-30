@@ -1,0 +1,736 @@
+================================================================================
+KANBAN BACKEND INTEGRATION PLAN - TEAM SPAN TRACK
+================================================================================
+Date: October 29, 2025
+Project: Taskify - Team Span Track
+Database: Neon PostgreSQL
+
+================================================================================
+OVERVIEW
+================================================================================
+
+This document outlines the complete plan for integrating the Neon PostgreSQL 
+database with the Taskify Kanban board application. The integration requires 
+work from both frontend and backend developers.
+
+Your application has TWO templates:
+1. Automated Workflow Board (auto-sync) - Tasks move automatically based on dates
+2. Custom Workflow Board (custom) - Users create custom columns and drag tasks manually
+
+
+================================================================================
+PHASE 1: DATABASE SETUP (COMPLETED)
+================================================================================
+
+✅ Connected to Neon PostgreSQL database
+✅ Database credentials saved and secured
+✅ SQL schema ready to execute
+
+NEXT STEP: Run the SQL script in your Taskify-Neon.session.sql file to create
+all necessary tables.
+
+
+================================================================================
+PHASE 2: DATABASE TABLES STRUCTURE
+================================================================================
+
+The following tables need to be created in your Neon database:
+
+1. USERS TABLE
+   - Stores user account information
+   - Fields: id, name, email, password, job_title, description, avatar
+   - Used for: Authentication, team member assignments, activity tracking
+
+2. PROJECTS TABLE
+   - Stores all project information
+   - Fields: id, name, description, template_type, invite_code, start_date, 
+            end_date, visibility, owner_id
+   - CRITICAL: template_type field determines if project uses auto-sync or custom
+   - Used for: Dashboard project list, project workspace
+
+3. COLUMNS TABLE
+   - Stores custom columns for Custom Workflow Board only
+   - Fields: id, project_id, name, position, color
+   - Only used when template_type = 'custom'
+   - Used for: Custom workflow board layout
+
+4. TASKS TABLE
+   - Stores all tasks/cards
+   - Fields: id, project_id, title, description, status, column_id, priority,
+            progress, start_date, end_date, created_by
+   - Has TWO location fields:
+     * status: Used for auto-sync template (backlog, upcoming, in-progress, review, complete)
+     * column_id: Used for custom template (references columns table)
+   - Used for: Both kanban boards, all task operations
+
+5. PROJECT_MEMBERS TABLE
+   - Links users to projects (many-to-many relationship)
+   - Fields: id, project_id, user_id, role, joined_at
+   - Used for: Project access control, team member list
+
+6. TASK_ASSIGNEES TABLE
+   - Links users to tasks (many-to-many relationship)
+   - Fields: id, task_id, user_id, assigned_at
+   - Used for: Task assignments, filtering tasks by assignee
+
+7. SUBTASKS TABLE
+   - Stores checklist items within tasks
+   - Fields: id, task_id, title, completed, position
+   - Used for: Task detail modal subtask checklist
+
+8. COMMENTS TABLE
+   - Stores task comments/discussions
+   - Fields: id, task_id, user_id, content, created_at
+   - Used for: Task detail modal comments section
+
+9. ACTIVITY_LOG TABLE
+   - Tracks all project activities
+   - Fields: id, project_id, user_id, action, target_type, target_id, description
+   - Used for: Project overview activity feed
+
+
+================================================================================
+PHASE 3: BACKEND API ENDPOINTS (TEAMMATE'S RESPONSIBILITY)
+================================================================================
+
+Your backend teammate needs to create a REST API with the following endpoints:
+
+--- AUTHENTICATION ---
+POST   /api/auth/register          - Create new user account
+POST   /api/auth/login             - Login and get JWT token
+GET    /api/auth/me                - Get current logged-in user info
+
+--- PROJECTS ---
+POST   /api/projects               - Create new project (with template_type)
+GET    /api/projects               - Get all projects for logged-in user
+GET    /api/projects/:id           - Get single project details
+PUT    /api/projects/:id           - Update project information
+DELETE /api/projects/:id           - Delete project
+GET    /api/projects/:id/stats     - Get project statistics (total tasks, completed, in progress, overdue)
+POST   /api/projects/join          - Join project using invite code
+
+--- TASKS ---
+GET    /api/projects/:projectId/tasks     - Get all tasks for a project
+POST   /api/projects/:projectId/tasks     - Create new task
+GET    /api/tasks/:id                     - Get single task with all details
+PUT    /api/tasks/:id                     - Update complete task information
+PATCH  /api/tasks/:id/status              - Update only task status (for drag and drop)
+PATCH  /api/tasks/:id/progress            - Update only task progress percentage
+DELETE /api/tasks/:id                     - Delete task
+POST   /api/tasks/:id/complete            - Special endpoint to move task from review to complete
+
+--- COLUMNS (Custom Workflow Only) ---
+GET    /api/projects/:projectId/columns   - Get all custom columns for project
+POST   /api/projects/:projectId/columns   - Create new custom column
+PUT    /api/columns/:id                   - Update column name or color
+DELETE /api/columns/:id                   - Delete column (moves tasks to first column)
+PATCH  /api/columns/reorder               - Update column positions/order
+
+--- PROJECT MEMBERS ---
+GET    /api/projects/:projectId/members   - Get all team members with their stats
+POST   /api/projects/:projectId/members   - Add member to project
+DELETE /api/projects/:projectId/members/:userId - Remove member from project
+
+--- ACTIVITY LOG ---
+GET    /api/projects/:projectId/activity  - Get recent activity for project overview
+
+--- SUBTASKS ---
+GET    /api/tasks/:taskId/subtasks        - Get all subtasks for a task
+POST   /api/tasks/:taskId/subtasks        - Create new subtask
+PUT    /api/subtasks/:id                  - Update subtask (toggle completed)
+DELETE /api/subtasks/:id                  - Delete subtask
+
+--- COMMENTS ---
+GET    /api/tasks/:taskId/comments        - Get all comments for a task
+POST   /api/tasks/:taskId/comments        - Add new comment
+DELETE /api/comments/:id                  - Delete comment
+
+
+================================================================================
+PHASE 4: AUTO-SYNC LOGIC (BACKEND CRON JOB)
+================================================================================
+
+For the Automated Workflow Board, tasks need to move automatically based on dates.
+
+BACKEND TEAMMATE MUST CREATE:
+
+A scheduled job (cron job) that runs daily at midnight (or every hour) to:
+
+1. Find all projects where template_type = 'auto-sync'
+2. For each project, get all tasks
+3. For each task, check today's date against task dates and apply these rules:
+
+   RULE 1: If task progress = 100% AND status is not 'review' or 'complete'
+           → Move task to 'review' status
+
+   RULE 2: If current date > end_date AND progress < 100%
+           → Move task to 'backlog' status (overdue)
+
+   RULE 3: If current date >= start_date AND current date <= end_date
+           → Move task to 'in-progress' status (currently active)
+
+   RULE 4: If current date < start_date
+           → Keep task in 'upcoming' status (future work)
+
+   RULE 5: Tasks in 'review' status stay there until user clicks "Complete" button
+           → Then manually moved to 'complete' status
+
+4. Log all automatic movements in the activity_log table
+5. Send notifications (optional) when tasks move statuses
+
+
+================================================================================
+PHASE 5: FRONTEND API INTEGRATION (YOUR RESPONSIBILITY)
+================================================================================
+
+You need to create API service files and update React components to use real data
+instead of mock data.
+
+--- Step 1: Create API Service Files ---
+
+Create these new files in frontend/src/services/ folder:
+
+1. api.ts
+   Purpose: Base configuration for all API calls
+   Contains:
+   - Axios instance with base URL
+   - Function to add JWT token to request headers
+   - Global error handling
+   - Request/response interceptors
+
+2. projectService.ts
+   Purpose: All project-related API calls
+   Functions needed:
+   - fetchProjects() - Get all user's projects
+   - fetchProjectById(id) - Get single project
+   - createProject(data) - Create new project with template selection
+   - updateProject(id, data) - Update project
+   - deleteProject(id) - Delete project
+   - getProjectStats(id) - Get project statistics
+   - joinProjectByCode(code) - Join project using invite code
+
+3. taskService.ts
+   Purpose: All task-related API calls
+   Functions needed:
+   - fetchTasksByProject(projectId) - Get all tasks for project
+   - fetchTaskById(id) - Get single task details
+   - createTask(projectId, data) - Create new task
+   - updateTask(id, data) - Update complete task
+   - updateTaskStatus(id, status) - Update only status (for drag drop)
+   - updateTaskProgress(id, progress) - Update only progress percentage
+   - deleteTask(id) - Delete task
+   - completeTask(id) - Move from review to complete
+
+4. columnService.ts
+   Purpose: Custom workflow column operations
+   Functions needed:
+   - fetchColumnsByProject(projectId) - Get all columns
+   - createColumn(projectId, data) - Create new column
+   - updateColumn(id, data) - Update column name/color
+   - deleteColumn(id) - Delete column
+   - reorderColumns(projectId, order) - Update column positions
+
+5. activityService.ts
+   Purpose: Activity log operations
+   Functions needed:
+   - fetchProjectActivity(projectId) - Get recent activities
+
+6. memberService.ts
+   Purpose: Project member operations
+   Functions needed:
+   - fetchProjectMembers(projectId) - Get all team members
+   - addMemberToProject(projectId, userId) - Add member
+   - removeMemberFromProject(projectId, userId) - Remove member
+
+
+--- Step 2: Update React Components ---
+
+The following components currently use mock data and need to be updated:
+
+1. Dashboard.tsx (frontend/src/pages/Dashboard.tsx)
+   Current state: Uses hardcoded projects array
+   Changes needed:
+   - Remove mock projects array
+   - Add useEffect to fetch projects on component mount
+   - Update handleCreateProject to call API and save template_type
+   - Add loading state while fetching
+   - Add error handling for failed requests
+   - Refresh project list after creating new project
+
+2. ProjectWorkspace.tsx (frontend/src/pages/ProjectWorkspace.tsx)
+   Current state: Uses URL parameter but doesn't fetch project
+   Changes needed:
+   - Add useEffect to fetch project details by ID
+   - Pass project data to child components
+   - Fetch project template_type to show correct board
+   - Add loading state
+   - Handle project not found error
+
+3. KanbanBoardAutoSync.tsx (frontend/src/components/project/KanbanBoardAutoSync.tsx)
+   Current state: Uses hardcoded tasks array
+   Changes needed:
+   - Remove mock tasks array
+   - Add useEffect to fetch tasks from API
+   - Filter tasks by status on frontend (or request filtered from backend)
+   - Update handleCreateTask to call API
+   - Update handleUpdateTask to call API
+   - Update handleDeleteTask to call API
+   - Add handleCompleteTask for "Review" → "Complete" button
+   - Add loading/error states
+   - Refresh tasks after any modification
+
+4. KanbanBoardCustom.tsx (frontend/src/components/project/KanbanBoardCustom.tsx)
+   Current state: Uses hardcoded columns and tasks arrays
+   Changes needed:
+   - Remove mock columns and tasks arrays
+   - Add useEffect to fetch both columns AND tasks
+   - Update handleAddColumn to call API
+   - Update handleDeleteColumn to call API
+   - Update handleEditColumn to call API
+   - Update handleQuickAddCard to call API
+   - Update drag-and-drop onDrop handler to call updateTaskStatus API
+   - Add loading/error states
+   - Refresh data after modifications
+
+5. ProjectOverview.tsx (frontend/src/components/project/ProjectOverview.tsx)
+   Current state: Uses multiple hardcoded data arrays
+   Changes needed:
+   - Remove mock stats object
+   - Remove mock detailedMembers array
+   - Remove mock recentActivities array
+   - Remove mock workItemsStats array
+   - Add useEffect to fetch project stats
+   - Add useEffect to fetch project members
+   - Add useEffect to fetch project activity
+   - Calculate work items stats from tasks or create separate endpoint
+   - Add loading states for each data section
+   - Handle errors gracefully
+
+6. TaskFormModal.tsx (frontend/src/components/project/TaskFormModal.tsx)
+   Current state: Just console.logs on submit
+   Changes needed:
+   - Update handleSubmit to call createTask API (create mode)
+   - Update handleSubmit to call updateTask API (edit mode)
+   - Show loading state while saving
+   - Show success message
+   - Handle validation errors from API
+   - Close modal after successful save
+   - Trigger parent component to refresh tasks
+
+7. TaskModal.tsx (frontend/src/components/project/TaskModal.tsx)
+   Current state: Shows static task data
+   Changes needed:
+   - Add API call to update task on field changes
+   - Add API call to create subtasks
+   - Add API call to toggle subtask completion
+   - Add API call to add comments
+   - Add API call to update assignees
+   - Add loading states for each operation
+   - Handle errors for each operation
+
+
+--- Step 3: Authentication & Token Management ---
+
+You need to set up authentication flow:
+
+1. Store JWT token after login
+   - Save to localStorage or sessionStorage
+   - Token format: "Bearer <token>"
+
+2. Add token to all API requests
+   - Use axios interceptor to automatically add Authorization header
+   - Format: Authorization: "Bearer <token>"
+
+3. Handle token expiration
+   - Catch 401 Unauthorized responses
+   - Redirect to login page
+   - Clear stored token
+
+4. Protect routes
+   - Check if user is authenticated before showing dashboard
+   - Redirect unauthenticated users to login
+
+
+--- Step 4: Loading & Error States ---
+
+Every component that fetches data needs:
+
+1. Loading state
+   - Show spinner or skeleton while fetching
+   - Disable buttons during operations
+   - Show "Loading..." text
+
+2. Error state
+   - Show error message if API call fails
+   - Provide "Retry" button
+   - Display user-friendly error messages
+
+3. Empty state
+   - Show helpful message when no data exists
+   - Provide call-to-action button
+   - Example: "No projects yet. Create your first project!"
+
+
+================================================================================
+PHASE 6: TEMPLATE-SPECIFIC LOGIC
+================================================================================
+
+Your application needs to behave differently based on project template type:
+
+--- Automated Workflow Board (auto-sync) ---
+
+Characteristics:
+- Fixed 5 columns: Backlog, Upcoming, In Progress, Review, Complete
+- Tasks move automatically based on dates (backend cron job)
+- Tasks can also be moved manually by user
+- Progress bar updates trigger automatic status changes
+- Special "Complete" button in Review column
+- Timeline view shows tasks on calendar
+- Start date and end date are REQUIRED fields
+
+Frontend behavior:
+- Fetch tasks and filter by status field
+- Show "Complete" button only for tasks in Review status
+- When task progress reaches 100%, immediately call API to move to Review
+- Display dates prominently
+- Show overdue warning for tasks in Backlog
+
+Backend behavior:
+- Cron job runs daily to update statuses
+- Status field is primary location indicator
+- column_id field is NULL for auto-sync tasks
+
+
+--- Custom Workflow Board (custom) ---
+
+Characteristics:
+- User creates their own columns (unlimited)
+- Default 3 columns: To Do, In Progress, Done
+- Tasks move ONLY when user drags them
+- No automatic movement
+- Dates are optional
+- "Add a card" button at bottom of each column
+- Column management: create, edit, delete, reorder
+
+Frontend behavior:
+- Fetch columns separately from tasks
+- Show column management UI (edit, delete icons)
+- Implement drag-and-drop between columns
+- Update column_id when task is moved
+- Allow quick card creation in any column
+- Show "Add another list" button
+
+Backend behavior:
+- No cron job needed
+- column_id field is primary location indicator
+- status field is NULL for custom workflow tasks
+- When column is deleted, move its tasks to first column
+
+
+--- Template Selection Flow ---
+
+1. User clicks "Create Project" on Dashboard
+2. Template selection modal opens
+3. User chooses: Automated Workflow OR Custom Workflow
+4. User must click "Continue" button to confirm selection
+5. New Project form opens with selected template indicated
+6. User fills in project details (name, description, dates, visibility)
+7. User clicks "Create Project"
+8. API call sends all data including template_type field
+9. Backend creates project with correct template_type
+10. If custom workflow, backend also creates 3 default columns
+11. User is redirected to new project workspace
+12. Correct kanban board loads based on template_type
+
+
+================================================================================
+PHASE 7: REAL-TIME UPDATES (OPTIONAL - PHASE 2)
+================================================================================
+
+For live collaboration, you can add WebSocket/Socket.io integration:
+
+Backend needs to:
+- Set up Socket.io server
+- Authenticate socket connections with JWT
+- Create rooms for each project
+- Emit events when data changes
+
+Events to broadcast:
+- task:created - New task added
+- task:updated - Task modified
+- task:moved - Task changed status/column
+- task:deleted - Task removed
+- column:created - New column added (custom workflow)
+- column:updated - Column renamed
+- column:deleted - Column removed
+- member:joined - User joined project
+- member:left - User left project
+
+Frontend needs to:
+- Connect to Socket.io server
+- Join project room when opening project
+- Listen for events and update UI in real-time
+- Show indicator when other users are active
+- Update task cards without refresh
+- Show "User X is editing" indicators
+
+
+================================================================================
+PHASE 8: TESTING PLAN
+================================================================================
+
+Test in this order:
+
+1. Database Testing
+   ✓ Verify all tables created successfully
+   ✓ Insert test data manually
+   ✓ Verify foreign keys work correctly
+   ✓ Test indexes improve query performance
+
+2. Backend API Testing (use Postman or Thunder Client)
+   ✓ Test authentication endpoints
+   ✓ Test project CRUD operations
+   ✓ Test task CRUD operations
+   ✓ Test column CRUD operations (custom workflow)
+   ✓ Test all relationships (members, assignees)
+   ✓ Verify cron job runs and updates statuses correctly
+
+3. Frontend Service Testing
+   ✓ Test each service function individually
+   ✓ Verify API calls succeed
+   ✓ Check error handling works
+   ✓ Verify data transformation is correct
+
+4. Component Integration Testing
+   ✓ Test Dashboard loads projects
+   ✓ Test project creation with both templates
+   ✓ Test Automated Workflow board functionality
+   ✓ Test Custom Workflow board functionality
+   ✓ Test task creation, editing, deletion
+   ✓ Test drag and drop
+   ✓ Test ProjectOverview displays correct data
+
+5. Template-Specific Testing
+   ✓ Create auto-sync project and verify tasks move automatically
+   ✓ Create custom workflow project and verify manual control
+   ✓ Test switching between projects with different templates
+   ✓ Verify correct board displays based on template_type
+
+6. Edge Case Testing
+   ✓ Test with no projects
+   ✓ Test with no tasks
+   ✓ Test with no columns (custom workflow)
+   ✓ Test deleting project with tasks
+   ✓ Test removing user from project
+   ✓ Test expired tokens
+   ✓ Test network failures
+
+
+================================================================================
+PHASE 9: DEPLOYMENT CHECKLIST
+================================================================================
+
+Before going to production:
+
+Database:
+□ All tables created in production database
+□ Indexes added for performance
+□ Test data removed
+□ Backups configured
+
+Backend:
+□ Environment variables set (.env file)
+□ Database connection string secured
+□ JWT secret key generated and secured
+□ CORS configured for frontend domain
+□ API rate limiting added
+□ Error logging set up
+□ Cron job scheduled and tested
+□ SSL/HTTPS enabled
+
+Frontend:
+□ API base URL updated to production
+□ Environment variables configured
+□ Authentication flow tested
+□ Error boundaries added
+□ Loading states everywhere
+□ Build optimized (npm run build)
+□ Deployed to hosting (Vercel, Netlify, etc)
+
+Testing:
+□ All features tested end-to-end
+□ Both templates tested thoroughly
+□ Mobile responsiveness checked
+□ Performance optimized
+□ Security audit completed
+
+
+================================================================================
+COORDINATION BETWEEN YOU AND TEAMMATE
+================================================================================
+
+What to ask your teammate:
+
+1. "Have you created the database tables yet?"
+2. "What is the backend API base URL?" (e.g., http://localhost:3000/api)
+3. "Which authentication method are we using?" (JWT, sessions, etc)
+4. "What is the JWT token format and where should I store it?"
+5. "Have you implemented the cron job for auto-sync?"
+6. "Are all the API endpoints working and tested?"
+7. "What error codes should I expect and handle?"
+8. "Do you have API documentation?" (Swagger, Postman collection)
+9. "Are we implementing real-time updates now or later?"
+10. "When can I start testing against the API?"
+
+What to share with your teammate:
+
+1. The SQL schema (from Taskify-Neon.session.sql)
+2. This integration plan document
+3. The list of required API endpoints
+4. Expected data formats for each endpoint
+5. Frontend requirements (what data you need)
+6. When you'll be ready to test integration
+7. Any issues you encounter during integration
+
+
+================================================================================
+TIMELINE ESTIMATE
+================================================================================
+
+Realistic timeline for full integration:
+
+Week 1: Database & Backend Foundation
+- Day 1-2: Create database tables, insert test data
+- Day 3-4: Build basic API endpoints (projects, tasks)
+- Day 5-7: Build advanced endpoints (columns, members, activity)
+
+Week 2: Backend Completion & Testing
+- Day 1-2: Implement authentication
+- Day 3-4: Create cron job for auto-sync
+- Day 5-7: Test all endpoints thoroughly with Postman
+
+Week 3: Frontend Integration
+- Day 1-2: Create API service files
+- Day 3-4: Update Dashboard and project pages
+- Day 5-7: Update KanbanBoard components
+
+Week 4: Polish & Testing
+- Day 1-2: Update task modals and forms
+- Day 3-4: Add loading states and error handling
+- Day 5-7: End-to-end testing, bug fixes
+
+Week 5: Optional Real-Time & Deployment
+- Day 1-3: Add WebSocket functionality (optional)
+- Day 4-5: Deployment preparation
+- Day 6-7: Deploy and final testing
+
+
+================================================================================
+CURRENT STATUS
+================================================================================
+
+✅ COMPLETED:
+- Database connection established
+- Database credentials secured
+- SQL schema prepared
+- Frontend UI completed
+- Template selection modal working
+- Both kanban board designs finished
+- Project overview page styled
+
+⏳ PENDING:
+- Execute SQL schema to create tables
+- Backend API development
+- Frontend API service files
+- Component integration
+- Testing
+
+🎯 NEXT IMMEDIATE STEPS:
+1. Run SQL schema in your Taskify-Neon.session.sql file
+2. Coordinate with backend teammate to start API development
+3. Share this plan with your team
+4. Set up project timeline and milestones
+
+
+================================================================================
+IMPORTANT NOTES
+================================================================================
+
+1. Template Type is Critical
+   - Every project MUST have template_type field set
+   - Frontend depends on this to show correct board
+   - Cannot change template after project creation
+
+2. Two Location Systems
+   - Auto-sync uses "status" field (backlog, upcoming, etc)
+   - Custom uses "column_id" field (references columns table)
+   - Never use both for same task
+
+3. Date Rules for Auto-Sync
+   - Start date and end date are required
+   - Cron job checks these dates daily
+   - Manual moves still allowed
+
+4. Column Management for Custom
+   - Projects start with 3 default columns
+   - Users can add unlimited columns
+   - Deleting column moves tasks to first column
+   - Column positions determine display order
+
+5. Authentication Required
+   - All API calls need JWT token
+   - Store token securely
+   - Refresh or re-login if expired
+
+6. Error Handling is Essential
+   - Network can fail
+   - Always show user-friendly messages
+   - Provide retry options
+   - Log errors for debugging
+
+
+================================================================================
+QUESTIONS OR ISSUES?
+================================================================================
+
+If you encounter problems:
+
+1. Database connection issues
+   - Verify Neon credentials are correct
+   - Check SSL mode is set to "require"
+   - Ensure internet connection is stable
+
+2. API integration issues
+   - Check API base URL is correct
+   - Verify CORS is configured on backend
+   - Inspect network tab in browser DevTools
+   - Check JWT token is being sent
+
+3. Template-specific issues
+   - Verify template_type is being saved correctly
+   - Check correct board component loads
+   - Ensure status vs column_id logic is correct
+
+4. Performance issues
+   - Add database indexes
+   - Implement pagination for large datasets
+   - Use React Query for caching
+   - Optimize API queries
+
+5. Real-time update issues
+   - Verify Socket.io connection
+   - Check room joining logic
+   - Ensure events are emitted correctly
+   - Test with multiple browser windows
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================
+
+Last Updated: October 29, 2025
+Document Version: 1.0
+Project: Taskify - Team Span Track
+Authors: Development Team
+
+Good luck with your integration! 🚀

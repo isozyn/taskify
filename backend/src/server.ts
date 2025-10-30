@@ -52,7 +52,7 @@ app.use(morgan("dev"));
 // ============================================
 
 // Health check endpoint
-app.get("/api/v1/health", (req: Request, res: Response) => {
+app.get("/api/v1/health", (_req: Request, res: Response) => {
   res.status(200).json({ status: "OK", message: "Server is running" });
 });
 
@@ -82,7 +82,7 @@ app.use((req: Request, res: Response) => {
 });
 
 // Global error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Error:", err);
 
   const status = err.status || err.statusCode || 500;
