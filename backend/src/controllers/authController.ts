@@ -3,6 +3,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as userService from '../services/userService';
 import * as authService from '../services/authService';
+import * as emailService from '../services/emailService';
 
 /**
  * Register new user
@@ -33,11 +34,19 @@ export const register = async (
       password: hashedPassword,
     });
 
+    // Send verification email
+    try {
+      await emailService.sendVerificationEmail(user.email, user.id, user.name);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Don't fail registration if email fails, but log the error
+    }
+
     // Return user response without password
     const userResponse = userService.toUserResponse(user);
 
     res.status(201).json({
-      message: 'User registered successfully',
+      message: 'User registered successfully. Please check your email to verify your account.',
       user: userResponse,
     });
   } catch (error) {
@@ -68,6 +77,16 @@ export const login = async (
     const isPasswordValid = await authService.comparePassword(password, user.password);
     if (!isPasswordValid) {
       res.status(401).json({ message: 'Invalid email or password' });
+      return;
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      res.status(403).json({ 
+        message: 'Please verify your email before logging in',
+        userId: user.id,
+        email: user.email
+      });
       return;
     }
 
@@ -187,5 +206,57 @@ export const logout = async (
     });
   } catch (error) {
     next(error);
+  }
+};
+
+/**
+ * Verify email address
+ * GET /api/v1/auth/verify-email
+ */
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { token } = req.query;
+
+    // Check if token is provided
+    if (!token || typeof token !== 'string') {
+      res.status(400).json({ message: 'Verification token is required' });
+      return;
+    }
+
+    // Verify the token
+    const decoded = authService.verifyAccessToken(token);
+
+    // Find user by ID
+    const user = await userService.findUserById(decoded.id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Check if already verified
+    if (user.isEmailVerified) {
+      res.status(200).json({ message: 'Email already verified' });
+      return;
+    }
+
+    // Update user to mark email as verified
+    await userService.updateUser(user.id, {
+      isEmailVerified: true,
+    });
+
+    res.status(200).json({
+      message: 'Email verified successfully',
+      user: userService.toUserResponse(user),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Invalid or expired')) {
+      res.status(400).json({ message: 'Invalid or expired verification token' });
+    } else {
+      next(error);
+    }
   }
 };

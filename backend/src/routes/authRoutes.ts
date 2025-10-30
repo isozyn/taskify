@@ -34,4 +34,12 @@ router.post('/refresh', authController.refresh);
  */
 router.post('/logout', authController.logout);
 
+/**
+ * @route   GET /api/v1/auth/verify-email
+ * @desc    Verify user email address
+ * @access  Public
+ * @query   token - Email verification token
+ */
+router.get('/verify-email', authController.verifyEmail);
+
 export default router;
