@@ -1,10 +1,8 @@
 // Task business logic
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 import { TaskCreateInput, TaskUpdateInput, TaskResponse, TaskStatus } from '../models';
 import { calculateAutomatedStatus } from '../utils/automatedWorkflow';
-
-const prisma = new PrismaClient();
 
 export class TaskService {
   /**
@@ -68,7 +66,7 @@ export class TaskService {
 
     // If AUTOMATED workflow, calculate real-time status based on dates
     if (project.workflowType === 'AUTOMATED') {
-      return tasks.map(task => ({
+      return tasks.map((task: any) => ({
         ...task,
         status: calculateAutomatedStatus({
           id: task.id,
@@ -187,7 +185,7 @@ export class TaskService {
 
     const tasksByColumn = new Map<string, TaskResponse[]>();
     
-    tasks.forEach(task => {
+    tasks.forEach((task: any) => {
       const columnId = task.columnId || 'unassigned';
       if (!tasksByColumn.has(columnId)) {
         tasksByColumn.set(columnId, []);

@@ -1,10 +1,8 @@
 // Project business logic
 
-import { PrismaClient } from '@prisma/client';
-import { ProjectCreateInput, ProjectUpdateInput, ProjectResponse, WorkflowType } from '../models';
+import prisma from '../config/db';
+import { ProjectCreateInput, ProjectUpdateInput, ProjectResponse } from '../models';
 import { CustomColumnService } from './customColumnService';
-
-const prisma = new PrismaClient();
 
 export class ProjectService {
   /**

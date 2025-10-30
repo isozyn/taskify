@@ -1,9 +1,7 @@
 // CustomColumn Service - Business logic for custom workflow columns
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 import { CustomColumnCreateInput, CustomColumnUpdateInput, CustomColumnResponse } from '../models';
-
-const prisma = new PrismaClient();
 
 export class CustomColumnService {
   /**
@@ -132,7 +130,7 @@ export class CustomColumnService {
   /**
    * Reorder columns
    */
-  static async reorderColumns(projectId: number, columnIds: number[]): Promise<void> {
+  static async reorderColumns(_projectId: number, columnIds: number[]): Promise<void> {
     // Update order for each column
     await Promise.all(
       columnIds.map((columnId, index) =>

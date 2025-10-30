@@ -1,1 +1,27 @@
 // /api/v1/projects/*
+
+import { Router } from 'express';
+import { ProjectController } from '../controllers/projectController';
+import { authenticateToken } from '../middleware/authMiddleware';
+
+const router = Router();
+
+// All project routes require authentication
+router.use(authenticateToken);
+
+// Create a new project
+router.post('/projects', ProjectController.createProject);
+
+// Get all projects for authenticated user
+router.get('/projects', ProjectController.getAllProjects);
+
+// Get a single project by ID
+router.get('/projects/:projectId', ProjectController.getProjectById);
+
+// Update a project
+router.put('/projects/:projectId', ProjectController.updateProject);
+
+// Delete a project
+router.delete('/projects/:projectId', ProjectController.deleteProject);
+
+export default router;
