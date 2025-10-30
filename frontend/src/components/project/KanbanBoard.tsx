@@ -6,10 +6,16 @@ import KanbanBoardCustom from "./KanbanBoardCustom";
 
 interface KanbanBoardProps {
   projectMembers: any[];
+  onWorkflowChange?: (workflow: "auto-sync" | "custom") => void;
 }
 
-const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
+const KanbanBoard = ({ projectMembers, onWorkflowChange }: KanbanBoardProps) => {
   const [boardTemplate, setBoardTemplate] = useState<"auto-sync" | "custom">("auto-sync");
+
+  const handleTemplateChange = (template: "auto-sync" | "custom") => {
+    setBoardTemplate(template);
+    onWorkflowChange?.(template);
+  };
 
   return (
     <div className="space-y-4">
@@ -19,7 +25,7 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
           <Button
             variant={boardTemplate === "auto-sync" ? "default" : "outline"}
             size="sm"
-            onClick={() => setBoardTemplate("auto-sync")}
+            onClick={() => handleTemplateChange("auto-sync")}
             className={boardTemplate === "auto-sync" 
               ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white" 
               : "border-slate-300 text-slate-700 hover:bg-slate-100"
@@ -31,7 +37,7 @@ const KanbanBoard = ({ projectMembers }: KanbanBoardProps) => {
           <Button
             variant={boardTemplate === "custom" ? "default" : "outline"}
             size="sm"
-            onClick={() => setBoardTemplate("custom")}
+            onClick={() => handleTemplateChange("custom")}
             className={boardTemplate === "custom" 
               ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white" 
               : "border-slate-300 text-slate-700 hover:bg-slate-100"
