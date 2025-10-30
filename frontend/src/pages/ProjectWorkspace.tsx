@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   BarChart3, 
   Calendar, 
+  CalendarDays,
   Settings, 
   Layers, 
   ArrowLeft, 
@@ -17,8 +18,10 @@ import {
 } from "lucide-react";
 import KanbanBoard from "@/components/project/KanbanBoard";
 import TimelineView from "@/components/project/TimelineView";
+import CalendarView from "@/components/project/CalendarView";
 import ProjectOverview from "@/components/project/ProjectOverview";
 import ProjectSettings from "@/components/project/ProjectSettings";
+import StickyNotes from "@/components/ui/StickyNotes";
 
 const ProjectWorkspace = () => {
   const { id } = useParams();
@@ -55,6 +58,11 @@ const ProjectWorkspace = () => {
       icon: Calendar,
     },
     {
+      id: "calendar",
+      label: "Calendar",
+      icon: CalendarDays,
+    },
+    {
       id: "settings",
       label: "Settings",
       icon: Settings,
@@ -69,6 +77,8 @@ const ProjectWorkspace = () => {
         return <KanbanBoard projectMembers={project.members} />;
       case "timeline":
         return <TimelineView projectMembers={project.members} />;
+      case "calendar":
+        return <CalendarView projectMembers={project.members} />;
       case "settings":
         return <ProjectSettings project={project} />;
       default:
@@ -203,6 +213,9 @@ const ProjectWorkspace = () => {
           {renderContent()}
         </div>
       </main>
+
+      {/* Sticky Notes - Floating */}
+      <StickyNotes projectId={id} />
     </div>
   );
 };

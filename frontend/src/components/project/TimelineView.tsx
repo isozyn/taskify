@@ -2,8 +2,12 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
+
+
 import TaskModal from "./TaskModal";
+
 
 interface TimelineViewProps {
   projectMembers: any[];
@@ -154,12 +158,14 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
     setSelectedTask(task);
   };
 
+
+
   // Generate week columns
   const weeks = Array.from({ length: 18 }, (_, i) => `S ${String(i + 4).padStart(2, "0")}`);
 
   return (
     <div className="space-y-6">
-      <Card className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/90 shadow-premium">
+        <Card className="premium-card border-0 bg-gradient-to-br from-card via-card to-card/90 shadow-premium">
         <CardContent className="p-8">
           {/* Executive Timeline Header */}
           <div className="flex items-center justify-between mb-8 pb-6 border-b border-border/30">
@@ -208,6 +214,8 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
               </div>
             </div>
           </div>
+
+
 
           {/* Executive Timeline Grid */}
           {viewMode === 'detailed' ? (
@@ -440,6 +448,7 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
               </div>
             </div>
           )}
+
         </CardContent>
       </Card>
 
