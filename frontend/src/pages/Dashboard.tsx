@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/Navbar";
+import { api, Project } from "@/lib/api";
 import { 
   Plus, 
   Layers, 
@@ -45,6 +46,8 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [activeTab, setActiveTab] = useState("recent");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [newProject, setNewProject] = useState({
     name: "",
     description: "",
@@ -53,39 +56,22 @@ const Dashboard = () => {
     visibility: "private",
   });
 
-  // Mock data - will be replaced with real data from backend
-  const projects = [
-    {
-      id: 1,
-      name: "Website Redesign",
-      description: "Complete overhaul of company website",
-      progress: 65,
-      members: 5,
-      tasks: { total: 24, completed: 16 },
-      starred: true,
-      lastUpdated: "2024-01-15",
-    },
-    {
-      id: 2,
-      name: "Mobile App Launch",
-      description: "iOS and Android app development",
-      progress: 40,
-      members: 8,
-      tasks: { total: 32, completed: 13 },
-      starred: false,
-      lastUpdated: "2024-01-14",
-    },
-    {
-      id: 3,
-      name: "Marketing Campaign",
-      description: "Q1 2024 marketing initiatives",
-      progress: 80,
-      members: 4,
-      tasks: { total: 15, completed: 12 },
-      starred: true,
-      lastUpdated: "2024-01-13",
-    },
-  ];
+  // Fetch projects from database
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoadingProjects(true);
+        const response: any = await api.getProjects();
+        setProjects(response || []);
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+      } finally {
+        setIsLoadingProjects(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
 
   // Mock active tasks data
   const activeTasks = [
@@ -190,20 +176,43 @@ const Dashboard = () => {
     }
   };
 
-  const handleCreateProject = () => {
-    // TODO: Implement create project logic with backend
-    console.log("Creating project with template:", selectedTemplate, newProject);
-    setIsNewProjectModalOpen(false);
-    // Reset form
-    setNewProject({
-      name: "",
-      description: "",
-      startDate: "",
-      endDate: "",
-      visibility: "private",
-    });
-    setSelectedTemplate(null);
-    // For now, just show a success message or navigate
+  const handleCreateProject = async () => {
+    try {
+      // Map selectedTemplate to workflowType
+      const workflowType = selectedTemplate === 'auto-sync' ? 'AUTOMATED' : 'CUSTOM';
+      
+      const response: any = await api.createProject({
+        title: newProject.name,
+        description: newProject.description || undefined,
+        workflowType: workflowType,
+      });
+
+      console.log("Project created successfully:", response);
+      
+      // Refresh the projects list
+      const updatedProjects: any = await api.getProjects();
+      setProjects(updatedProjects || []);
+      
+      setIsNewProjectModalOpen(false);
+      
+      // Reset form
+      setNewProject({
+        name: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        visibility: "private",
+      });
+      setSelectedTemplate(null);
+      
+      // Navigate to the new project workspace
+      if (response.id) {
+        navigate(`/project/${response.id}`);
+      }
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      alert('Failed to create project. Please try again.');
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -242,9 +251,9 @@ const Dashboard = () => {
         acc[task.project] = {
           projectId: task.projectId,
           projectName: task.project,
-          progress: project?.progress || 0,
-          totalTasks: project?.tasks.total || 0,
-          completedTasks: project?.tasks.completed || 0,
+          progress: 0, // Will be calculated from tasks when we add task fetching
+          totalTasks: 0,
+          completedTasks: 0,
           tasks: []
         };
       }
@@ -270,12 +279,13 @@ const Dashboard = () => {
   // Filter projects based on search query and tab
   const getFilteredProjects = () => {
     let filtered = projects.filter(project =>
-      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchQuery.toLowerCase())
+      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     if (activeTab === "starred") {
-      filtered = filtered.filter(p => p.starred);
+      // For now, show all projects since we don't have starred functionality yet
+      filtered = filtered;
     }
 
     return filtered;
@@ -283,13 +293,21 @@ const Dashboard = () => {
 
   const filteredProjects = getFilteredProjects();
 
-  // Calculate stats
-  const totalTasks = projects.reduce((sum, p) => sum + p.tasks.total, 0);
-  const completedTasks = projects.reduce((sum, p) => sum + p.tasks.completed, 0);
-  const avgProgress = Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / projects.length);
-  const starredProjects = projects.filter(p => p.starred);
+  // Calculate stats - these will be placeholder until we add task counting
+  const totalProjects = projects.length;
+  const activeProjects = projects.filter(p => p.status === 'ACTIVE').length;
+  const completedProjects = projects.filter(p => p.status === 'COMPLETED').length;
 
   const renderProjectsView = () => {
+    if (isLoadingProjects) {
+      return (
+        <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-3"></div>
+          <p className="text-sm text-slate-500">Loading projects...</p>
+        </div>
+      );
+    }
+
     if (filteredProjects.length === 0) {
       return (
         <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
@@ -318,42 +336,38 @@ const Dashboard = () => {
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between mb-2">
-                  <div className="w-10 h-10 rounded bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                  <div 
+                    className="w-10 h-10 rounded flex items-center justify-center"
+                    style={{ backgroundColor: project.color || '#3B82F6' }}
+                  >
                     <Layers className="w-5 h-5 text-white" />
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Toggle star
-                    }}
-                  >
-                    <Star className={`w-4 h-4 ${project.starred ? "fill-yellow-400 text-yellow-400" : "text-slate-400"}`} />
-                  </Button>
+                  <Badge variant="outline" className="text-xs">
+                    {project.workflowType === 'AUTOMATED' ? 'Auto-Sync' : 'Custom'}
+                  </Badge>
                 </div>
                 <CardTitle className="text-base font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
-                  {project.name}
+                  {project.title}
                 </CardTitle>
                 <CardDescription className="text-sm text-slate-500 line-clamp-2">
-                  {project.description}
+                  {project.description || 'No description'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>{project.tasks.completed}/{project.tasks.total} tasks</span>
-                  <span>{project.progress}%</span>
-                </div>
-                <Progress value={project.progress} className="h-1.5" />
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
-                    <Users className="w-3.5 h-3.5" />
-                    <span>{project.members} members</span>
-                  </div>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs ${
+                      project.status === 'ACTIVE' ? 'bg-green-50 text-green-700 border-green-200' :
+                      project.status === 'COMPLETED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      'bg-gray-50 text-gray-700 border-gray-200'
+                    }`}
+                  >
+                    {project.status}
+                  </Badge>
                   <div className="flex items-center gap-1 text-xs text-slate-400">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>{new Date(project.lastUpdated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span>{new Date(project.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                 </div>
               </CardContent>
@@ -375,38 +389,38 @@ const Dashboard = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-10 h-10 rounded bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                  <div 
+                    className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: project.color || '#3B82F6' }}
+                  >
                     <Layers className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
-                        {project.name}
+                        {project.title}
                       </h3>
-                      {project.starred && (
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 flex-shrink-0" />
-                      )}
+                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                        {project.workflowType === 'AUTOMATED' ? 'Auto-Sync' : 'Custom'}
+                      </Badge>
                     </div>
-                    <p className="text-sm text-slate-500 truncate">{project.description}</p>
+                    <p className="text-sm text-slate-500 truncate">{project.description || 'No description'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6 ml-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-32">
-                      <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                        <span>{project.tasks.completed}/{project.tasks.total}</span>
-                        <span>{project.progress}%</span>
-                      </div>
-                      <Progress value={project.progress} className="h-1.5" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-slate-500 w-24">
-                    <Users className="w-3.5 h-3.5" />
-                    <span>{project.members} members</span>
-                  </div>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs w-24 justify-center ${
+                      project.status === 'ACTIVE' ? 'bg-green-50 text-green-700 border-green-200' :
+                      project.status === 'COMPLETED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      'bg-gray-50 text-gray-700 border-gray-200'
+                    }`}
+                  >
+                    {project.status}
+                  </Badge>
                   <div className="flex items-center gap-1 text-xs text-slate-400 w-20">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>{new Date(project.lastUpdated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span>{new Date(project.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                   <ChevronRight className="w-5 h-5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
@@ -505,15 +519,12 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="starred" className="mt-6">
-              {starredProjects.length === 0 ? (
-                <div className="text-center py-12">
-                  <Star className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-                  <h3 className="text-lg font-medium text-slate-900 mb-1">No starred projects</h3>
-                  <p className="text-sm text-slate-500">Star projects to quickly access them here</p>
-                </div>
-              ) : (
-                renderProjectsView()
-              )}
+              {/* Starred functionality coming soon */}
+              <div className="text-center py-12">
+                <Star className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                <h3 className="text-lg font-medium text-slate-900 mb-1">Starred projects</h3>
+                <p className="text-sm text-slate-500">Star projects feature coming soon</p>
+              </div>
             </TabsContent>
 
             <TabsContent value="all" className="mt-6">

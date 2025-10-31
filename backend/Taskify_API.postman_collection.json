@@ -129,7 +129,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Website Redesign\",\n  \"description\": \"Complete redesign of company website\",\n  \"workflowType\": \"CUSTOM\"\n}"
+							"raw": "{\n  \"title\": \"Website Redesign\",\n  \"description\": \"Complete redesign of company website\",\n  \"workflowType\": \"CUSTOM\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/projects",

@@ -113,6 +113,69 @@ class ApiClient {
       method: 'POST',
     });
   }
+
+  // Project endpoints
+  async getProjects() {
+    const token = localStorage.getItem('accessToken');
+    return this.request('/projects', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  }
+
+  async createProject(data: {
+    title: string;
+    description?: string;
+    workflowType: 'CUSTOM' | 'AUTOMATED';
+    color?: string;
+  }) {
+    const token = localStorage.getItem('accessToken');
+    return this.request('/projects', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getProjectById(projectId: number) {
+    const token = localStorage.getItem('accessToken');
+    return this.request(`/projects/${projectId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  }
+
+  async updateProject(projectId: number, data: {
+    title?: string;
+    description?: string;
+    color?: string;
+    status?: string;
+  }) {
+    const token = localStorage.getItem('accessToken');
+    return this.request(`/projects/${projectId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteProject(projectId: number) {
+    const token = localStorage.getItem('accessToken');
+    return this.request(`/projects/${projectId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  }
 }
 
 // Export a singleton instance
@@ -136,4 +199,21 @@ export interface AuthResponse {
 
 export interface MessageResponse {
   message: string;
+}
+
+export interface Project {
+  id: number;
+  title: string;
+  description?: string | null;
+  color?: string | null;
+  status: 'ACTIVE' | 'ARCHIVED' | 'COMPLETED';
+  workflowType: 'CUSTOM' | 'AUTOMATED';
+  ownerId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectResponse {
+  projects?: Project[];
+  project?: Project;
 }
