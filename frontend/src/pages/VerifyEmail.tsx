@@ -29,12 +29,7 @@ const VerifyEmail = () => {
         setStatus("success");
         setMessage(response.message || "Email verified successfully!");
         
-        // Store access token in localStorage
-        if (response.accessToken) {
-          localStorage.setItem("accessToken", response.accessToken);
-        }
-
-        // Store user data in context
+        // Store user data in context (tokens are in HttpOnly cookies)
         if (response.user) {
           setUser(response.user);
         }

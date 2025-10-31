@@ -1,4 +1,7 @@
 // Project model interfaces
+import { ProjectStatus, WorkflowType } from '@prisma/client';
+
+export { ProjectStatus, WorkflowType };
 
 export interface Project {
   id: number;
@@ -6,15 +9,10 @@ export interface Project {
   description?: string | null;
   color?: string | null;
   status: ProjectStatus;
+  workflowType: WorkflowType;
   ownerId: number;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export enum ProjectStatus {
-  ACTIVE = 'ACTIVE',
-  ARCHIVED = 'ARCHIVED',
-  COMPLETED = 'COMPLETED'
 }
 
 export interface ProjectCreateInput {
@@ -22,6 +20,7 @@ export interface ProjectCreateInput {
   description?: string;
   color?: string;
   status?: ProjectStatus;
+  workflowType: WorkflowType;
   ownerId: number;
 }
 
@@ -30,6 +29,7 @@ export interface ProjectUpdateInput {
   description?: string;
   color?: string;
   status?: ProjectStatus;
+  // workflowType cannot be changed after creation
 }
 
 export interface ProjectResponse {
@@ -38,6 +38,7 @@ export interface ProjectResponse {
   description?: string | null;
   color?: string | null;
   status: ProjectStatus;
+  workflowType: WorkflowType;
   ownerId: number;
   createdAt: Date;
   updatedAt: Date;
