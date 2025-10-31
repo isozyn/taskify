@@ -1,0 +1,126 @@
+# Taskify API Endpoint Tests
+# Use REST Client extension in VS Code or copy these to Postman/Thunder Client
+
+### Variables
+@baseUrl = http://localhost:5000/api/v1
+@token = YOUR_TOKEN_HERE
+
+### 1. Register a new user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123456",
+  "name": "Test User"
+}
+
+### 2. Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123456"
+}
+
+### 3. Create a CUSTOM workflow project
+POST {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "My Custom Project",
+  "description": "Testing custom workflow",
+  "workflowType": "CUSTOM"
+}
+
+### 4. Create an AUTOMATED workflow project
+POST {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Sprint 1",
+  "description": "Testing automated workflow",
+  "workflowType": "AUTOMATED"
+}
+
+### 5. Get all projects
+GET {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+
+### 6. Get custom columns for a project (replace :projectId)
+GET {{baseUrl}}/projects/1/columns
+Authorization: Bearer {{token}}
+
+### 7. Create a new custom column
+POST {{baseUrl}}/projects/1/columns
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Testing",
+  "color": "#10B981",
+  "order": 3
+}
+
+### 8. Create a task for CUSTOM workflow
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "projectId": 1,
+  "title": "Design homepage",
+  "description": "Create the homepage mockup",
+  "priority": "HIGH",
+  "columnId": "col_1",
+  "tags": ["design", "frontend"]
+}
+
+### 9. Create a task for AUTOMATED workflow (with dates)
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "projectId": 2,
+  "title": "Implement authentication",
+  "description": "Add login and registration",
+  "priority": "HIGH",
+  "startDate": "2025-11-01T00:00:00.000Z",
+  "endDate": "2025-11-05T23:59:59.999Z",
+  "tags": ["backend", "auth"]
+}
+
+### 10. Get all tasks for a project
+GET {{baseUrl}}/projects/1/tasks
+Authorization: Bearer {{token}}
+
+### 11. Update a task
+PUT {{baseUrl}}/tasks/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated task title",
+  "priority": "MEDIUM"
+}
+
+### 12. Delete a task
+DELETE {{baseUrl}}/tasks/1
+Authorization: Bearer {{token}}
+
+### 13. Reorder columns
+PUT {{baseUrl}}/projects/1/columns/reorder
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "columnOrders": [
+    { "id": 1, "order": 2 },
+    { "id": 2, "order": 0 },
+    { "id": 3, "order": 1 }
+  ]
+}

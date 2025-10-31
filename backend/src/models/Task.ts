@@ -6,10 +6,12 @@ export interface Task {
   description?: string | null;
   status: TaskStatus;
   priority: Priority;
-  dueDate?: Date | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
   projectId: number;
   assigneeId?: number | null;
   tags: string[];
+  columnId?: string | null; // For custom workflow
   order: number;
   createdAt: Date;
   updatedAt: Date;
@@ -35,10 +37,12 @@ export interface TaskCreateInput {
   description?: string;
   status?: TaskStatus;
   priority?: Priority;
-  dueDate?: Date;
+  startDate?: Date;
+  endDate?: Date;
   projectId: number;
   assigneeId?: number;
   tags?: string[];
+  columnId?: string; // For custom workflow
   order?: number;
 }
 
@@ -47,9 +51,11 @@ export interface TaskUpdateInput {
   description?: string;
   status?: TaskStatus;
   priority?: Priority;
-  dueDate?: Date;
+  startDate?: Date;
+  endDate?: Date;
   assigneeId?: number;
   tags?: string[];
+  columnId?: string; // For custom workflow
   order?: number;
 }
 
@@ -59,10 +65,12 @@ export interface TaskResponse {
   description?: string | null;
   status: TaskStatus;
   priority: Priority;
-  dueDate?: Date | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
   projectId: number;
   assigneeId?: number | null;
   tags: string[];
+  columnId?: string | null;
   order: number;
   createdAt: Date;
   updatedAt: Date;
