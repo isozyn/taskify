@@ -1,4 +1,7 @@
 // Task model interfaces
+import { TaskStatus, Priority } from '@prisma/client';
+
+export { TaskStatus, Priority };
 
 export interface Task {
   id: number;
@@ -15,21 +18,6 @@ export interface Task {
   order: number;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export enum TaskStatus {
-  TODO = 'TODO',
-  IN_PROGRESS = 'IN_PROGRESS',
-  IN_REVIEW = 'IN_REVIEW',
-  COMPLETED = 'COMPLETED',
-  BLOCKED = 'BLOCKED'
-}
-
-export enum Priority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  URGENT = 'URGENT'
 }
 
 export interface TaskCreateInput {

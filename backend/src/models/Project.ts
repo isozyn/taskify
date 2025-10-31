@@ -1,4 +1,7 @@
 // Project model interfaces
+import { ProjectStatus, WorkflowType } from '@prisma/client';
+
+export { ProjectStatus, WorkflowType };
 
 export interface Project {
   id: number;
@@ -10,17 +13,6 @@ export interface Project {
   ownerId: number;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export enum ProjectStatus {
-  ACTIVE = 'ACTIVE',
-  ARCHIVED = 'ARCHIVED',
-  COMPLETED = 'COMPLETED'
-}
-
-export enum WorkflowType {
-  CUSTOM = 'CUSTOM',
-  AUTOMATED = 'AUTOMATED'
 }
 
 export interface ProjectCreateInput {
