@@ -5,49 +5,108 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { CheckSquare, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { api, type AuthResponse } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/UserContext";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { setUser } = useUser();
+
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  // Signup form state
+  const [signupName, setSignupName] = useState("");
+  const [signupUsername, setSignupUsername] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Auth logic will be implemented with backend API
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    try {
+      const response = await api.login({
+        email: loginEmail,
+        password: loginPassword,
+        rememberMe: true,
+      }) as AuthResponse;
+
+      toast({
+        title: "Success",
+        description: response.message || "Logged in successfully",
+      });
+
+      // Store user data in context (tokens are in HttpOnly cookies)
+      if (response.user) {
+        setUser(response.user);
+      }
+
+      // Navigate to dashboard
       navigate("/dashboard");
-    }, 1000);
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Auth logic will be implemented with backend API
-    setTimeout(() => {
+    
+    try {
+      const response = await api.register({
+        name: signupName,
+        username: signupUsername,
+        email: signupEmail,
+        password: signupPassword,
+      }) as AuthResponse;
+
+      toast({
+        title: "Success",
+        description: response.message || "Account created successfully. Please check your email to verify your account.",
+      });
+
+      // Redirect to check email page with email in state
+      navigate("/check-email", { state: { email: signupEmail } });
+    } catch (error: any) {
+      const errorMessage = error.errors?.length 
+        ? error.errors.map((e: any) => e.msg).join(", ")
+        : error.message || "Failed to create account";
+      
+      toast({
+        title: "Signup Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-      navigate("/dashboard");
-    }, 1000);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/40 bg-background/95 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <button 
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
-              <CheckSquare className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">Taskify</span>
-          </button>
-        </div>
-      </header>
+      {/* Back Button - Login Page (Blue) */}
+      <div className="fixed top-4 left-4 z-10">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-[#0052CC] hover:opacity-80 transition-opacity"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="text-sm font-medium">Back</span>
+        </button>
+      </div>
 
       {/* Main Content */}
       <div className="flex items-center justify-center px-4 py-16 sm:py-20">
@@ -75,6 +134,8 @@ const Auth = () => {
                     <Input 
                       id="login-email" 
                       type="text" 
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
                       className="h-8 text-sm border-border/60 focus-visible:ring-1 focus-visible:ring-[#0052CC] focus-visible:border-[#0052CC] rounded-md"
                       required 
                     />
@@ -96,6 +157,8 @@ const Auth = () => {
                     <Input 
                       id="login-password" 
                       type="password" 
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
                       className="h-8 text-sm border-border/60 focus-visible:ring-1 focus-visible:ring-[#0052CC] focus-visible:border-[#0052CC] rounded-md"
                       required 
                     />
@@ -169,29 +232,16 @@ const Auth = () => {
       {/* Signup Page - Split Screen Layout */}
       {isSignup && (
         <div className="fixed inset-0 bg-background z-50">
-          {/* Header */}
-          <header className="absolute top-0 left-0 right-0 z-10">
-            <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-              <button 
-                onClick={() => navigate("/")}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-              >
-                {/* <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
-                  <CheckSquare className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold">Taskify</span> */}
-              </button>
-              <div className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <button
-                  onClick={() => setIsSignup(false)}
-                  className="text-[#0052CC] hover:underline font-medium ml-1"
-                >
-                  Sign in →
-                </button>
-              </div>
-            </div>
-          </header>
+          {/* Back Button - Signup Page (White) */}
+          <div className="absolute top-4 left-4 z-20">
+            <button
+              onClick={() => setIsSignup(false)}
+              className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-sm font-medium">Back</span>
+            </button>
+          </div>
 
           <div className="flex h-screen">
             {/* Left Side - Gradient Background */}
@@ -260,6 +310,21 @@ const Auth = () => {
                 {/* Signup Form */}
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
+                    <Label htmlFor="signup-name" className="text-sm font-normal text-foreground">
+                      Name<span className="text-red-500">*</span>
+                    </Label>
+                    <Input 
+                      id="signup-name" 
+                      type="text"
+                      placeholder="Full Name"
+                      value={signupName}
+                      onChange={(e) => setSignupName(e.target.value)}
+                      className="h-9 text-sm border-border/60 focus-visible:ring-2 focus-visible:ring-[#0052CC]/20 focus-visible:border-[#0052CC] rounded-md"
+                      required 
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="signup-email" className="text-sm font-normal text-foreground">
                       Email<span className="text-red-500">*</span>
                     </Label>
@@ -267,6 +332,23 @@ const Auth = () => {
                       id="signup-email" 
                       type="email"
                       placeholder="Email"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      className="h-9 text-sm border-border/60 focus-visible:ring-2 focus-visible:ring-[#0052CC]/20 focus-visible:border-[#0052CC] rounded-md"
+                      required 
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-username" className="text-sm font-normal text-foreground">
+                      Username<span className="text-red-500">*</span>
+                    </Label>
+                    <Input 
+                      id="signup-username" 
+                      type="text"
+                      placeholder="Username"
+                      value={signupUsername}
+                      onChange={(e) => setSignupUsername(e.target.value)}
                       className="h-9 text-sm border-border/60 focus-visible:ring-2 focus-visible:ring-[#0052CC]/20 focus-visible:border-[#0052CC] rounded-md"
                       required 
                     />
@@ -280,27 +362,13 @@ const Auth = () => {
                       id="signup-password" 
                       type="password"
                       placeholder="Password"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
                       className="h-9 text-sm border-border/60 focus-visible:ring-2 focus-visible:ring-[#0052CC]/20 focus-visible:border-[#0052CC] rounded-md"
                       required 
                     />
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Password should be at least 15 characters OR at least 8 characters including a number and a lowercase letter.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-username" className="text-sm font-normal text-foreground">
-                      Username<span className="text-red-500">*</span>
-                    </Label>
-                    <Input 
-                      id="signup-username" 
-                      type="text"
-                      placeholder="Username"
-                      className="h-9 text-sm border-border/60 focus-visible:ring-2 focus-visible:ring-[#0052CC]/20 focus-visible:border-[#0052CC] rounded-md"
-                      required 
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Username may only contain alphanumeric characters or single hyphens, and cannot begin or end with a hyphen.
+                      Password must be at least 8 characters with one uppercase, one lowercase, and one number.
                     </p>
                   </div>
 

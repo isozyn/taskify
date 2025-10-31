@@ -16,6 +16,7 @@ datasource db {
 model User {
   id              Int              @id @default(autoincrement())
   name            String
+  username        String           @unique
   email           String           @unique
   password        String
   avatar          String?
@@ -34,6 +35,7 @@ model User {
   refreshTokens   RefreshToken[]
   
   @@index([email])
+  @@index([username])
 }
 
 enum Role {
@@ -60,21 +62,23 @@ model RefreshToken {
 // Project Model
 // ============================================
 model Project {
-  id          Int             @id @default(autoincrement())
-  title       String
-  description String?
-  color       String?
-  status      ProjectStatus   @default(ACTIVE)
-  startDate   DateTime?
-  endDate     DateTime?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id           Int             @id @default(autoincrement())
+  title        String
+  description  String?
+  color        String?
+  status       ProjectStatus   @default(ACTIVE)
+  workflowType WorkflowType    @default(CUSTOM)
+  startDate    DateTime?
+  endDate      DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
   
   // Relations
-  ownerId     Int
-  owner       User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members     ProjectMember[]
-  tasks       Task[]
+  ownerId      Int
+  owner        User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members      ProjectMember[]
+  tasks        Task[]
+  customColumns CustomColumn[]
   
   @@index([ownerId])
   @@index([status])
@@ -84,6 +88,11 @@ enum ProjectStatus {
   ACTIVE
   ARCHIVED
   COMPLETED
+}
+
+enum WorkflowType {
+  CUSTOM
+  AUTOMATED
 }
 
 // ============================================
@@ -121,8 +130,10 @@ model Task {
   description String?
   status      TaskStatus @default(TODO)
   priority    Priority   @default(MEDIUM)
-  dueDate     DateTime?
+  startDate   DateTime?
+  endDate     DateTime?
   tags        String[]   @default([])
+  columnId    String?
   order       Int        @default(0)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -138,6 +149,7 @@ model Task {
   @@index([assigneeId])
   @@index([status])
   @@index([priority])
+  @@index([columnId])
 }
 
 enum TaskStatus {
@@ -172,4 +184,22 @@ model Comment {
   
   @@index([taskId])
   @@index([authorId])
+}
+
+// ============================================
+// CustomColumn Model (for Custom Workflow)
+// ============================================
+model CustomColumn {
+  id        Int      @id @default(autoincrement())
+  title     String
+  color     String   @default("slate")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
 }

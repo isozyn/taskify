@@ -20,6 +20,7 @@ import MemberDetailModal from "./MemberDetailModal";
 
 interface ProjectOverviewProps {
   project: any;
+  workflowType?: "auto-sync" | "custom";
 }
 
 interface TeamMember {
@@ -39,9 +40,23 @@ interface TeamMember {
   }>;
 }
 
-const ProjectOverview = ({ project }: ProjectOverviewProps) => {
+const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOverviewProps) => {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+
+  // Determine theme colors based on workflow type
+  const themeColors = {
+    primary: workflowType === "custom" ? "purple" : "blue",
+    gradientFrom: workflowType === "custom" ? "from-purple-500" : "from-blue-500",
+    gradientTo: workflowType === "custom" ? "to-purple-600" : "to-blue-600",
+    text: workflowType === "custom" ? "text-purple-600" : "text-blue-600",
+    hover: workflowType === "custom" ? "hover:border-purple-300" : "hover:border-blue-300",
+    ring: workflowType === "custom" ? "group-hover:ring-purple-300" : "group-hover:ring-blue-300",
+    hoverText: workflowType === "custom" ? "group-hover:text-purple-600" : "group-hover:text-blue-600",
+    bg: workflowType === "custom" ? "bg-purple-600" : "bg-blue-600",
+    progressFrom: workflowType === "custom" ? "from-purple-500" : "from-blue-500",
+    progressTo: workflowType === "custom" ? "to-purple-600" : "to-blue-600",
+  };
 
   // Mock detailed member data - will be replaced with real data from backend
   const detailedMembers: TeamMember[] = [

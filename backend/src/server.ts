@@ -13,6 +13,8 @@ dotenv.config();
 
 // Import routes
 import authRoutes from "./routes/authRoutes";
+import customColumnRoutes from "./routes/customColumnRoutes";
+import projectRoutes from "./routes/projectRoutes";
 
 // Create Express app
 const app: Express = express();
@@ -52,18 +54,21 @@ app.use(morgan("dev"));
 // ============================================
 
 // Health check endpoint
-app.get("/api/v1/health", (req: Request, res: Response) => {
+app.get("/api/v1/health", (_req: Request, res: Response) => {
   res.status(200).json({ status: "OK", message: "Server is running" });
 });
 
 // Auth routes
 app.use("/api/v1/auth", authRoutes);
 
+// Custom Column routes
+app.use("/api/v1", customColumnRoutes);
+
+// Project routes
+app.use("/api/v1", projectRoutes);
+
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);
-
-// Project routes (uncomment when ready)
-// app.use("/api/v1/projects", projectRoutes);
 
 // Task routes (uncomment when ready)
 // app.use("/api/v1/tasks", taskRoutes);
@@ -82,7 +87,7 @@ app.use((req: Request, res: Response) => {
 });
 
 // Global error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Error:", err);
 
   const status = err.status || err.statusCode || 500;
