@@ -33,6 +33,7 @@ model User {
   tasks           Task[]
   comments        Comment[]
   refreshTokens   RefreshToken[]
+  notifications  Notification[]
   
   @@index([email])
   @@index([username])
@@ -174,4 +175,32 @@ model Comment {
   
   @@index([taskId])
   @@index([authorId])
+}
+
+// ============================================
+// Notification Model
+// ============================================
+model Notification {
+  id        Int              @id @default(autoincrement())
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean         @default(false)
+  metadata  Json?           // For storing additional data like projectId, taskId etc.
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  
+  // Relations
+  userId    Int
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  PROJECT_COMPLETED
+  TASK_OVERDUE
+  TASK_ASSIGNED
+  PROJECT_INVITATION
 }

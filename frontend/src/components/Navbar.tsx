@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/UserContext";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -55,6 +56,7 @@ const Navbar = () => {
                 <span className="hidden sm:inline-block text-sm font-medium text-slate-700">
                   Welcome, <span className="text-[#0052CC] font-semibold">{user?.name || user?.username}</span>
                 </span>
+                <NotificationBell />
                 <ProfileDropdown />
               </>
             ) : (

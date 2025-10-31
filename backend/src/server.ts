@@ -11,8 +11,10 @@ import cookieParser from "cookie-parser";
 // Load environment variables
 dotenv.config();
 
-// Import routes
+// Import routes and services
 import authRoutes from "./routes/authRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
+import { scheduleTaskChecks } from "./services/taskCheckerService";
 
 // Create Express app
 const app: Express = express();
@@ -59,6 +61,9 @@ app.get("/api/v1/health", (_req: Request, res: Response) => {
 // Auth routes
 app.use("/api/v1/auth", authRoutes);
 
+// Notification routes
+app.use("/api/v1/notifications", notificationRoutes);
+
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);
 
@@ -101,6 +106,9 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 const startServer = async () => {
   try {
+    // Start task checker service
+    scheduleTaskChecks();
+    
     app.listen(PORT, () => {
       console.log(`
         ╔════════════════════════════════════════╗
