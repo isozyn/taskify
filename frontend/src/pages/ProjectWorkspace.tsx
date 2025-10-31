@@ -233,7 +233,7 @@ const ProjectWorkspace = () => {
       </main>
 
       {/* Sticky Notes - Floating */}
-      <StickyNotes projectId={id} />
+      <StickyNotes projectId={id} workflowType={workflowType} />
     </div>
   );
 };
