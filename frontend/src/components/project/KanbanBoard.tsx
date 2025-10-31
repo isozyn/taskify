@@ -7,10 +7,11 @@ import KanbanBoardCustom from "./KanbanBoardCustom";
 interface KanbanBoardProps {
   projectMembers: any[];
   onWorkflowChange?: (workflow: "auto-sync" | "custom") => void;
+  workflowType?: "auto-sync" | "custom";
 }
 
-const KanbanBoard = ({ projectMembers, onWorkflowChange }: KanbanBoardProps) => {
-  const [boardTemplate, setBoardTemplate] = useState<"auto-sync" | "custom">("auto-sync");
+const KanbanBoard = ({ projectMembers, onWorkflowChange, workflowType: initialWorkflowType }: KanbanBoardProps) => {
+  const [boardTemplate, setBoardTemplate] = useState<"auto-sync" | "custom">(initialWorkflowType || "auto-sync");
 
   const handleTemplateChange = (template: "auto-sync" | "custom") => {
     setBoardTemplate(template);
