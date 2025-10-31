@@ -41,7 +41,9 @@ const ProjectWorkspace = () => {
       
       try {
         setIsLoading(true);
+        console.log('Fetching project with ID:', id);
         const response: any = await api.getProjectById(parseInt(id));
+        console.log('Project data received:', response);
         setProject(response);
         
         // Set workflow type based on project data
@@ -129,8 +131,9 @@ const ProjectWorkspace = () => {
       case "kanban":
         return <KanbanBoard projectMembers={mockMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} />;
       case "timeline":
-   
+        return <TimelineView projectMembers={mockMembers} />;
       case "calendar":
+        return <CalendarView projectMembers={mockMembers} />;
       case "settings":
         return <ProjectSettings project={project} />;
       default:
