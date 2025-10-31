@@ -42,7 +42,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isAuthenticated = !!user;
 
   return (
-    <UserContext.Provider value={{ user, setUser, isAuthenticated, logout }}>
+    <UserContext.Provider value={{ user, setUser, isAuthenticated, loading, logout }}>
       {!loading && children}
     </UserContext.Provider>
   );

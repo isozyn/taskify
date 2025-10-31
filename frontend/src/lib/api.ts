@@ -116,12 +116,8 @@ class ApiClient {
 
   // Project endpoints
   async getProjects() {
-    const token = localStorage.getItem('accessToken');
     return this.request('/projects', {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
     });
   }
 
@@ -131,23 +127,15 @@ class ApiClient {
     workflowType: 'CUSTOM' | 'AUTOMATED';
     color?: string;
   }) {
-    const token = localStorage.getItem('accessToken');
     return this.request('/projects', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
       body: JSON.stringify(data),
     });
   }
 
   async getProjectById(projectId: number) {
-    const token = localStorage.getItem('accessToken');
     return this.request(`/projects/${projectId}`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
     });
   }
 
@@ -157,23 +145,15 @@ class ApiClient {
     color?: string;
     status?: string;
   }) {
-    const token = localStorage.getItem('accessToken');
     return this.request(`/projects/${projectId}`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
       body: JSON.stringify(data),
     });
   }
 
   async deleteProject(projectId: number) {
-    const token = localStorage.getItem('accessToken');
     return this.request(`/projects/${projectId}`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
     });
   }
 }
