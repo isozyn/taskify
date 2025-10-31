@@ -1,46 +1,49 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserContextType } from '@/models/User';
+import { api } from '@/lib/api';
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Load user from localStorage on mount
+  // Check if user is authenticated on mount by calling /me endpoint
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const accessToken = localStorage.getItem('accessToken');
-    
-    if (storedUser && accessToken) {
+    const checkAuth = async () => {
       try {
-        setUser(JSON.parse(storedUser));
+        const response = await api.getCurrentUser() as { user: User };
+        if (response.user) {
+          setUser(response.user);
+        }
       } catch (error) {
-        console.error('Failed to parse user data:', error);
-        localStorage.removeItem('user');
+        // User is not authenticated or token expired
+        console.log('Not authenticated');
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
+    checkAuth();
   }, []);
 
-  // Save user to localStorage when it changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('user');
+  // Logout function that calls backend to clear cookies
+  const logout = async () => {
+    try {
+      await api.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear user state regardless of API call result
+      setUser(null);
     }
-  }, [user]);
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('accessToken');
   };
 
-  const isAuthenticated = !!user && !!localStorage.getItem('accessToken');
+  const isAuthenticated = !!user;
 
   return (
     <UserContext.Provider value={{ user, setUser, isAuthenticated, logout }}>
-      {children}
+      {!loading && children}
     </UserContext.Provider>
   );
 };

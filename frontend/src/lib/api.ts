@@ -82,6 +82,12 @@ class ApiClient {
     });
   }
 
+  async getCurrentUser() {
+    return this.request('/auth/me', {
+      method: 'GET',
+    });
+  }
+
   async forgotPassword(email: string) {
     return this.request('/auth/forgot-password', {
       method: 'POST',
@@ -118,7 +124,6 @@ export type { ApiError };
 // Response types
 export interface AuthResponse {
   message: string;
-  accessToken?: string;
   user?: {
     id: number;
     name: string;
