@@ -24,10 +24,10 @@ export const ProfileDropdown = () => {
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
       });
-      navigate("/auth");
+      navigate("/");
     } catch (error: any) {
       console.error("Logout error:", error);
-      navigate("/auth");
+      navigate("/");
     }
   };
 
