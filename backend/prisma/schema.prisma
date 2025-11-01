@@ -43,21 +43,21 @@ model RefreshToken {
 }
 
 model Project {
-  id           Int             @id @default(autoincrement())
-  description  String?
-  status       ProjectStatus   @default(ACTIVE)
-  startDate    DateTime?
-  endDate      DateTime?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  ownerId      Int
-  color        String?
-  title        String
-  workflowType WorkflowType    @default(CUSTOM)
-  CustomColumn CustomColumn[]
-  owner        User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members      ProjectMember[]
-  tasks        Task[]
+  id            Int             @id @default(autoincrement())
+  description   String?
+  status        ProjectStatus   @default(ACTIVE)
+  startDate     DateTime?
+  endDate       DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  ownerId       Int
+  color         String?
+  title         String
+  workflowType  WorkflowType    @default(CUSTOM)
+  customColumns CustomColumn[]
+  owner         User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members       ProjectMember[]
+  tasks         Task[]
 
   @@index([ownerId])
   @@index([status])
@@ -123,9 +123,9 @@ model CustomColumn {
   color     String   @default("slate")
   order     Int      @default(0)
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   projectId Int
-  Project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
 }
