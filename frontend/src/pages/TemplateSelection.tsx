@@ -1,17 +1,27 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Calendar, GripVertical, Check, ArrowLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 
 const TemplateSelection = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedTemplate, setSelectedTemplate] = useState<"auto-sync" | "custom" | null>(null);
+  
+  // Get project data from previous step
+  const projectData = location.state?.projectData;
 
   const handleContinue = () => {
-    if (selectedTemplate) {
-      // Navigate to new project form with selected template
-      navigate("/dashboard", { state: { selectedTemplate } });
+    if (selectedTemplate && projectData) {
+      // Navigate to dashboard with complete project data
+      navigate("/dashboard", { 
+        state: { 
+          selectedTemplate,
+          projectData,
+          createProject: true
+        } 
+      });
     }
   };
 
@@ -21,11 +31,35 @@ const TemplateSelection = () => {
 
       {/* Main Container */}
       <div className="max-w-6xl mx-auto px-6 py-12 mt-16">
+        {/* Back Button */}
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/project-setup", { state: { projectData } })}
+            className="text-slate-600 hover:text-slate-900"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Project Setup
+          </Button>
+        </div>
+
         {/* Title Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-slate-900 mb-3">
             Choose your project template
           </h1>
+          {projectData && (
+            <div className="mb-4">
+              <p className="text-xl text-blue-600 font-semibold">
+                {projectData.name}
+              </p>
+              {projectData.description && (
+                <p className="text-sm text-slate-600 mt-1">
+                  {projectData.description}
+                </p>
+              )}
+            </div>
+          )}
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             Select the workflow that best fits your team's needs. Each template is designed for specific project types and team workflows.
           </p>

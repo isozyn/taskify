@@ -362,7 +362,7 @@ const Dashboard = () => {
 					</p>
 					<Button
 						className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-						onClick={() => setIsTemplateSelectionOpen(true)}
+						onClick={() => navigate("/project-setup")}
 					>
 						<Plus className="w-4 h-4" />
 						Create Project
@@ -578,7 +578,7 @@ const Dashboard = () => {
 							{/* Create Project Button */}
 							<Button
 								className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-9 shadow-sm"
-								onClick={() => setIsTemplateSelectionOpen(true)}
+								onClick={() => navigate("/project-setup")}
 							>
 								<Plus className="w-4 h-4" />
 								Create

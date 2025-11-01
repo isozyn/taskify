@@ -14,6 +14,7 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import CheckEmail from "./pages/CheckEmail";
 import TemplateSelection from "./pages/TemplateSelection";
+import ProjectSetup from "./pages/ProjectSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/check-email" element={<CheckEmail />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/project-setup" element={<ProjectSetup />} />
             <Route path="/template-selection" element={<TemplateSelection />} />
             <Route path="/project/:id" element={<ProjectWorkspace />} />
             <Route path="/profile" element={<Profile />} />
