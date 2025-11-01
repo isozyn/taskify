@@ -15,6 +15,7 @@ dotenv.config();
 import authRoutes from "./routes/authRoutes";
 import customColumnRoutes from "./routes/customColumnRoutes";
 import projectRoutes from "./routes/projectRoutes";
+import taskRoutes from "./routes/taskRoutes";
 
 // Create Express app
 const app: Express = express();
@@ -67,11 +68,11 @@ app.use("/api/v1", customColumnRoutes);
 // Project routes
 app.use("/api/v1", projectRoutes);
 
+// Task routes
+app.use("/api/v1", taskRoutes);
+
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);
-
-// Task routes (uncomment when ready)
-// app.use("/api/v1/tasks", taskRoutes);
 
 // ============================================
 // ERROR HANDLING MIDDLEWARE

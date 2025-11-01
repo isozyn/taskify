@@ -165,6 +165,55 @@ class ApiClient {
 			method: "DELETE",
 		});
 	}
+
+	// Task endpoints
+	async getTasksByProject(projectId: number) {
+		return this.request(`/projects/${projectId}/tasks`, {
+			method: "GET",
+		});
+	}
+
+	async createTask(projectId: number, data: {
+		title: string;
+		description?: string;
+		status?: string;
+		priority?: string;
+		startDate?: string;
+		endDate?: string;
+		assigneeId?: number;
+		tags?: string[];
+		columnId?: string;
+	}) {
+		console.log('Creating task with data:', data);
+		console.log('Project ID:', projectId);
+		return this.request(`/projects/${projectId}/tasks`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async updateTask(taskId: number, data: {
+		title?: string;
+		description?: string;
+		status?: string;
+		priority?: string;
+		startDate?: string;
+		endDate?: string;
+		assigneeId?: number;
+		tags?: string[];
+		columnId?: string;
+	}) {
+		return this.request(`/tasks/${taskId}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async deleteTask(taskId: number) {
+		return this.request(`/tasks/${taskId}`, {
+			method: "DELETE",
+		});
+	}
 }
 
 // Export a singleton instance
@@ -200,9 +249,56 @@ export interface Project {
 	ownerId: number;
 	createdAt: string;
 	updatedAt: string;
+	owner?: {
+		id: number;
+		name: string;
+		email: string;
+		avatar?: string | null;
+		username: string;
+	};
+	members?: Array<{
+		id: number;
+		role: string;
+		joinedAt: string;
+		user: {
+			id: number;
+			name: string;
+			email: string;
+			avatar?: string | null;
+			username: string;
+		};
+	}>;
 }
 
 export interface ProjectResponse {
 	projects?: Project[];
 	project?: Project;
+}
+
+export interface Task {
+	id: number;
+	title: string;
+	description?: string | null;
+	status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "COMPLETED" | "BLOCKED";
+	priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+	startDate?: string | null;
+	endDate?: string | null;
+	projectId: number;
+	assigneeId?: number | null;
+	tags: string[];
+	columnId?: string | null;
+	order: number;
+	createdAt: string;
+	updatedAt: string;
+	assignee?: {
+		id: number;
+		name: string;
+		email: string;
+		avatar?: string | null;
+	} | null;
+}
+
+export interface TaskResponse {
+	tasks?: Task[];
+	task?: Task;
 }

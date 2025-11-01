@@ -49,6 +49,29 @@ export class ProjectService {
 				customColumns: {
 					orderBy: { order: "asc" },
 				},
+				members: {
+					include: {
+						user: {
+							select: {
+								id: true,
+								name: true,
+								email: true,
+								avatar: true,
+								username: true,
+							},
+						},
+					},
+					orderBy: { joinedAt: "asc" },
+				},
+				owner: {
+					select: {
+						id: true,
+						name: true,
+						email: true,
+						avatar: true,
+						username: true,
+					},
+				},
 			},
 		});
 
