@@ -15,6 +15,7 @@ dotenv.config();
 import authRoutes from "./routes/authRoutes";
 import customColumnRoutes from "./routes/customColumnRoutes";
 import projectRoutes from "./routes/projectRoutes";
+import meetingRoutes from "./routes/meetingRoutes";
 
 // Create Express app
 const app: Express = express();
@@ -66,6 +67,9 @@ app.use("/api/v1", customColumnRoutes);
 
 // Project routes
 app.use("/api/v1", projectRoutes);
+
+// Meeting routes
+app.use("/api/v1/meetings", meetingRoutes);
 
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);

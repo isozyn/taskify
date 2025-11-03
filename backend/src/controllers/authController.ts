@@ -133,12 +133,16 @@ export const login = async (
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    // Return user info only (no tokens in response)
+    // Return user info and tokens
     const userResponse = userService.toUserResponse(user);
 
     res.status(200).json({
       message: 'Login successful',
       user: userResponse,
+      tokens: {
+        accessToken,
+        refreshToken
+      }
     });
   } catch (error) {
     next(error);

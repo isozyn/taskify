@@ -155,3 +155,30 @@ export const sendPasswordResetEmail = async (
     throw new Error('Failed to send password reset email');
   }
 };
+
+/**
+ * Generic email sending function
+ */
+export interface EmailOptions {
+  to: string;
+  subject: string;
+  html?: string;
+  text?: string;
+}
+
+export const sendEmail = async (options: EmailOptions): Promise<void> => {
+  try {
+    await transporter.sendMail({
+      from: `Taskify <${process.env.SMTP_USER}>`,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+    });
+
+    console.log(`✅ Email sent to ${options.to}: ${options.subject}`);
+  } catch (error) {
+    console.error('❌ Failed to send email:', error);
+    throw new Error('Failed to send email');
+  }
+};

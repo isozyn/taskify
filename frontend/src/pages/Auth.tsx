@@ -43,9 +43,15 @@ const Auth = () => {
         description: response.message || "Logged in successfully",
       });
 
-      // Store user data in context (tokens are in HttpOnly cookies)
+      // Store user data in context and tokens in localStorage
       if (response.user) {
         setUser(response.user);
+      }
+      
+      // Store tokens in localStorage if they exist
+      if (response.tokens?.accessToken) {
+        localStorage.setItem('token', response.tokens.accessToken);
+        localStorage.setItem('refreshToken', response.tokens.refreshToken);
       }
 
       // Navigate to dashboard

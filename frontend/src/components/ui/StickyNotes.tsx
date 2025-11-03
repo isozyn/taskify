@@ -41,7 +41,7 @@ const CUSTOM_COLORS = [
 
 const StickyNotes = ({ projectId = 'default', workflowType = 'auto-sync' }: StickyNotesProps) => {
   const { notes, createNote, updateNote, deleteNote, duplicateNote } = useStickyNotes(projectId);
-  const [isMainMinimized, setIsMainMinimized] = useState(false);
+  const [isMainMinimized, setIsMainMinimized] = useState(true); // Start minimized
   const [isExpanded, setIsExpanded] = useState(false);
   const [draggedNote, setDraggedNote] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -113,7 +113,7 @@ const StickyNotes = ({ projectId = 'default', workflowType = 'auto-sync' }: Stic
         )}>
           {!isMainMinimized ? (
             <Card className={cn(
-              "shadow-xl hover:shadow-2xl transition-all duration-300 backdrop-blur-sm",
+              "shadow-xl hover:shadow-2xl transition-all duration-300 backdrop-blur-sm mt-2",
               themeColors.bg,
               themeColors.border,
               "border-2"
@@ -278,12 +278,12 @@ const StickyNotes = ({ projectId = 'default', workflowType = 'auto-sync' }: Stic
             <Button
               onClick={() => setIsMainMinimized(false)}
               className={cn(
-                "w-14 h-14 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105",
-                themeColors.button,
-                "text-white"
+                "w-9 h-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105",
+                "bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm"
               )}
+              title="Sticky Notes"
             >
-              <StickyNote className="w-6 h-6" />
+              S
             </Button>
           )}
         </div>

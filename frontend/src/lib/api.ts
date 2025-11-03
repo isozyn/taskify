@@ -184,6 +184,10 @@ export interface AuthResponse {
 		role: string;
 		isEmailVerified: boolean;
 	};
+	tokens?: {
+		accessToken: string;
+		refreshToken: string;
+	};
 }
 
 export interface MessageResponse {
