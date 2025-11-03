@@ -1,12 +1,10 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
-import { CalendarIcon, Clock, Users, Plus, Filter, Download, Settings } from "lucide-react";
+import { Filter, Download } from "lucide-react";
 import TaskModal from "./TaskModal";
-import QuickTaskModal from "./QuickTaskModal";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar-styles.css';
 
@@ -18,9 +16,7 @@ interface CalendarViewProps {
 
 const CalendarView = ({ projectMembers }: CalendarViewProps) => {
     const [selectedTask, setSelectedTask] = useState<any>(null);
-    const [showQuickTaskModal, setShowQuickTaskModal] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-    const [currentView, setCurrentView] = useState(Views.MONTH);
+    const [currentView, setCurrentView] = useState<any>(Views.MONTH);
 
     // Mock tasks data - same as TimelineView for consistency
     const tasks = [
@@ -29,8 +25,8 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
             title: "UX Research",
             description: "Conduct user interviews and analyze user behavior patterns to inform design decisions.",
             assignees: ["John Doe", "Jane Smith"],
-            startDate: "2024-01-04",
-            endDate: "2024-01-12",
+            startDate: "2024-11-04",
+            endDate: "2024-11-12",
             status: "in-progress",
             progress: 48,
             color: "from-blue-500 to-blue-600",
@@ -48,8 +44,8 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
             title: "Information Architecture",
             description: "Design the site structure and navigation flow for optimal user experience.",
             assignees: ["Jane Smith", "Mike Johnson", "Sarah Wilson"],
-            startDate: "2024-01-06",
-            endDate: "2024-01-14",
+            startDate: "2024-11-06",
+            endDate: "2024-11-14",
             status: "complete",
             progress: 100,
             color: "from-emerald-500 to-emerald-600",
@@ -67,8 +63,8 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
             title: "Design Phase",
             description: "Create visual designs and mockups for all key pages and components.",
             assignees: ["Mike Johnson", "Sarah Wilson"],
-            startDate: "2024-01-08",
-            endDate: "2024-01-20",
+            startDate: "2024-11-08",
+            endDate: "2024-11-20",
             status: "in-progress",
             progress: 54,
             color: "from-teal-500 to-teal-600",
@@ -86,8 +82,8 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
             title: "Prototyping",
             description: "Build interactive prototypes for user testing and stakeholder review.",
             assignees: ["Sarah Wilson", "John Doe"],
-            startDate: "2024-01-18",
-            endDate: "2024-01-28",
+            startDate: "2024-11-18",
+            endDate: "2024-11-28",
             status: "upcoming",
             progress: 39,
             color: "from-sky-500 to-sky-600",
@@ -105,8 +101,8 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
             title: "Development",
             description: "Implement the frontend and backend functionality according to specifications.",
             assignees: ["Mike Johnson", "Jane Smith"],
-            startDate: "2024-01-14",
-            endDate: "2024-01-22",
+            startDate: "2024-11-14",
+            endDate: "2024-11-22",
             status: "in-progress",
             progress: 54,
             color: "from-orange-500 to-orange-600",
@@ -121,18 +117,20 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
         },
     ];
 
-    // Convert tasks to calendar events
-    const calendarEvents = tasks.map(task => ({
-        id: task.id,
-        title: task.title,
-        start: new Date(task.startDate),
-        end: new Date(task.endDate),
-        resource: task,
-        allDay: false,
-    }));
+    // Convert tasks to calendar events (memoized to prevent unnecessary re-renders)
+    const calendarEvents = useMemo(() =>
+        tasks.map(task => ({
+            id: task.id,
+            title: task.title,
+            start: new Date(task.startDate),
+            end: new Date(task.endDate),
+            resource: task,
+            allDay: false,
+        })), [tasks]
+    );
 
-    // Custom event style getter for calendar
-    const eventStyleGetter = (event: any) => {
+    // Custom event style getter for calendar (memoized)
+    const eventStyleGetter = useMemo(() => (event: any) => {
         const task = event.resource;
         let backgroundColor = '#3174ad';
 
@@ -162,18 +160,14 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                 fontWeight: '600',
             }
         };
-    };
+    }, []);
 
     // Handle calendar event selection
     const handleSelectEvent = (event: any) => {
         setSelectedTask(event.resource);
     };
 
-    // Handle slot selection (empty calendar slot)
-    const handleSelectSlot = (slotInfo: any) => {
-        setSelectedDate(slotInfo.start);
-        setShowQuickTaskModal(true);
-    };
+
 
     // Get task statistics
     const getTaskStats = () => {
@@ -216,13 +210,6 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                     </div>
 
                     {/* Action Buttons */}
-                    <Button
-                        onClick={() => setShowQuickTaskModal(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Task
-                    </Button>
 
                     <Button variant="outline" size="sm">
                         <Filter className="w-4 h-4 mr-2" />
@@ -247,17 +234,17 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                             endAccessor="end"
                             style={{ height: '100%' }}
                             onSelectEvent={handleSelectEvent}
-                            onSelectSlot={handleSelectSlot}
-                            selectable
+                            selectable={false}
                             eventPropGetter={eventStyleGetter}
                             views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
                             defaultView={Views.MONTH}
                             view={currentView}
-                            onView={setCurrentView}
+                            onView={(view) => setCurrentView(view)}
                             popup
                             showMultiDayTimes
                             step={60}
                             showAllEvents
+
                             components={{
                                 event: ({ event }) => (
                                     <div className="p-1">
@@ -267,6 +254,7 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                                         </div>
                                     </div>
                                 ),
+
                                 toolbar: ({ label, onNavigate, onView, view }) => (
                                     <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
                                         <div className="flex items-center gap-4">
@@ -356,17 +344,7 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                 />
             )}
 
-            {/* Quick Task Creation Modal */}
-            <QuickTaskModal
-                open={showQuickTaskModal}
-                onClose={() => setShowQuickTaskModal(false)}
-                selectedDate={selectedDate}
-                projectMembers={projectMembers}
-                onTaskCreate={(newTask) => {
-                    console.log('New task created:', newTask);
-                    // Here you would typically add the task to your state/database
-                }}
-            />
+
         </div>
     );
 };

@@ -25,9 +25,14 @@ export const authenticateToken = (
   next: NextFunction
 ): void => {
   try {
-    // Get token from Authorization header
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    // Get token from cookies first, then fall back to Authorization header
+    let token = req.cookies?.accessToken;
+    
+    if (!token) {
+      // Fall back to Authorization header
+      const authHeader = req.headers['authorization'];
+      token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    }
 
     if (!token) {
       res.status(401).json({ message: 'Access token not provided' });

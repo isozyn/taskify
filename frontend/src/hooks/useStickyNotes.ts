@@ -53,11 +53,11 @@ export const useStickyNotes = (projectId: string = 'default') => {
     }
   }, [notes, saveNotes, isLoading]);
 
-  const createNote = useCallback(() => {
+  const createNote = useCallback((defaultColor?: string) => {
     const newNote: Note = {
       id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       content: '',
-      color: 'bg-yellow-200 border-yellow-300',
+      color: defaultColor || 'bg-blue-50 border-blue-200',
       position: { 
         x: Math.random() * 300 + 100, 
         y: Math.random() * 300 + 100 

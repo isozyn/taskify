@@ -13,8 +13,14 @@ dotenv.config();
 
 // Import routes and services
 import authRoutes from "./routes/authRoutes";
+<<<<<<< HEAD
 import notificationRoutes from "./routes/notificationRoutes";
 import { scheduleTaskChecks } from "./services/taskCheckerService";
+=======
+import customColumnRoutes from "./routes/customColumnRoutes";
+import projectRoutes from "./routes/projectRoutes";
+import taskRoutes from "./routes/taskRoutes";
+>>>>>>> 0d43750bd79ea4c71c4385b8a9a261801cf22ab0
 
 // Create Express app
 const app: Express = express();
@@ -61,17 +67,22 @@ app.get("/api/v1/health", (_req: Request, res: Response) => {
 // Auth routes
 app.use("/api/v1/auth", authRoutes);
 
+<<<<<<< HEAD
 // Notification routes
 app.use("/api/v1/notifications", notificationRoutes);
+=======
+// Custom Column routes
+app.use("/api/v1", customColumnRoutes);
+
+// Project routes
+app.use("/api/v1", projectRoutes);
+
+// Task routes
+app.use("/api/v1", taskRoutes);
+>>>>>>> 0d43750bd79ea4c71c4385b8a9a261801cf22ab0
 
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);
-
-// Project routes (uncomment when ready)
-// app.use("/api/v1/projects", projectRoutes);
-
-// Task routes (uncomment when ready)
-// app.use("/api/v1/tasks", taskRoutes);
 
 // ============================================
 // ERROR HANDLING MIDDLEWARE
