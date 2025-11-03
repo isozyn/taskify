@@ -10,7 +10,7 @@ export interface ProjectMember {
 
 export enum MemberRole {
   OWNER = 'OWNER',
-  ADMIN = 'ADMIN',
+  PROJECT_MANAGER = 'PROJECT_MANAGER',
   MEMBER = 'MEMBER',
   VIEWER = 'VIEWER'
 }
