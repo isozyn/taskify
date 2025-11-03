@@ -4,7 +4,7 @@
  */
 
 // Google API Configuration
-const GOOGLE_API_KEY = 'AIzaSyAinW7lb_M2PFZL1LCVxAtCaJtrPzf6YLo';
+const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || 'your_google_api_key_here';
 const GOOGLE_CLIENT_ID = 'your-client-id'; // You'll need to get this from Google Console
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
