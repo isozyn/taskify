@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -24,12 +24,43 @@ import ProjectSettings from "@/components/project/ProjectSettings";
 import StickyNotes from "@/components/ui/StickyNotes";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { useUser } from "@/contexts/UserContext";
+import { api, Project } from "@/lib/api";
 
 const ProjectWorkspace = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState("kanban");
+  const [project, setProject] = useState<Project | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [workflowType, setWorkflowType] = useState<"auto-sync" | "custom">("auto-sync");
+
+  // Fetch project data from database
+  useEffect(() => {
+    const fetchProject = async () => {
+      if (!id) return;
+      
+      try {
+        setIsLoading(true);
+        console.log('Fetching project with ID:', id);
+        const response: any = await api.getProjectById(parseInt(id));
+        console.log('Project data received:', response);
+        setProject(response);
+        
+        // Set workflow type based on project data
+        if (response.workflowType === 'AUTOMATED') {
+          setWorkflowType('auto-sync');
+        } else if (response.workflowType === 'CUSTOM') {
+          setWorkflowType('custom');
+        }
+      } catch (error) {
+        console.error('Failed to fetch project:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProject();
+  }, [id]);
 
   // Determine theme colors based on workflow type
   const themeColors = {
@@ -41,18 +72,13 @@ const ProjectWorkspace = () => {
     bg: workflowType === "custom" ? "bg-purple-600" : "bg-blue-600",
   };
 
-  // Mock project data
-  const project = {
-    id: id,
-    name: "Website Redesign",
-    description: "Complete overhaul of company website",
-    members: [
-      { id: 1, name: "John Doe", avatar: "" },
-      { id: 2, name: "Jane Smith", avatar: "" },
-      { id: 3, name: "Mike Johnson", avatar: "" },
-      { id: 4, name: "Sarah Wilson", avatar: "" },
-    ],
-  };
+  // Mock members data (will be replaced with real data when we add project members)
+  const mockMembers = [
+    { id: 1, name: "John Doe", avatar: "" },
+    { id: 2, name: "Jane Smith", avatar: "" },
+    { id: 3, name: "Mike Johnson", avatar: "" },
+    { id: 4, name: "Sarah Wilson", avatar: "" },
+  ];
 
   const navItems = [
     {
@@ -83,19 +109,35 @@ const ProjectWorkspace = () => {
   ];
 
   const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    if (!project) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <p className="text-slate-500">Project not found</p>
+        </div>
+      );
+    }
+
     switch (activeView) {
       case "overview":
         return <ProjectOverview project={project} workflowType={workflowType} />;
       case "kanban":
-        return <KanbanBoard projectMembers={project.members} onWorkflowChange={setWorkflowType} />;
+        return <KanbanBoard projectMembers={mockMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} />;
       case "timeline":
-        return <TimelineView projectMembers={project.members} />;
+        return <TimelineView projectMembers={mockMembers} />;
       case "calendar":
-        return <CalendarView projectMembers={project.members} />;
+        return <CalendarView projectMembers={mockMembers} />;
       case "settings":
         return <ProjectSettings project={project} />;
       default:
-        return <KanbanBoard projectMembers={project.members} onWorkflowChange={setWorkflowType} />;
+        return <KanbanBoard projectMembers={mockMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} />;
     }
   };
 
@@ -125,8 +167,8 @@ const ProjectWorkspace = () => {
                   <Layers className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-base font-semibold text-slate-900">{project.name}</h1>
-                  <p className="text-xs text-slate-500">{project.description}</p>
+                  <h1 className="text-base font-semibold text-slate-900">{project?.title || 'Loading...'}</h1>
+                  <p className="text-xs text-slate-500">{project?.description || ''}</p>
                 </div>
               </div>
             </div>
@@ -163,7 +205,7 @@ const ProjectWorkspace = () => {
               {/* Team Members */}
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
-                  {project.members.slice(0, 3).map((member) => (
+                  {mockMembers.slice(0, 3).map((member) => (
                     <Avatar
                       key={member.id}
                       className="w-7 h-7 border-2 border-white hover:z-10 transition-all cursor-pointer"
@@ -172,10 +214,10 @@ const ProjectWorkspace = () => {
                         {member.name?.split(' ').map(n => n[0]).join('') || '??'}                      </AvatarFallback>
                     </Avatar>
                   ))}
-                  {project.members.length > 3 && (
+                  {mockMembers.length > 3 && (
                     <Avatar className="w-7 h-7 border-2 border-white">
                       <AvatarFallback className="bg-slate-100 text-slate-600 text-xs font-medium">
-                        +{project.members.length - 3}
+                        +{mockMembers.length - 3}
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -233,7 +275,7 @@ const ProjectWorkspace = () => {
       </main>
 
       {/* Sticky Notes - Floating */}
-      <StickyNotes projectId={id} />
+      <StickyNotes projectId={id} workflowType={workflowType} />
     </div>
   );
 };

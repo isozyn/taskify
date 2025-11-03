@@ -13,6 +13,8 @@ dotenv.config();
 
 // Import routes
 import authRoutes from "./routes/authRoutes";
+import customColumnRoutes from "./routes/customColumnRoutes";
+import projectRoutes from "./routes/projectRoutes";
 
 // Create Express app
 const app: Express = express();
@@ -59,11 +61,14 @@ app.get("/api/v1/health", (_req: Request, res: Response) => {
 // Auth routes
 app.use("/api/v1/auth", authRoutes);
 
+// Custom Column routes
+app.use("/api/v1", customColumnRoutes);
+
+// Project routes
+app.use("/api/v1", projectRoutes);
+
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);
-
-// Project routes (uncomment when ready)
-// app.use("/api/v1/projects", projectRoutes);
 
 // Task routes (uncomment when ready)
 // app.use("/api/v1/tasks", taskRoutes);

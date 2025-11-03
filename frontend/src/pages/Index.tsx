@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
+import { useUser } from "@/contexts/UserContext";
 import { 
   CheckCircle2,
   Users,
@@ -28,6 +30,14 @@ import {
 } from "lucide-react";
 const Index = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useUser();
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="min-h-screen bg-background">

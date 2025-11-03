@@ -125,16 +125,65 @@ export const login = async (
         : 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    // Return access token and user info
+    // Set access token as httpOnly cookie
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Return user info only (no tokens in response)
     const userResponse = userService.toUserResponse(user);
 
     res.status(200).json({
       message: 'Login successful',
-      accessToken,
       user: userResponse,
     });
   } catch (error) {
     next(error);
+  }
+};
+
+/**
+ * Get current user
+ * GET /api/v1/auth/me
+ */
+export const getCurrentUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { accessToken } = req.cookies;
+
+    if (!accessToken) {
+      res.status(401).json({ message: 'Not authenticated' });
+      return;
+    }
+
+    // Verify access token
+    const decoded = authService.verifyAccessToken(accessToken);
+
+    // Find user by ID
+    const user = await userService.findUserById(decoded.id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Return user data
+    const userResponse = userService.toUserResponse(user);
+
+    res.status(200).json({
+      user: userResponse,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Invalid or expired')) {
+      res.status(401).json({ message: 'Invalid or expired token' });
+    } else {
+      next(error);
+    }
   }
 };
 
@@ -207,8 +256,18 @@ export const logout = async (
       await userService.revokeRefreshToken(refreshToken);
     }
 
-    // Clear cookie
-    res.clearCookie('refreshToken');
+    // Clear both cookies
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+    
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
 
     res.status(200).json({
       message: 'Logout successful',
@@ -270,9 +329,16 @@ export const verifyEmail = async (
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 
+      // Set access token as HTTP-only cookie
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
       res.status(200).json({ 
         message: 'Email already verified',
-        accessToken,
         user: userService.toUserResponse(user),
       });
       return;
@@ -305,9 +371,16 @@ export const verifyEmail = async (
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
+    // Set access token as HTTP-only cookie
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     res.status(200).json({
       message: 'Email verified successfully',
-      accessToken,
       user: userService.toUserResponse(updatedUser),
     });
   } catch (error) {

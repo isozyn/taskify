@@ -7,6 +7,9 @@ import { Filter, Download, Video } from "lucide-react";
 import TaskModal from "./TaskModal";
 import SimpleGoogleMeetModal from "./SimpleGoogleMeetModal";
 import ErrorBoundary from "../ErrorBoundary";
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import './calendar-styles.css';
+
 // Task interface
 interface Task {
     id: number;
@@ -20,8 +23,6 @@ interface Task {
     tags?: string[];
     progress?: number;
 }
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import './calendar-styles.css';
 
 const localizer = momentLocalizer(moment);
 
@@ -150,40 +151,16 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
         [...taskEvents, ...meetingEvents], [taskEvents, meetingEvents]
     );
 
-    // Custom event style getter for calendar
-    const eventStyleGetter = (event: any) => {
-        const task = event.resource;
-        let backgroundColor = '#3174ad';
-
-        switch (task.status) {
-            case 'complete':
-                backgroundColor = '#10b981';
-                break;
-            case 'in-progress':
-                backgroundColor = '#f59e0b';
-                break;
-            case 'upcoming':
-                backgroundColor = '#6366f1';
-                break;
-            default:
-                backgroundColor = '#8b5cf6';
-        }
-
+    // Custom event style getter using our new utility function
+    const eventStyleGetter = useMemo(() => (event: any) => {
+        // The styling is now handled by our calendar utilities
+        // This function can be simplified or removed entirely
         return {
-            style: {
-                backgroundColor,
-                borderRadius: '6px',
-                opacity: 0.9,
-                color: 'white',
-                border: '0px',
-                display: 'block',
-                fontSize: '12px',
-                fontWeight: '600',
-            }
+            className: 'task-calendar-event'
         };
-    };
+    }, []);
 
-    // Handle calendar event selection
+    // Handle calendar event selection using our utility
     const handleSelectEvent = (event: any) => {
         setSelectedTask(event.resource);
     };
@@ -292,7 +269,7 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                                     <div className="p-1">
                                         <div className="font-semibold text-xs truncate">{event.title}</div>
                                         <div className="text-xs opacity-90">
-                                            {event.resource.progress}% • {event.resource.assignees.length} assignee{event.resource.assignees.length !== 1 ? 's' : ''}
+                                            {event.resource.progress}% • {event.resource.assignees?.length || 0} assignee{(event.resource.assignees?.length || 0) !== 1 ? 's' : ''}
                                         </div>
                                     </div>
                                 ),

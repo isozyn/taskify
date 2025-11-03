@@ -19,18 +19,15 @@ export const ProfileDropdown = () => {
 
   const handleLogout = async () => {
     try {
-      await api.logout();
-      logout();
+      await logout();
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
       });
-      navigate("/auth");
+      navigate("/");
     } catch (error: any) {
       console.error("Logout error:", error);
-      // Even if API call fails, clear local state
-      logout();
-      navigate("/auth");
+      navigate("/");
     }
   };
 

@@ -1,112 +1,170 @@
 // API utility for making requests to the backend
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 interface ApiError {
-  message: string;
-  errors?: Array<{
-    msg: string;
-    path: string;
-  }>;
+	message: string;
+	errors?: Array<{
+		msg: string;
+		path: string;
+	}>;
 }
 
 class ApiClient {
-  private baseURL: string;
+	private baseURL: string;
 
-  constructor(baseURL: string) {
-    this.baseURL = baseURL;
-  }
+	constructor(baseURL: string) {
+		this.baseURL = baseURL;
+	}
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      credentials: 'include', // Include cookies for refresh tokens
-    };
+	private async request<T>(
+		endpoint: string,
+		options: RequestInit = {}
+	): Promise<T> {
+		const url = `${this.baseURL}${endpoint}`;
 
-    try {
-      const response = await fetch(url, config);
-      const data = await response.json();
+		const config: RequestInit = {
+			...options,
+			headers: {
+				"Content-Type": "application/json",
+				...options.headers,
+			},
+			credentials: "include", // Include cookies for refresh tokens
+		};
 
-      if (!response.ok) {
-        throw {
-          message: data.message || 'An error occurred',
-          errors: data.errors || [],
-          status: response.status,
-        };
-      }
+		try {
+			const response = await fetch(url, config);
+			const data = await response.json();
 
-      return data;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw {
-          message: error.message,
-          errors: [],
-        };
-      }
-      throw error;
-    }
-  }
+			if (!response.ok) {
+				throw {
+					message: data.message || "An error occurred",
+					errors: data.errors || [],
+					status: response.status,
+				};
+			}
 
-  // Auth endpoints
-  async register(data: {
-    name: string;
-    username: string;
-    email: string;
-    password: string;
-  }) {
-    return this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+			return data;
+		} catch (error) {
+			if (error instanceof Error) {
+				throw {
+					message: error.message,
+					errors: [],
+				};
+			}
+			throw error;
+		}
+	}
 
-  async login(data: { email: string; password: string; rememberMe?: boolean }) {
-    return this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+	// Auth endpoints
+	async register(data: {
+		name: string;
+		username: string;
+		email: string;
+		password: string;
+	}) {
+		return this.request("/auth/register", {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
 
-  async logout() {
-    return this.request('/auth/logout', {
-      method: 'POST',
-    });
-  }
+	async login(data: {
+		email: string;
+		password: string;
+		rememberMe?: boolean;
+	}) {
+		return this.request("/auth/login", {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
 
-  async forgotPassword(email: string) {
-    return this.request('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
+	async logout() {
+		return this.request("/auth/logout", {
+			method: "POST",
+		});
+	}
 
-  async resetPassword(token: string, password: string) {
-    return this.request('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, password }),
-    });
-  }
+	async getCurrentUser() {
+		return this.request("/auth/me", {
+			method: "GET",
+		});
+	}
 
-  async verifyEmail(token: string) {
-    return this.request(`/auth/verify-email?token=${token}`, {
-      method: 'GET',
-    });
-  }
+	async forgotPassword(email: string) {
+		return this.request("/auth/forgot-password", {
+			method: "POST",
+			body: JSON.stringify({ email }),
+		});
+	}
 
-  async refreshToken() {
-    return this.request('/auth/refresh', {
-      method: 'POST',
-    });
-  }
+	async resetPassword(token: string, password: string) {
+		return this.request("/auth/reset-password", {
+			method: "POST",
+			body: JSON.stringify({ token, password }),
+		});
+	}
+
+	async verifyEmail(token: string) {
+		return this.request(`/auth/verify-email?token=${token}`, {
+			method: "GET",
+		});
+	}
+
+	async refreshToken() {
+		return this.request("/auth/refresh", {
+			method: "POST",
+		});
+	}
+
+	// Project endpoints
+	async getProjects() {
+		return this.request("/projects", {
+			method: "GET",
+		});
+	}
+
+	async createProject(data: {
+		title: string;
+		description?: string;
+		workflowType: "CUSTOM" | "AUTOMATED";
+		color?: string;
+		startDate?: string;
+		endDate?: string;
+	}) {
+		return this.request("/projects", {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async getProjectById(projectId: number) {
+		return this.request(`/projects/${projectId}`, {
+			method: "GET",
+		});
+	}
+
+	async updateProject(
+		projectId: number,
+		data: {
+			title?: string;
+			description?: string;
+			color?: string;
+			status?: string;
+		}
+	) {
+		return this.request(`/projects/${projectId}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async deleteProject(projectId: number) {
+		return this.request(`/projects/${projectId}`, {
+			method: "DELETE",
+		});
+	}
 }
 
 // Export a singleton instance
@@ -117,18 +175,34 @@ export type { ApiError };
 
 // Response types
 export interface AuthResponse {
-  message: string;
-  accessToken?: string;
-  user?: {
-    id: number;
-    name: string;
-    username: string;
-    email: string;
-    role: string;
-    isEmailVerified: boolean;
-  };
+	message: string;
+	user?: {
+		id: number;
+		name: string;
+		username: string;
+		email: string;
+		role: string;
+		isEmailVerified: boolean;
+	};
 }
 
 export interface MessageResponse {
-  message: string;
+	message: string;
+}
+
+export interface Project {
+	id: number;
+	title: string;
+	description?: string | null;
+	color?: string | null;
+	status: "ACTIVE" | "ARCHIVED" | "COMPLETED";
+	workflowType: "CUSTOM" | "AUTOMATED";
+	ownerId: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface ProjectResponse {
+	projects?: Project[];
+	project?: Project;
 }
