@@ -426,68 +426,73 @@ const Dashboard = () => {
 		if (viewMode === "grid") {
 			return (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-					{filteredProjects.map((project) => (
-						<Card
-							key={project.id}
-							className="group cursor-pointer border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all bg-white"
-							onClick={() => navigate(`/project/${project.id}`)}
-						>
-							<CardHeader className="pb-3">
-								<div className="flex items-start justify-between mb-2">
-									<div
-										className="w-10 h-10 rounded flex items-center justify-center"
-										style={{
-											backgroundColor:
-												project.color || "#3B82F6",
-										}}
-									>
-										<Layers className="w-5 h-5 text-white" />
+					{filteredProjects.map((project) => {
+						const isCustomWorkflow = project.workflowType === "CUSTOM";
+						const themeColor = isCustomWorkflow ? "#A855F7" : "#3B82F6";
+						const themeName = isCustomWorkflow ? "purple" : "blue";
+						
+						return (
+							<Card
+								key={project.id}
+								className="group cursor-pointer border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all bg-white"
+								onClick={() => navigate(`/project/${project.id}`)}
+							>
+								<CardHeader className="pb-3">
+									<div className="flex items-start justify-between mb-2">
+										<div
+											className="w-10 h-10 rounded flex items-center justify-center"
+											style={{
+												backgroundColor: themeColor,
+											}}
+										>
+											<Layers className="w-5 h-5 text-white" />
+										</div>
+										<Badge
+											variant="outline"
+											className="text-xs"
+										>
+											{project.workflowType === "AUTOMATED"
+												? "Auto-Sync"
+												: "Custom"}
+										</Badge>
 									</div>
-									<Badge
-										variant="outline"
-										className="text-xs"
-									>
-										{project.workflowType === "AUTOMATED"
-											? "Auto-Sync"
-											: "Custom"}
-									</Badge>
-								</div>
-								<CardTitle className="text-base font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
-									{project.title}
-								</CardTitle>
-								<CardDescription className="text-sm text-slate-500 line-clamp-2">
-									{project.description || "No description"}
-								</CardDescription>
-							</CardHeader>
-							<CardContent className="space-y-3">
-								<div className="flex items-center justify-between pt-2 border-t border-slate-100">
-									<Badge
-										variant="outline"
-										className={`text-xs ${
-											project.status === "ACTIVE"
-												? "bg-green-50 text-green-700 border-green-200"
-												: project.status === "COMPLETED"
-												? "bg-blue-50 text-blue-700 border-blue-200"
-												: "bg-gray-50 text-gray-700 border-gray-200"
-										}`}
-									>
-										{project.status}
-									</Badge>
-									<div className="flex items-center gap-1 text-xs text-slate-400">
-										<Clock className="w-3.5 h-3.5" />
-										<span>
-											{new Date(
-												project.updatedAt
-											).toLocaleDateString("en-US", {
-												month: "short",
-												day: "numeric",
-											})}
-										</span>
+									<CardTitle className={`text-base font-semibold text-slate-900 group-hover:text-${themeName}-600 transition-colors`}>
+										{project.title}
+									</CardTitle>
+									<CardDescription className="text-sm text-slate-500 line-clamp-2">
+										{project.description || "No description"}
+									</CardDescription>
+								</CardHeader>
+								<CardContent className="space-y-3">
+									<div className="flex items-center justify-between pt-2 border-t border-slate-100">
+										<Badge
+											variant="outline"
+											className={`text-xs ${
+												project.status === "ACTIVE"
+													? "bg-green-50 text-green-700 border-green-200"
+													: project.status === "COMPLETED"
+													? "bg-blue-50 text-blue-700 border-blue-200"
+													: "bg-gray-50 text-gray-700 border-gray-200"
+											}`}
+										>
+											{project.status}
+										</Badge>
+										<div className="flex items-center gap-1 text-xs text-slate-400">
+											<Clock className="w-3.5 h-3.5" />
+											<span>
+												{new Date(
+													project.updatedAt
+												).toLocaleDateString("en-US", {
+													month: "short",
+													day: "numeric",
+												})}
+											</span>
+										</div>
 									</div>
-								</div>
-							</CardContent>
-						</Card>
-					))}
+								</CardContent>
+							</Card>
+						);
+					})}
 				</div>
 			);
 		}
@@ -495,75 +500,80 @@ const Dashboard = () => {
 		// List view
 		return (
 			<div className="space-y-2">
-				{filteredProjects.map((project) => (
-					<Card
-						key={project.id}
-						className="group cursor-pointer border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all bg-white"
-						onClick={() => navigate(`/project/${project.id}`)}
-					>
-						<CardContent className="p-4">
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-4 flex-1">
-									<div
-										className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
-										style={{
-											backgroundColor:
-												project.color || "#3B82F6",
-										}}
-									>
-										<Layers className="w-5 h-5 text-white" />
-									</div>
-									<div className="flex-1 min-w-0">
-										<div className="flex items-center gap-2 mb-1">
-											<h3 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
-												{project.title}
-											</h3>
-											<Badge
-												variant="outline"
-												className="text-xs flex-shrink-0"
-											>
-												{project.workflowType ===
-												"AUTOMATED"
-													? "Auto-Sync"
-													: "Custom"}
-											</Badge>
+				{filteredProjects.map((project) => {
+					const isCustomWorkflow = project.workflowType === "CUSTOM";
+					const themeColor = isCustomWorkflow ? "#A855F7" : "#3B82F6";
+					const themeName = isCustomWorkflow ? "purple" : "blue";
+					
+					return (
+						<Card
+							key={project.id}
+							className="group cursor-pointer border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all bg-white"
+							onClick={() => navigate(`/project/${project.id}`)}
+						>
+							<CardContent className="p-4">
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-4 flex-1">
+										<div
+											className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+											style={{
+												backgroundColor: themeColor,
+											}}
+										>
+											<Layers className="w-5 h-5 text-white" />
 										</div>
-										<p className="text-sm text-slate-500 truncate">
-											{project.description ||
-												"No description"}
-										</p>
+										<div className="flex-1 min-w-0">
+											<div className="flex items-center gap-2 mb-1">
+												<h3 className={`font-semibold text-slate-900 group-hover:text-${themeName}-600 transition-colors truncate`}>
+													{project.title}
+												</h3>
+												<Badge
+													variant="outline"
+													className="text-xs flex-shrink-0"
+												>
+													{project.workflowType ===
+													"AUTOMATED"
+														? "Auto-Sync"
+														: "Custom"}
+												</Badge>
+											</div>
+											<p className="text-sm text-slate-500 truncate">
+												{project.description ||
+													"No description"}
+											</p>
+										</div>
+									</div>
+									<div className="flex items-center gap-6 ml-4">
+										<Badge
+											variant="outline"
+											className={`text-xs w-24 justify-center ${
+												project.status === "ACTIVE"
+													? "bg-green-50 text-green-700 border-green-200"
+													: project.status === "COMPLETED"
+													? "bg-blue-50 text-blue-700 border-blue-200"
+													: "bg-gray-50 text-gray-700 border-gray-200"
+											}`}
+										>
+											{project.status}
+										</Badge>
+										<div className="flex items-center gap-1 text-xs text-slate-400 w-20">
+											<Clock className="w-3.5 h-3.5" />
+											<span>
+												{new Date(
+													project.updatedAt
+												).toLocaleDateString("en-US", {
+													month: "short",
+													day: "numeric",
+												})}
+											</span>
+										</div>
+										<ChevronRight className="w-5 h-5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
 									</div>
 								</div>
-								<div className="flex items-center gap-6 ml-4">
-									<Badge
-										variant="outline"
-										className={`text-xs w-24 justify-center ${
-											project.status === "ACTIVE"
-												? "bg-green-50 text-green-700 border-green-200"
-												: project.status === "COMPLETED"
-												? "bg-blue-50 text-blue-700 border-blue-200"
-												: "bg-gray-50 text-gray-700 border-gray-200"
-										}`}
-									>
-										{project.status}
-									</Badge>
-									<div className="flex items-center gap-1 text-xs text-slate-400 w-20">
-										<Clock className="w-3.5 h-3.5" />
-										<span>
-											{new Date(
-												project.updatedAt
-											).toLocaleDateString("en-US", {
-												month: "short",
-												day: "numeric",
-											})}
-										</span>
-									</div>
-									<ChevronRight className="w-5 h-5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-				))}
+							</CardContent>
+						</Card>
+					);
+				})}
 			</div>
 		);
 	};
