@@ -1,12 +1,25 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
-import { CalendarIcon, Clock, Users, Plus, Filter, Download, Settings } from "lucide-react";
+import { Filter, Download, Video } from "lucide-react";
 import TaskModal from "./TaskModal";
-import QuickTaskModal from "./QuickTaskModal";
+import SimpleGoogleMeetModal from "./SimpleGoogleMeetModal";
+import ErrorBoundary from "../ErrorBoundary";
+// Task interface
+interface Task {
+    id: number;
+    title: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
+    status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'BLOCKED';
+    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+    assignees?: string[];
+    tags?: string[];
+    progress?: number;
+}
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar-styles.css';
 
@@ -18,118 +31,124 @@ interface CalendarViewProps {
 
 const CalendarView = ({ projectMembers }: CalendarViewProps) => {
     const [selectedTask, setSelectedTask] = useState<any>(null);
-    const [showQuickTaskModal, setShowQuickTaskModal] = useState(false);
+    const [showGoogleMeetModal, setShowGoogleMeetModal] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-    const [currentView, setCurrentView] = useState(Views.MONTH);
+    const [currentView, setCurrentView] = useState<any>(Views.MONTH);
+    const [meetings, setMeetings] = useState<any[]>([]);
 
-    // Mock tasks data - same as TimelineView for consistency
-    const tasks = [
+    // Status color mapping
+    const getStatusColor = (status: string) => {
+        const colors = {
+            TODO: { background: '#F3F4F6', border: '#6B7280', text: '#374151' },
+            IN_PROGRESS: { background: '#FEF3C7', border: '#F59E0B', text: '#92400E' },
+            IN_REVIEW: { background: '#DBEAFE', border: '#3B82F6', text: '#1E40AF' },
+            COMPLETED: { background: '#D1FAE5', border: '#10B981', text: '#065F46' },
+            BLOCKED: { background: '#FEE2E2', border: '#EF4444', text: '#991B1B' }
+        };
+        return colors[status as keyof typeof colors] || colors.TODO;
+    };
+
+    // Mock tasks data - updated for current dates
+    const tasks: Task[] = [
         {
             id: 1,
             title: "UX Research",
             description: "Conduct user interviews and analyze user behavior patterns to inform design decisions.",
             assignees: ["John Doe", "Jane Smith"],
-            startDate: "2024-01-04",
-            endDate: "2024-01-12",
-            status: "in-progress",
+            startDate: "2024-11-04T09:00:00.000Z",
+            endDate: "2024-11-12T17:00:00.000Z",
+            status: "IN_PROGRESS",
             progress: 48,
-            color: "from-blue-500 to-blue-600",
-            priority: "high",
+            priority: "HIGH",
             tags: ["research", "ux"],
-            subtasks: [
-                { id: 1, title: "User interviews", completed: true },
-                { id: 2, title: "Survey analysis", completed: true },
-                { id: 3, title: "Persona creation", completed: false },
-                { id: 4, title: "Journey mapping", completed: false },
-            ],
         },
         {
             id: 2,
             title: "Information Architecture",
             description: "Design the site structure and navigation flow for optimal user experience.",
             assignees: ["Jane Smith", "Mike Johnson", "Sarah Wilson"],
-            startDate: "2024-01-06",
-            endDate: "2024-01-14",
-            status: "complete",
+            startDate: "2024-11-06T09:00:00.000Z",
+            endDate: "2024-11-14T17:00:00.000Z",
+            status: "COMPLETED",
             progress: 100,
-            color: "from-emerald-500 to-emerald-600",
-            priority: "medium",
+            priority: "MEDIUM",
             tags: ["architecture", "navigation"],
-            subtasks: [
-                { id: 1, title: "Site map creation", completed: true },
-                { id: 2, title: "Navigation design", completed: true },
-                { id: 3, title: "Content hierarchy", completed: true },
-                { id: 4, title: "User flow diagrams", completed: true },
-            ],
         },
         {
             id: 3,
             title: "Design Phase",
             description: "Create visual designs and mockups for all key pages and components.",
             assignees: ["Mike Johnson", "Sarah Wilson"],
-            startDate: "2024-01-08",
-            endDate: "2024-01-20",
-            status: "in-progress",
+            startDate: "2024-11-08T09:00:00.000Z",
+            endDate: "2024-11-20T17:00:00.000Z",
+            status: "IN_PROGRESS",
             progress: 54,
-            color: "from-teal-500 to-teal-600",
-            priority: "high",
+            priority: "HIGH",
             tags: ["design", "mockups"],
-            subtasks: [
-                { id: 1, title: "Wireframes", completed: true },
-                { id: 2, title: "Visual design", completed: true },
-                { id: 3, title: "Component library", completed: false },
-                { id: 4, title: "Responsive layouts", completed: false },
-            ],
         },
         {
             id: 4,
             title: "Prototyping",
             description: "Build interactive prototypes for user testing and stakeholder review.",
             assignees: ["Sarah Wilson", "John Doe"],
-            startDate: "2024-01-18",
-            endDate: "2024-01-28",
-            status: "upcoming",
+            startDate: "2024-11-18T09:00:00.000Z",
+            endDate: "2024-11-28T17:00:00.000Z",
+            status: "TODO",
             progress: 39,
-            color: "from-sky-500 to-sky-600",
-            priority: "medium",
+            priority: "MEDIUM",
             tags: ["prototype", "testing"],
-            subtasks: [
-                { id: 1, title: "Low-fi prototype", completed: true },
-                { id: 2, title: "High-fi prototype", completed: false },
-                { id: 3, title: "User testing", completed: false },
-                { id: 4, title: "Iteration", completed: false },
-            ],
         },
         {
             id: 5,
             title: "Development",
             description: "Implement the frontend and backend functionality according to specifications.",
             assignees: ["Mike Johnson", "Jane Smith"],
-            startDate: "2024-01-14",
-            endDate: "2024-01-22",
-            status: "in-progress",
+            startDate: "2024-11-14T09:00:00.000Z",
+            endDate: "2024-11-22T17:00:00.000Z",
+            status: "IN_PROGRESS",
             progress: 54,
-            color: "from-orange-500 to-orange-600",
-            priority: "high",
+            priority: "HIGH",
             tags: ["development", "coding"],
-            subtasks: [
-                { id: 1, title: "Setup development environment", completed: true },
-                { id: 2, title: "Core functionality", completed: true },
-                { id: 3, title: "API integration", completed: false },
-                { id: 4, title: "Testing", completed: false },
-            ],
         },
     ];
 
     // Convert tasks to calendar events
-    const calendarEvents = tasks.map(task => ({
-        id: task.id,
-        title: task.title,
-        start: new Date(task.startDate),
-        end: new Date(task.endDate),
-        resource: task,
-        allDay: false,
-    }));
+    const taskEvents = useMemo(() => 
+        tasks.map(task => ({
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            start: new Date(task.startDate),
+            end: new Date(task.endDate),
+            resource: task,
+            allDay: false,
+            backgroundColor: getStatusColor(task.status).background,
+            borderColor: getStatusColor(task.status).border,
+            textColor: getStatusColor(task.status).text,
+        })), [tasks]
+    );
+
+    // Convert meetings to calendar events
+    const meetingEvents = useMemo(() => 
+        meetings.map(meeting => ({
+            id: meeting.id,
+            title: `📹 ${meeting.title}`,
+            description: meeting.description,
+            start: new Date(meeting.start),
+            end: new Date(meeting.end),
+            resource: { ...meeting, type: 'meeting' },
+            allDay: false,
+            backgroundColor: '#10B981',
+            borderColor: '#059669',
+            textColor: '#ffffff',
+            classNames: ['meeting-event']
+        })), [meetings]
+    );
+
+    // Combine all calendar events
+    const calendarEvents = useMemo(() => 
+        [...taskEvents, ...meetingEvents], [taskEvents, meetingEvents]
+    );
 
     // Custom event style getter for calendar
     const eventStyleGetter = (event: any) => {
@@ -169,18 +188,24 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
         setSelectedTask(event.resource);
     };
 
-    // Handle slot selection (empty calendar slot)
+    // Handle slot selection (empty calendar slot) - Now opens Google Meet modal
     const handleSelectSlot = (slotInfo: any) => {
         setSelectedDate(slotInfo.start);
-        setShowQuickTaskModal(true);
+        setShowGoogleMeetModal(true);
+    };
+
+    // Handle meeting creation
+    const handleMeetingCreated = (meeting: any) => {
+        setMeetings(prev => [...prev, meeting]);
+        // You can also add this to your calendar events if needed
     };
 
     // Get task statistics
     const getTaskStats = () => {
         const total = tasks.length;
-        const completed = tasks.filter(task => task.status === 'complete').length;
-        const inProgress = tasks.filter(task => task.status === 'in-progress').length;
-        const upcoming = tasks.filter(task => task.status === 'upcoming').length;
+        const completed = tasks.filter(task => task.status === 'COMPLETED').length;
+        const inProgress = tasks.filter(task => task.status === 'IN_PROGRESS').length;
+        const upcoming = tasks.filter(task => task.status === 'TODO').length;
 
         return { total, completed, inProgress, upcoming };
     };
@@ -217,11 +242,11 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
 
                     {/* Action Buttons */}
                     <Button
-                        onClick={() => setShowQuickTaskModal(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => setShowGoogleMeetModal(true)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
                     >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Task
+                        <Video className="w-4 h-4 mr-2" />
+                        Create Meeting
                     </Button>
 
                     <Button variant="outline" size="sm">
@@ -239,13 +264,17 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
             {/* Main Calendar Card */}
             <Card className="border border-slate-200 shadow-sm bg-white">
                 <CardContent className="p-6">
-                    <div className="h-[700px] bg-white rounded-lg">
+                    <div className="h-[700px] bg-white rounded-lg relative overflow-hidden">
                         <Calendar
                             localizer={localizer}
                             events={calendarEvents}
                             startAccessor="start"
                             endAccessor="end"
-                            style={{ height: '100%' }}
+                            style={{ 
+                                height: '100%',
+                                position: 'static',
+                                transform: 'none'
+                            }}
                             onSelectEvent={handleSelectEvent}
                             onSelectSlot={handleSelectSlot}
                             selectable
@@ -356,17 +385,15 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                 />
             )}
 
-            {/* Quick Task Creation Modal */}
-            <QuickTaskModal
-                open={showQuickTaskModal}
-                onClose={() => setShowQuickTaskModal(false)}
-                selectedDate={selectedDate}
-                projectMembers={projectMembers}
-                onTaskCreate={(newTask) => {
-                    console.log('New task created:', newTask);
-                    // Here you would typically add the task to your state/database
-                }}
-            />
+            {/* Google Meet Modal */}
+            <ErrorBoundary>
+                <SimpleGoogleMeetModal
+                    open={showGoogleMeetModal}
+                    onClose={() => setShowGoogleMeetModal(false)}
+                    selectedDate={selectedDate}
+                    onMeetingCreated={handleMeetingCreated}
+                />
+            </ErrorBoundary>
         </div>
     );
 };

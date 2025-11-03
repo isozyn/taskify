@@ -1,9 +1,37 @@
-/* Custom styles for React Big Calendar */
+/* Custom styles for React Big Calendar - prevent movement */
 .rbc-calendar {
   font-family: inherit;
   border-radius: 8px;
   overflow: hidden;
   background: white;
+  height: 100% !important;
+  width: 100% !important;
+  position: static !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Prevent calendar from moving when clicking dates */
+.rbc-calendar,
+.rbc-calendar * {
+  position: static !important;
+  transform: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+
+.rbc-calendar .rbc-month-view {
+  position: static !important;
+  transform: none !important;
+}
+
+.rbc-calendar .rbc-day-bg {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.rbc-calendar .rbc-day-bg:hover {
+  background-color: #f8fafc;
 }
 
 .rbc-header {
@@ -219,4 +247,31 @@
     font-size: 10px;
     padding: 1px 4px;
   }
+}
+/* Meeting
+ event styling */
+.meeting-event {
+  background: #10B981 !important;
+  border-left: 4px solid #059669 !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.meeting-event:hover {
+  background: #059669 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Prevent calendar movement on interactions */
+.rbc-calendar .rbc-month-view .rbc-row {
+  position: static !important;
+}
+
+.rbc-calendar .rbc-month-view .rbc-row-bg {
+  position: static !important;
+}
+
+.rbc-calendar .rbc-month-view .rbc-row-content {
+  position: static !important;
 }
