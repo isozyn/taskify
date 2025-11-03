@@ -35,9 +35,11 @@ interface CustomColumn {
 
 interface KanbanBoardCustomProps {
   projectMembers: any[];
+  projectId?: number;
+  onTasksChange?: () => void;
 }
 
-const KanbanBoardCustom = ({ projectMembers }: KanbanBoardCustomProps) => {
+const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange }: KanbanBoardCustomProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [addingCardInColumn, setAddingCardInColumn] = useState<string | null>(null);

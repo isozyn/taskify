@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -17,6 +17,7 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import MemberDetailModal from "./MemberDetailModal";
+import { api, Task } from "@/lib/api";
 
 interface ProjectOverviewProps {
   project: any;
@@ -43,129 +44,71 @@ interface TeamMember {
 const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOverviewProps) => {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch tasks when component mounts
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        const response: any = await api.getTasksByProject(project.id);
+        console.log("ProjectOverview - Fetched tasks:", response);
+        // Response is directly an array of tasks
+        setTasks(Array.isArray(response) ? response : []);
+      } catch (error) {
+        console.error("Failed to fetch tasks:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, [project.id]);
+
+  // Calculate stats from real task data
+  const stats = {
+    totalTasks: tasks.length,
+    completed: tasks.filter(t => t.status === "COMPLETED").length,
+    inProgress: tasks.filter(t => t.status === "IN_PROGRESS").length,
+    overdue: tasks.filter(t => {
+      if (!t.endDate) return false;
+      return new Date(t.endDate) < new Date() && t.status !== "COMPLETED";
+    }).length,
+  };
+
+  const progress = stats.totalTasks > 0 ? (stats.completed / stats.totalTasks) * 100 : 0;
+
+  // Calculate team velocity (tasks completed per day)
+  const calculateVelocity = () => {
+    if (tasks.length === 0) return "0";
+    
+    const projectStart = new Date(project.createdAt);
+    const today = new Date();
+    const daysSinceStart = Math.max(1, Math.ceil((today.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    return (stats.completed / daysSinceStart).toFixed(1);
+  };
+
+  // Estimate completion date based on velocity
+  const estimateCompletion = () => {
+    const velocity = parseFloat(calculateVelocity());
+    if (velocity === 0 || stats.totalTasks === stats.completed) return null;
+    
+    const remainingTasks = stats.totalTasks - stats.completed;
+    const daysRemaining = Math.ceil(remainingTasks / velocity);
+    
+    const completionDate = new Date();
+    completionDate.setDate(completionDate.getDate() + daysRemaining);
+    
+    return completionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   // Determine theme colors based on workflow type
-  const themeColors = {
-    primary: workflowType === "custom" ? "purple" : "blue",
-    gradientFrom: workflowType === "custom" ? "from-purple-500" : "from-blue-500",
-    gradientTo: workflowType === "custom" ? "to-purple-600" : "to-blue-600",
-    text: workflowType === "custom" ? "text-purple-600" : "text-blue-600",
-    hover: workflowType === "custom" ? "hover:border-purple-300" : "hover:border-blue-300",
-    ring: workflowType === "custom" ? "group-hover:ring-purple-300" : "group-hover:ring-blue-300",
-    hoverText: workflowType === "custom" ? "group-hover:text-purple-600" : "group-hover:text-blue-600",
-    bg: workflowType === "custom" ? "bg-purple-600" : "bg-blue-600",
-    progressFrom: workflowType === "custom" ? "from-purple-500" : "from-blue-500",
-    progressTo: workflowType === "custom" ? "to-purple-600" : "to-blue-600",
-  };
-
-  // Mock detailed member data - will be replaced with real data from backend
-  const detailedMembers: TeamMember[] = [
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@company.com",
-      role: "Full Stack Developer",
-      joinDate: "2024-01-05",
-      description: "Senior developer with expertise in React and Node.js. Passionate about creating scalable applications and mentoring junior developers.",
-      assignedTasks: [
-        { id: 1, title: "Design landing page mockup", status: "complete", priority: "high", dueDate: "2024-01-20" },
-        { id: 4, title: "Database optimization", status: "in-progress", priority: "medium", dueDate: "2024-01-25" },
-        { id: 7, title: "API documentation update", status: "upcoming", priority: "low", dueDate: "2024-01-30" },
-      ]
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@company.com",
-      role: "UI/UX Designer",
-      joinDate: "2023-12-10",
-      description: "Creative designer focused on user-centered design and accessibility. Specializes in creating intuitive and beautiful interfaces.",
-      assignedTasks: [
-        { id: 1, title: "Design landing page mockup", status: "complete", priority: "high", dueDate: "2024-01-20" },
-        { id: 2, title: "Implement authentication", status: "in-progress", priority: "high", dueDate: "2024-01-18" },
-        { id: 5, title: "User testing preparation", status: "review", priority: "low", dueDate: "2024-01-28" },
-      ]
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      email: "mike.johnson@company.com",
-      role: "Backend Developer",
-      joinDate: "2024-01-15",
-      description: "Backend specialist with strong database and API design skills. Experienced in microservices architecture and cloud infrastructure.",
-      assignedTasks: [
-        { id: 2, title: "Implement authentication", status: "in-progress", priority: "high", dueDate: "2024-01-18" },
-        { id: 3, title: "Write API documentation", status: "upcoming", priority: "medium", dueDate: "2024-01-25" },
-        { id: 8, title: "Performance testing", status: "review", priority: "medium", dueDate: "2024-01-24" },
-      ]
-    },
-    {
-      id: 4,
-      name: "Sarah Wilson",
-      email: "sarah.wilson@company.com",
-      role: "Project Manager",
-      joinDate: "2023-11-20",
-      description: "Experienced project manager ensuring smooth delivery and team collaboration. Skilled in agile methodologies and stakeholder management.",
-      assignedTasks: [
-        { id: 4, title: "Database migration", status: "review", priority: "high", dueDate: "2024-01-17" },
-        { id: 6, title: "Campaign analytics setup", status: "in-progress", priority: "high", dueDate: "2024-01-19" },
-      ]
-    }
-  ];
-
   const handleMemberClick = (memberId: number) => {
-    const member = detailedMembers.find(m => m.id === memberId);
-    if (member) {
-      setSelectedMember(member);
-      setIsMemberModalOpen(true);
-    }
+    // TODO: Fetch member details from API
+    setIsMemberModalOpen(true);
   };
-
-  // Mock stats
-  const stats = {
-    totalTasks: 24,
-    completed: 16,
-    inProgress: 5,
-    overdue: 2,
-  };
-
-  const progress = (stats.completed / stats.totalTasks) * 100;
-
-  // Mock activity data with more details
-  const recentActivities = [
-    {
-      id: 1,
-      user: "John Doe",
-      action: "completed task",
-      target: "Design landing page mockup",
-      time: "2 hours ago",
-      type: "completed"
-    },
-    {
-      id: 2,
-      user: "Jane Smith",
-      action: "updated task",
-      target: "Implement authentication",
-      time: "5 hours ago",
-      type: "updated"
-    },
-    {
-      id: 3,
-      user: "Mike Johnson",
-      action: "added a comment on",
-      target: "Write API documentation",
-      time: "1 day ago",
-      type: "comment"
-    }
-  ];
-
-  // Mock work items stats
-  const workItemsStats = [
-    { type: "Epic", count: 3, color: "bg-purple-500" },
-    { type: "Feature", count: 8, color: "bg-green-500" },
-    { type: "Bug", count: 4, color: "bg-red-500" },
-    { type: "Story", count: 9, color: "bg-blue-500" }
-  ];
 
   return (
     <div className="space-y-6 pb-8">
@@ -269,51 +212,20 @@ const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOvervie
                     <TrendingUp className="w-4 h-4 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">Great progress!</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {stats.totalTasks === 0 ? "Get started!" : progress >= 75 ? "Great progress!" : progress >= 50 ? "Keep it up!" : "Just getting started"}
+                    </p>
                     <p className="text-xs text-slate-600 mt-1">
-                      Keep up the momentum to reach your project goals. The team is on track for completion.
+                      {stats.totalTasks === 0 
+                        ? "Create your first task to start tracking progress." 
+                        : progress >= 75
+                        ? "You're almost there! Keep up the momentum to reach your project goals."
+                        : progress >= 50
+                        ? "Halfway there! The team is making solid progress."
+                        : "Keep going! Every completed task brings you closer to your goals."}
                     </p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Types of Work Card */}
-          <Card className="border-0 bg-white shadow-sm">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg font-semibold text-slate-900">Types of Work</CardTitle>
-                  <CardDescription className="text-sm text-slate-600 mt-1">
-                    Get a breakdown of work items by their types
-                  </CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                  View all items
-                  <ArrowUpRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                {workItemsStats.map((item, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="flex items-center gap-3 w-32">
-                      <div className={`w-3 h-3 rounded-sm ${item.color}`} />
-                      <span className="text-sm font-medium text-slate-700">{item.type}</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full ${item.color}`}
-                          style={{ width: `${(item.count / 24) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-sm font-semibold text-slate-900 w-8 text-right">{item.count}</span>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
@@ -331,43 +243,9 @@ const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOvervie
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
-                    <Avatar className="w-8 h-8 flex-shrink-0">
-                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs font-semibold">
-                        {activity.user.split(" ").map(n => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-900">
-                        <span className="font-semibold">{activity.user}</span>{" "}
-                        <span className="text-slate-600">{activity.action}</span>{" "}
-                        <span className="font-medium text-blue-600 cursor-pointer hover:underline">
-                          "{activity.target}"
-                        </span>
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
-                    </div>
-                    <div>
-                      {activity.type === "completed" && (
-                        <Badge className="bg-green-50 text-green-700 border-0 font-medium">
-                          Completed
-                        </Badge>
-                      )}
-                      {activity.type === "updated" && (
-                        <Badge className="bg-blue-50 text-blue-700 border-0 font-medium">
-                          Updated
-                        </Badge>
-                      )}
-                      {activity.type === "comment" && (
-                        <Badge className="bg-slate-100 text-slate-700 border-0 font-medium">
-                          Comment
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div className="text-center py-12 text-slate-500">
+                <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No recent activity</p>
               </div>
             </CardContent>
           </Card>
@@ -425,7 +303,9 @@ const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOvervie
               <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-slate-600">Completion Rate</span>
-                  <span className="text-xs font-bold text-green-600">↑ 12%</span>
+                  <span className="text-xs font-bold text-slate-400">
+                    {stats.totalTasks > 0 ? (progress >= 50 ? "↑" : "→") : "--"}
+                  </span>
                 </div>
                 <p className="text-2xl font-bold text-slate-900">{Math.round(progress)}%</p>
               </div>
@@ -433,9 +313,11 @@ const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOvervie
               <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-slate-600">Team Velocity</span>
-                  <span className="text-xs font-bold text-green-600">↑ 8%</span>
+                  <span className="text-xs font-bold text-slate-400">
+                    {tasks.length > 0 ? "→" : "--"}
+                  </span>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">4.2</p>
+                <p className="text-2xl font-bold text-slate-900">{calculateVelocity()}</p>
                 <p className="text-xs text-slate-500 mt-1">tasks/day average</p>
               </div>
 
@@ -444,8 +326,12 @@ const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOvervie
                   <span className="text-xs font-medium text-slate-600">Est. Completion</span>
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 </div>
-                <p className="text-base font-bold text-slate-900">Feb 15, 2025</p>
-                <p className="text-xs text-slate-500 mt-1">Based on current pace</p>
+                <p className="text-base font-bold text-slate-900">
+                  {estimateCompletion() || "--"}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {estimateCompletion() ? "Based on current pace" : "No data yet"}
+                </p>
               </div>
             </CardContent>
           </Card>

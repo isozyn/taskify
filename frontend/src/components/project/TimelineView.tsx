@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
-
-
 import TaskModal from "./TaskModal";
+import { api, Task } from "@/lib/api";
 
 
 interface TimelineViewProps {
@@ -14,154 +13,172 @@ interface TimelineViewProps {
 }
 
 const TimelineView = ({ projectMembers }: TimelineViewProps) => {
-  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const { id: projectId } = useParams();
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [viewMode, setViewMode] = useState<'detailed' | 'fit-to-screen'>('detailed');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock timeline data with multiple assignees and detailed information
-  const tasks = [
-    {
-      id: 1,
-      title: "UX Research",
-      description: "Conduct user interviews and analyze user behavior patterns to inform design decisions.",
-      assignees: ["John Doe", "Jane Smith"],
-      startDate: "2024-01-04",
-      endDate: "2024-01-12",
-      status: "in-progress",
-      progress: 48,
-      color: "from-blue-500 to-blue-600",
-      priority: "high",
-      tags: ["research", "ux"],
-      subtasks: [
-        { id: 1, title: "User interviews", completed: true },
-        { id: 2, title: "Survey analysis", completed: true },
-        { id: 3, title: "Persona creation", completed: false },
-        { id: 4, title: "Journey mapping", completed: false },
-      ],
-    },
-    {
-      id: 2,
-      title: "Information Architecture",
-      description: "Design the site structure and navigation flow for optimal user experience.",
-      assignees: ["Jane Smith", "Mike Johnson", "Sarah Wilson"],
-      startDate: "2024-01-06",
-      endDate: "2024-01-14",
-      status: "complete",
-      progress: 100,
-      color: "from-emerald-500 to-emerald-600",
-      priority: "medium",
-      tags: ["architecture", "navigation"],
-      subtasks: [
-        { id: 1, title: "Site map creation", completed: true },
-        { id: 2, title: "Navigation design", completed: true },
-        { id: 3, title: "Content hierarchy", completed: true },
-        { id: 4, title: "User flow diagrams", completed: true },
-      ],
-    },
-    {
-      id: 3,
-      title: "Design Phase",
-      description: "Create visual designs and mockups for all key pages and components.",
-      assignees: ["Mike Johnson", "Sarah Wilson"],
-      startDate: "2024-01-08",
-      endDate: "2024-01-20",
-      status: "in-progress",
-      progress: 54,
-      color: "from-teal-500 to-teal-600",
-      priority: "high",
-      tags: ["design", "mockups"],
-      subtasks: [
-        { id: 1, title: "Wireframes", completed: true },
-        { id: 2, title: "Visual design", completed: true },
-        { id: 3, title: "Component library", completed: false },
-        { id: 4, title: "Responsive layouts", completed: false },
-      ],
-    },
-    {
-      id: 4,
-      title: "Prototyping",
-      description: "Build interactive prototypes for user testing and stakeholder review.",
-      assignees: ["Sarah Wilson", "John Doe"],
-      startDate: "2024-01-18",
-      endDate: "2024-01-28",
-      status: "upcoming",
-      progress: 39,
-      color: "from-sky-500 to-sky-600",
-      priority: "medium",
-      tags: ["prototype", "testing"],
-      subtasks: [
-        { id: 1, title: "Low-fi prototype", completed: true },
-        { id: 2, title: "High-fi prototype", completed: false },
-        { id: 3, title: "User testing", completed: false },
-        { id: 4, title: "Iteration", completed: false },
-      ],
-    },
-    {
-      id: 5,
-      title: "Development",
-      description: "Implement the frontend and backend functionality according to specifications.",
-      assignees: ["Mike Johnson", "Jane Smith"],
-      startDate: "2024-01-14",
-      endDate: "2024-01-22",
-      status: "in-progress",
-      progress: 54,
-      color: "from-orange-500 to-orange-600",
-      priority: "high",
-      tags: ["development", "coding"],
-      subtasks: [
-        { id: 1, title: "Setup development environment", completed: true },
-        { id: 2, title: "Core functionality", completed: true },
-        { id: 3, title: "API integration", completed: false },
-        { id: 4, title: "Testing", completed: false },
-      ],
-    },
-    {
-      id: 6,
-      title: "Backend Development",
-      description: "Build robust server-side architecture and database design.",
-      assignees: ["John Doe"],
-      startDate: "2024-01-10",
-      endDate: "2024-01-16",
-      status: "in-progress",
-      progress: 69,
-      color: "from-purple-500 to-purple-600",
-      priority: "high",
-      tags: ["backend", "api"],
-      subtasks: [
-        { id: 1, title: "Database schema", completed: true },
-        { id: 2, title: "API endpoints", completed: true },
-        { id: 3, title: "Authentication", completed: true },
-        { id: 4, title: "Data validation", completed: false },
-      ],
-    },
-    {
-      id: 7,
-      title: "Frontend Development",
-      description: "Implement responsive user interface with modern web technologies.",
-      assignees: ["Jane Smith", "Mike Johnson"],
-      startDate: "2024-01-16",
-      endDate: "2024-01-20",
-      status: "in-progress",
-      progress: 61,
-      color: "from-amber-500 to-amber-600",
-      priority: "medium",
-      tags: ["frontend", "ui"],
-      subtasks: [
-        { id: 1, title: "Component setup", completed: true },
-        { id: 2, title: "Styling system", completed: true },
-        { id: 3, title: "State management", completed: true },
-        { id: 4, title: "Performance optimization", completed: false },
-      ],
-    },
-  ];
+  // Fetch tasks from API
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!projectId) return;
+      
+      try {
+        setIsLoading(true);
+        const response: any = await api.getTasksByProject(parseInt(projectId));
+        console.log("TimelineView - Fetched tasks:", response);
+        
+        // Filter tasks that have both start and end dates
+        const tasksWithDates = Array.isArray(response) 
+          ? response.filter(task => task.startDate && task.endDate)
+          : [];
+        
+        setTasks(tasksWithDates);
+      } catch (error) {
+        console.error('Failed to fetch tasks:', error);
+        setTasks([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleTaskClick = (task: any) => {
+    fetchTasks();
+  }, [projectId]);
+
+  // Map API status to UI status
+  const mapStatusToUI = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'complete';
+      case 'IN_PROGRESS':
+        return 'in-progress';
+      case 'IN_REVIEW':
+        return 'review';
+      case 'TODO':
+      case 'BACKLOG':
+      default:
+        return 'upcoming';
+    }
+  };
+
+  // Map priority to color gradient
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'URGENT':
+        return 'from-red-500 to-red-600';
+      case 'HIGH':
+        return 'from-orange-500 to-orange-600';
+      case 'MEDIUM':
+        return 'from-blue-500 to-blue-600';
+      case 'LOW':
+      default:
+        return 'from-green-500 to-green-600';
+    }
+  };
+
+  // Calculate progress based on status
+  const calculateProgress = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 100;
+      case 'IN_REVIEW':
+        return 80;
+      case 'IN_PROGRESS':
+        return 50;
+      case 'TODO':
+        return 25;
+      case 'BACKLOG':
+      default:
+        return 0;
+    }
+  };
+
+  // Calculate task position on timeline based on dates
+  const calculateTaskPosition = (task: Task, totalWeeks: number) => {
+    if (!task.startDate || !task.endDate) return { left: 0, width: 0 };
+
+    const projectStart = new Date('2024-01-01'); // You might want to get this from project data
+    const taskStart = new Date(task.startDate);
+    const taskEnd = new Date(task.endDate);
+
+    const totalDays = totalWeeks * 7;
+    const daysSinceProjectStart = Math.floor((taskStart.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24));
+    const taskDuration = Math.floor((taskEnd.getTime() - taskStart.getTime()) / (1000 * 60 * 60 * 24));
+
+    const left = (daysSinceProjectStart / totalDays) * 100;
+    const width = (taskDuration / totalDays) * 100;
+
+    return {
+      left: Math.max(0, Math.min(left, 95)),
+      width: Math.max(5, Math.min(width, 100 - left))
+    };
+  };
+
+  const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
   };
 
+  const handleTaskUpdated = () => {
+    // Refresh tasks after update
+    if (projectId) {
+      api.getTasksByProject(parseInt(projectId)).then((response: any) => {
+        const tasksWithDates = Array.isArray(response) 
+          ? response.filter(task => task.startDate && task.endDate)
+          : [];
+        setTasks(tasksWithDates);
+      });
+    }
+    setSelectedTask(null);
+  };
 
+  const handleTaskDeleted = () => {
+    setSelectedTask(null);
+    // Refresh tasks after deletion
+    if (projectId) {
+      api.getTasksByProject(parseInt(projectId)).then((response: any) => {
+        const tasksWithDates = Array.isArray(response) 
+          ? response.filter(task => task.startDate && task.endDate)
+          : [];
+        setTasks(tasksWithDates);
+      });
+    }
+  };
 
-  // Generate week columns
-  const weeks = Array.from({ length: 18 }, (_, i) => `S ${String(i + 4).padStart(2, "0")}`);
+  // Generate date columns based on tasks
+  const generateDateColumns = () => {
+    if (tasks.length === 0) {
+      // Default to current month if no tasks
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      return Array.from({ length: 18 }, (_, i) => {
+        const date = new Date(startOfMonth);
+        date.setDate(startOfMonth.getDate() + (i * 7)); // Weekly intervals
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+    }
+
+    // Find earliest start date and latest end date
+    const allDates = tasks.flatMap(task => [
+      new Date(task.startDate!),
+      new Date(task.endDate!)
+    ]);
+    const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+
+    // Calculate number of weeks needed
+    const daysDiff = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
+    const weeksNeeded = Math.max(18, Math.ceil(daysDiff / 7) + 2); // Add buffer
+
+    // Generate weekly date labels
+    return Array.from({ length: Math.min(weeksNeeded, 24) }, (_, i) => {
+      const date = new Date(minDate);
+      date.setDate(minDate.getDate() + (i * 7));
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+  };
+
+  const weeks = generateDateColumns();
 
   return (
     <div className="space-y-6">
@@ -207,7 +224,9 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                 <Button variant="ghost" size="icon" className="w-8 h-8 hover:bg-muted/50">
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <span className="text-sm font-bold px-4 text-foreground">Q1 2024</span>
+                <span className="text-sm font-bold px-4 text-foreground">
+                  {tasks.length > 0 ? weeks[0] + ' - ' + weeks[weeks.length - 1] : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                </span>
                 <Button variant="ghost" size="icon" className="w-8 h-8 hover:bg-muted/50">
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -218,7 +237,17 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
 
 
           {/* Executive Timeline Grid */}
-          {viewMode === 'detailed' ? (
+          {tasks.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/30 mb-4">
+                <ChevronRight className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No Tasks Yet</h3>
+              <p className="text-sm text-muted-foreground">
+                Create tasks with start and end dates to see them on the timeline
+              </p>
+            </div>
+          ) : viewMode === 'detailed' ? (
             <div className="relative bg-gradient-to-r from-muted/20 to-transparent rounded-xl p-6">
               {/* Premium Week Headers */}
               <div className="flex mb-6 pl-[280px]">
@@ -236,7 +265,13 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
 
               {/* Executive Task Rows */}
               <div className="space-y-3">
-                {tasks.map((task, taskIdx) => (
+                {tasks.map((task, taskIdx) => {
+                  const progress = calculateProgress(task.status);
+                  const uiStatus = mapStatusToUI(task.status);
+                  const colorGradient = getPriorityColor(task.priority);
+                  const position = calculateTaskPosition(task, weeks.length);
+                  
+                  return (
                   <div key={task.id} className="flex items-center gap-6 group">
                     {/* Executive Task Info Panel */}
                     <div className="w-64 premium-card border-0 bg-gradient-to-r from-card to-card/80 overflow-hidden">
@@ -244,7 +279,7 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                       <div className="relative h-1 bg-muted/30">
                         <div
                           className="absolute top-0 left-0 h-1 bg-gradient-to-r from-primary to-accent transition-all duration-700"
-                          style={{ width: `${task.progress}%` }}
+                          style={{ width: `${progress}%` }}
                         />
                       </div>
                       
@@ -253,15 +288,15 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                           <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-semibold text-foreground truncate">{task.title}</h4>
                             <p className="text-[9px] text-muted-foreground font-medium tracking-wide mt-0.5">
-                              {task.priority.toUpperCase()} PRIORITY
+                              {task.priority} PRIORITY
                             </p>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm font-semibold text-foreground">{task.progress}%</div>
+                            <div className="text-sm font-semibold text-foreground">{progress}%</div>
                             <div className={`w-2.5 h-2.5 rounded-full mt-0.5 mx-auto ${
-                              task.status === 'complete' ? 'bg-success' : 
-                              task.status === 'in-progress' ? 'bg-accent' : 
-                              task.status === 'review' ? 'bg-warning' : 'bg-primary'
+                              uiStatus === 'complete' ? 'bg-success' : 
+                              uiStatus === 'in-progress' ? 'bg-accent' : 
+                              uiStatus === 'review' ? 'bg-warning' : 'bg-primary'
                             } shadow-md`}></div>
                           </div>
                         </div>
@@ -286,16 +321,16 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                       <div
                         className="absolute h-10 rounded-xl shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:-translate-y-1"
                         style={{
-                          left: `${((taskIdx) * 8) + 5}%`,
-                          width: `${20 + (taskIdx * 3)}%`,
+                          left: `${position.left}%`,
+                          width: `${position.width}%`,
                         }}
                         onClick={() => handleTaskClick(task)}
                       >
-                        <div className={`h-full rounded-xl bg-gradient-to-r ${task.color} flex items-center justify-between px-4 shadow-lg border border-white/20`}>
+                        <div className={`h-full rounded-xl bg-gradient-to-r ${colorGradient} flex items-center justify-between px-4 shadow-lg border border-white/20`}>
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-white/80"></div>
                             <span className="text-white text-xs font-bold tracking-wide">
-                              {task.progress}%
+                              {progress}%
                             </span>
                           </div>
                           <ChevronRight className="w-4 h-4 text-white/80" />
@@ -303,12 +338,13 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                         {/* Progress Fill */}
                         <div 
                           className="absolute top-0 left-0 h-full rounded-xl bg-gradient-to-r from-white/20 to-transparent transition-all duration-700"
-                          style={{ width: `${task.progress}%` }}
+                          style={{ width: `${progress}%` }}
                         ></div>
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -330,82 +366,89 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
 
               {/* Compact Task Rows */}
               <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                {tasks.map((task, taskIdx) => (
-                  <div key={task.id} className="flex items-center gap-4 group">
-                    {/* Compact Task Info Panel */}
-                    <div className="w-40 premium-card border-0 bg-gradient-to-r from-card to-card/80 overflow-hidden">
-                      {/* Progress Bar at Top */}
-                      <div className="relative h-1 bg-muted/30">
-                        <div
-                          className="absolute top-0 left-0 h-1 bg-gradient-to-r from-primary to-accent transition-all duration-700"
-                          style={{ width: `${task.progress}%` }}
-                        />
-                      </div>
-                      
-                      <div className="p-1.5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-xs font-semibold text-foreground truncate">{task.title}</h4>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <Badge 
-                                variant="outline" 
-                                className={`text-[9px] px-1 py-0 h-3.5 font-medium ${
-                                  task.priority === 'high' ? 'border-red-300 text-red-600' :
-                                  task.priority === 'medium' ? 'border-yellow-300 text-yellow-600' :
-                                  'border-green-300 text-green-600'
-                                }`}
-                              >
-                                {task.priority.charAt(0).toUpperCase()}
-                              </Badge>
-                              <span className="text-xs font-semibold text-foreground">{task.progress}%</span>
-                              <div className={`w-1.5 h-1.5 rounded-full ${
-                                task.status === 'complete' ? 'bg-success' : 
-                                task.status === 'in-progress' ? 'bg-accent' : 
-                                task.status === 'review' ? 'bg-warning' : 'bg-primary'
-                              } shadow-sm`}></div>
+                {tasks.map((task, taskIdx) => {
+                  const progress = calculateProgress(task.status);
+                  const uiStatus = mapStatusToUI(task.status);
+                  const colorGradient = getPriorityColor(task.priority);
+                  const position = calculateTaskPosition(task, weeks.length);
+                  
+                  return (
+                    <div key={task.id} className="flex items-center gap-4 group">
+                      {/* Compact Task Info Panel */}
+                      <div className="w-40 premium-card border-0 bg-gradient-to-r from-card to-card/80 overflow-hidden">
+                        {/* Progress Bar at Top */}
+                        <div className="relative h-1 bg-muted/30">
+                          <div
+                            className="absolute top-0 left-0 h-1 bg-gradient-to-r from-primary to-accent transition-all duration-700"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        
+                        <div className="p-1.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-xs font-semibold text-foreground truncate">{task.title}</h4>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-[9px] px-1 py-0 h-3.5 font-medium ${
+                                    task.priority === 'URGENT' || task.priority === 'HIGH' ? 'border-red-300 text-red-600' :
+                                    task.priority === 'MEDIUM' ? 'border-yellow-300 text-yellow-600' :
+                                    'border-green-300 text-green-600'
+                                  }`}
+                                >
+                                  {task.priority.charAt(0).toUpperCase()}
+                                </Badge>
+                                <span className="text-xs font-semibold text-foreground">{progress}%</span>
+                                <div className={`w-1.5 h-1.5 rounded-full ${
+                                  uiStatus === 'complete' ? 'bg-success' : 
+                                  uiStatus === 'in-progress' ? 'bg-accent' : 
+                                  uiStatus === 'review' ? 'bg-warning' : 'bg-primary'
+                                } shadow-sm`}></div>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Compact Timeline Bar */}
-                    <div className="flex-1 relative h-8 flex items-center">
-                      {/* Grid Lines */}
-                      <div className="absolute inset-0 grid grid-cols-18">
-                        {weeks.map((week, idx) => (
-                          <div
-                            key={week}
-                            className={`border-r ${
-                              idx === 0 ? "border-l" : ""
-                            } ${idx % 6 === 0 ? 'border-slate-300' : 'border-slate-200'}`}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Compact Progress Bar */}
-                      <div
-                        className="absolute h-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group-hover:scale-105"
-                        style={{
-                          left: `${((taskIdx) * 6) + 2}%`,
-                          width: `${Math.max(12, 15 + (taskIdx * 2))}%`,
-                        }}
-                        onClick={() => handleTaskClick(task)}
-                      >
-                        <div className={`h-full rounded-lg bg-gradient-to-r ${task.color} flex items-center justify-center px-2 shadow-md border border-white/20`}>
-                          <span className="text-white text-xs font-bold tracking-wide">
-                            {task.progress}%
-                          </span>
+                      {/* Compact Timeline Bar */}
+                      <div className="flex-1 relative h-8 flex items-center">
+                        {/* Grid Lines */}
+                        <div className="absolute inset-0 grid grid-cols-18">
+                          {weeks.map((week, idx) => (
+                            <div
+                              key={week}
+                              className={`border-r ${
+                                idx === 0 ? "border-l" : ""
+                              } ${idx % 6 === 0 ? 'border-slate-300' : 'border-slate-200'}`}
+                            />
+                          ))}
                         </div>
-                        {/* Progress Fill */}
-                        <div 
-                          className="absolute top-0 left-0 h-full rounded-lg bg-gradient-to-r from-white/20 to-transparent transition-all duration-500"
-                          style={{ width: `${task.progress}%` }}
-                        ></div>
+
+                        {/* Compact Progress Bar */}
+                        <div
+                          className="absolute h-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group-hover:scale-105"
+                          style={{
+                            left: `${position.left}%`,
+                            width: `${position.width}%`,
+                          }}
+                          onClick={() => handleTaskClick(task)}
+                        >
+                          <div className={`h-full rounded-lg bg-gradient-to-r ${colorGradient} flex items-center justify-center px-2 shadow-md border border-white/20`}>
+                            <span className="text-white text-xs font-bold tracking-wide">
+                              {progress}%
+                            </span>
+                          </div>
+                          {/* Progress Fill */}
+                          <div 
+                            className="absolute top-0 left-0 h-full rounded-lg bg-gradient-to-r from-white/20 to-transparent transition-all duration-500"
+                            style={{ width: `${progress}%` }}
+                          ></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -414,10 +457,10 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
       </Card>
 
       {/* Task Modal */}
-      {selectedTask && (
+      {selectedTask !== null && (
         <TaskModal
           task={selectedTask}
-          open={!!selectedTask}
+          open={selectedTask !== null}
           onClose={() => setSelectedTask(null)}
           projectMembers={projectMembers}
         />

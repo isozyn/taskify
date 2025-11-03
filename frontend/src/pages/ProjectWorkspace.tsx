@@ -33,6 +33,12 @@ const ProjectWorkspace = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [workflowType, setWorkflowType] = useState<"auto-sync" | "custom">("auto-sync");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Function to trigger refresh
+  const refreshProject = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   // Fetch project data from database
   useEffect(() => {
@@ -143,9 +149,9 @@ const ProjectWorkspace = () => {
 
     switch (activeView) {
       case "overview":
-        return <ProjectOverview project={project} workflowType={workflowType} />;
+        return <ProjectOverview key={refreshKey} project={project} workflowType={workflowType} />;
       case "kanban":
-        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} />;
+        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={project.id} onTasksChange={refreshProject} />;
       case "timeline":
         return <TimelineView projectMembers={projectMembers} />;
       case "calendar":
@@ -153,7 +159,7 @@ const ProjectWorkspace = () => {
       case "settings":
         return <ProjectSettings project={project} />;
       default:
-        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} />;
+        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={project.id} onTasksChange={refreshProject} />;
     }
   };
 

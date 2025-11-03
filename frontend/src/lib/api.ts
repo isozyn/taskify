@@ -173,6 +173,12 @@ class ApiClient {
 		});
 	}
 
+	async getTaskById(taskId: number) {
+		return this.request(`/tasks/${taskId}`, {
+			method: "GET",
+		});
+	}
+
 	async createTask(projectId: number, data: {
 		title: string;
 		description?: string;

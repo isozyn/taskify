@@ -10,10 +10,13 @@ import { api, Task } from "@/lib/api";
 
 interface KanbanBoardAutoSyncProps {
   projectMembers: any[];
+  projectId?: number;
+  onTasksChange?: () => void;
 }
 
-const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
-  const { id: projectId } = useParams();
+const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasksChange }: KanbanBoardAutoSyncProps) => {
+  const { id: urlProjectId } = useParams();
+  const projectId = propProjectId || (urlProjectId ? parseInt(urlProjectId) : undefined);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -26,8 +29,9 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
       
       try {
         setIsLoading(true);
-        const response: any = await api.getTasksByProject(parseInt(projectId));
-        setTasks(response || []);
+        const response: any = await api.getTasksByProject(projectId);
+        console.log("KanbanBoard - Fetched tasks:", response);
+        setTasks(Array.isArray(response) ? response : []);
       } catch (error) {
         console.error('Failed to fetch tasks:', error);
         setTasks([]);
@@ -51,7 +55,7 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
         assigneeId = assignee ? assignee.id : null;
       }
 
-      const newTask = await api.createTask(parseInt(projectId), {
+      const newTask = await api.createTask(projectId, {
         title: taskData.title,
         description: taskData.description,
         startDate: taskData.startDate,
@@ -61,9 +65,15 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
         tags: taskData.tags || [],
       });
       
+      console.log("Task created successfully:", newTask);
+      
       // Refresh tasks list
-      const response: any = await api.getTasksByProject(parseInt(projectId));
-      setTasks(response || []);
+      const response: any = await api.getTasksByProject(projectId);
+      setTasks(Array.isArray(response) ? response : []);
+      
+      // Notify parent component to refresh
+      console.log("Calling onTasksChange to refresh Overview");
+      onTasksChange?.();
       
       setIsCreateTaskModalOpen(false);
     } catch (error: any) {

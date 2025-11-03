@@ -8,9 +8,11 @@ interface KanbanBoardProps {
   projectMembers: any[];
   onWorkflowChange?: (workflow: "auto-sync" | "custom") => void;
   workflowType?: "auto-sync" | "custom";
+  projectId?: number;
+  onTasksChange?: () => void;
 }
 
-const KanbanBoard = ({ projectMembers, onWorkflowChange, workflowType: initialWorkflowType }: KanbanBoardProps) => {
+const KanbanBoard = ({ projectMembers, onWorkflowChange, workflowType: initialWorkflowType, projectId, onTasksChange }: KanbanBoardProps) => {
   const [boardTemplate, setBoardTemplate] = useState<"auto-sync" | "custom">(initialWorkflowType || "auto-sync");
 
   const handleTemplateChange = (template: "auto-sync" | "custom") => {
@@ -21,9 +23,9 @@ const KanbanBoard = ({ projectMembers, onWorkflowChange, workflowType: initialWo
   return (
     <div className="space-y-4">
       {boardTemplate === "auto-sync" ? (
-        <KanbanBoardAutoSync projectMembers={projectMembers} />
+        <KanbanBoardAutoSync projectMembers={projectMembers} projectId={projectId} onTasksChange={onTasksChange} />
       ) : (
-        <KanbanBoardCustom projectMembers={projectMembers} />
+        <KanbanBoardCustom projectMembers={projectMembers} projectId={projectId} onTasksChange={onTasksChange} />
       )}
     </div>
   );
