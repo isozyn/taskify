@@ -48,10 +48,13 @@ import {
 	Sparkles,
 	ArrowLeft,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useUser } from "@/contexts/UserContext";
 
 const Dashboard = () => {
 	const navigate = useNavigate();
+	const location = useLocation();
+	const { user, isAuthenticated } = useUser();
 	const [joinProjectCode, setJoinProjectCode] = useState("");
 	const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
 	const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
@@ -89,6 +92,55 @@ const Dashboard = () => {
 
 		fetchProjects();
 	}, []);
+
+	// Handle project creation from template selection
+	useEffect(() => {
+		const handleProjectCreation = async () => {
+			const { createProject, selectedTemplate, projectData } = location.state || {};
+			
+			if (createProject && selectedTemplate && projectData) {
+				console.log("Creating project with data:", { selectedTemplate, projectData });
+				console.log("User authenticated:", isAuthenticated, "User:", user);
+				
+				if (!isAuthenticated) {
+					console.error("User not authenticated, redirecting to login");
+					navigate("/auth");
+					return;
+				}
+				
+				try {
+					// Map selectedTemplate to workflowType
+					const workflowType = selectedTemplate === "auto-sync" ? "AUTOMATED" : "CUSTOM";
+
+					console.log("Calling API to create project...");
+					const response: any = await api.createProject({
+						title: projectData.name,
+						description: projectData.description || undefined,
+						workflowType: workflowType,
+					});
+
+					console.log("Project created successfully:", response);
+
+					// Refresh projects list
+					console.log("Refreshing projects list...");
+					const updatedResponse: any = await api.getProjects();
+					setProjects(updatedResponse || []);
+					console.log("Projects updated:", updatedResponse);
+
+					// Navigate to the new project workspace
+					if (response.id) {
+						console.log("Navigating to project:", response.id);
+						navigate(`/project/${response.id}`);
+					}
+				} catch (error) {
+					console.error("Failed to create project:", error);
+					alert(`Failed to create project: ${error.message || 'Unknown error'}`);
+				}
+			}
+		};
+
+		handleProjectCreation();
+	}, [location.state, navigate]);
 
 	// Mock active tasks data
 	const activeTasks = [
@@ -362,7 +414,7 @@ const Dashboard = () => {
 					</p>
 					<Button
 						className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-						onClick={() => setIsTemplateSelectionOpen(true)}
+						onClick={() => navigate("/project-setup")}
 					>
 						<Plus className="w-4 h-4" />
 						Create Project
@@ -578,7 +630,7 @@ const Dashboard = () => {
 							{/* Create Project Button */}
 							<Button
 								className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-9 shadow-sm"
-								onClick={() => setIsTemplateSelectionOpen(true)}
+								onClick={() => navigate("/project-setup")}
 							>
 								<Plus className="w-4 h-4" />
 								Create

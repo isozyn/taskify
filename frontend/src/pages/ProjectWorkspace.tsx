@@ -44,6 +44,8 @@ const ProjectWorkspace = () => {
         console.log('Fetching project with ID:', id);
         const response: any = await api.getProjectById(parseInt(id));
         console.log('Project data received:', response);
+        console.log('Project members:', response.members);
+        console.log('Project owner:', response.owner);
         setProject(response);
         
         // Set workflow type based on project data
@@ -72,13 +74,27 @@ const ProjectWorkspace = () => {
     bg: workflowType === "custom" ? "bg-purple-600" : "bg-blue-600",
   };
 
-  // Mock members data (will be replaced with real data when we add project members)
-  const mockMembers = [
-    { id: 1, name: "John Doe", avatar: "" },
-    { id: 2, name: "Jane Smith", avatar: "" },
-    { id: 3, name: "Mike Johnson", avatar: "" },
-    { id: 4, name: "Sarah Wilson", avatar: "" },
-  ];
+  // Get real project members from the project data
+  const projectMembers = project ? [
+    // Include the project owner
+    ...(project.owner ? [{
+      id: project.owner.id,
+      name: project.owner.name,
+      email: project.owner.email,
+      avatar: project.owner.avatar,
+      username: project.owner.username,
+      role: 'OWNER'
+    }] : []),
+    // Include all project members
+    ...(project.members || []).map((member: any) => ({
+      id: member.user.id,
+      name: member.user.name,
+      email: member.user.email,
+      avatar: member.user.avatar,
+      username: member.user.username,
+      role: member.role
+    }))
+  ] : [];
 
   const navItems = [
     {
@@ -129,15 +145,15 @@ const ProjectWorkspace = () => {
       case "overview":
         return <ProjectOverview project={project} workflowType={workflowType} />;
       case "kanban":
-        return <KanbanBoard projectMembers={mockMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} />;
+        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} />;
       case "timeline":
-        return <TimelineView projectMembers={mockMembers} />;
+        return <TimelineView projectMembers={projectMembers} />;
       case "calendar":
-        return <CalendarView projectMembers={mockMembers} />;
+        return <CalendarView projectMembers={projectMembers} />;
       case "settings":
         return <ProjectSettings project={project} />;
       default:
-        return <KanbanBoard projectMembers={mockMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} />;
+        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} />;
     }
   };
 
@@ -205,7 +221,7 @@ const ProjectWorkspace = () => {
               {/* Team Members */}
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
-                  {mockMembers.slice(0, 3).map((member) => (
+                  {projectMembers.slice(0, 3).map((member) => (
                     <Avatar
                       key={member.id}
                       className="w-7 h-7 border-2 border-white hover:z-10 transition-all cursor-pointer"
@@ -214,10 +230,10 @@ const ProjectWorkspace = () => {
                         {member.name?.split(' ').map(n => n[0]).join('') || '??'}                      </AvatarFallback>
                     </Avatar>
                   ))}
-                  {mockMembers.length > 3 && (
+                  {projectMembers.length > 3 && (
                     <Avatar className="w-7 h-7 border-2 border-white">
                       <AvatarFallback className="bg-slate-100 text-slate-600 text-xs font-medium">
-                        +{mockMembers.length - 3}
+                        +{projectMembers.length - 3}
                       </AvatarFallback>
                     </Avatar>
                   )}

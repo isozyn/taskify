@@ -1,83 +1,79 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, CheckCircle2, Clock, AlertCircle, FileText, Archive, Plus } from "lucide-react";
 import TaskModal from "./TaskModal";
 import TaskFormModal from "./TaskFormModal";
-
-interface Task {
-  id: number;
-  title: string;
-  assignees: string[];
-  startDate: string;
-  endDate: string;
-  status: "upcoming" | "in-progress" | "review" | "complete" | "backlog";
-  progress: number;
-}
+import { api, Task } from "@/lib/api";
 
 interface KanbanBoardAutoSyncProps {
   projectMembers: any[];
 }
 
 const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
+  const { id: projectId } = useParams();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleCreateTask = (taskData: any) => {
-    // TODO: Implement create task logic with backend
-    // Tasks will automatically move based on their dates
-    console.log("Creating auto-sync task:", taskData);
+  // Fetch tasks from API
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!projectId) return;
+      
+      try {
+        setIsLoading(true);
+        const response: any = await api.getTasksByProject(parseInt(projectId));
+        setTasks(response || []);
+      } catch (error) {
+        console.error('Failed to fetch tasks:', error);
+        setTasks([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, [projectId]);
+
+  const handleCreateTask = async (taskData: any) => {
+    if (!projectId) return;
+    
+    try {
+      // Find the first assigned member and get their ID
+      let assigneeId = null;
+      if (taskData.assignees && taskData.assignees.length > 0) {
+        const assigneeName = taskData.assignees[0]; // Take first assignee for now
+        const assignee = projectMembers.find(member => member.name === assigneeName);
+        assigneeId = assignee ? assignee.id : null;
+      }
+
+      const newTask = await api.createTask(parseInt(projectId), {
+        title: taskData.title,
+        description: taskData.description,
+        startDate: taskData.startDate,
+        endDate: taskData.endDate,
+        priority: taskData.priority || 'MEDIUM',
+        assigneeId: assigneeId,
+        tags: taskData.tags || [],
+      });
+      
+      // Refresh tasks list
+      const response: any = await api.getTasksByProject(parseInt(projectId));
+      setTasks(response || []);
+      
+      setIsCreateTaskModalOpen(false);
+    } catch (error: any) {
+      console.error('Failed to create task:', error);
+      const errorMessage = error?.message || 'Unknown error occurred';
+      alert(`Failed to create task: ${errorMessage}`);
+    }
   };
 
-  // Mock tasks - will be replaced with real data
-  const tasks: Task[] = [
-    {
-      id: 1,
-      title: "Design landing page mockup",
-      assignees: ["John Doe", "Jane Smith"],
-      startDate: "2024-01-15",
-      endDate: "2024-01-20",
-      status: "complete",
-      progress: 100,
-    },
-    {
-      id: 2,
-      title: "Implement authentication",
-      assignees: ["Jane Smith", "Mike Johnson"],
-      startDate: "2024-01-10",
-      endDate: "2024-01-18",
-      status: "in-progress",
-      progress: 60,
-    },
-    {
-      id: 3,
-      title: "Write API documentation",
-      assignees: ["Mike Johnson"],
-      startDate: "2024-01-20",
-      endDate: "2024-01-25",
-      status: "upcoming",
-      progress: 0,
-    },
-    {
-      id: 4,
-      title: "Database migration",
-      assignees: ["Sarah Wilson", "John Doe"],
-      startDate: "2024-01-12",
-      endDate: "2024-01-17",
-      status: "review",
-      progress: 100,
-    },
-    {
-      id: 5,
-      title: "Fix payment gateway bug",
-      assignees: ["Jane Smith", "Sarah Wilson", "Mike Johnson"],
-      startDate: "2023-12-28",
-      endDate: "2024-01-05",
-      status: "backlog",
-      progress: 30,
-    },
-  ];
+
 
   // Fixed columns for auto-sync mode
   const columns = [
@@ -113,8 +109,18 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
     },
   ];
 
-  const getTasksByStatus = (status: string) => {
-    return tasks.filter((task) => task.status === status);
+  const getTasksByStatus = (columnId: string) => {
+    // Map column IDs to Task status values
+    const statusMap: { [key: string]: string } = {
+      "upcoming": "TODO",
+      "in-progress": "IN_PROGRESS", 
+      "review": "IN_REVIEW",
+      "complete": "COMPLETED",
+      "backlog": "BLOCKED"
+    };
+    
+    const taskStatus = statusMap[columnId];
+    return tasks.filter((task) => task.status === taskStatus);
   };
 
   return (
@@ -139,8 +145,17 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
         </Button>
       </div>
 
-      {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-slate-600">Loading tasks...</p>
+          </div>
+        </div>
+      ) : (
+        /* Kanban Board */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {columns.map((column) => {
           const Icon = column.icon;
           const columnTasks = getTasksByStatus(column.id);
@@ -184,52 +199,61 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
                             {task.title}
                           </h4>
 
-                          {/* Progress Bar */}
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-slate-500 font-medium">Progress</span>
-                              <span className="text-xs font-semibold text-slate-700">{task.progress}%</span>
-                            </div>
-                            <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
-                              <div 
-                                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all"
-                                style={{ width: `${task.progress}%` }}
-                              />
-                            </div>
+                          {/* Priority Badge */}
+                          <div className="flex items-center justify-between">
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${
+                                task.priority === 'URGENT' ? 'border-red-300 text-red-700 bg-red-50' :
+                                task.priority === 'HIGH' ? 'border-orange-300 text-orange-700 bg-orange-50' :
+                                task.priority === 'MEDIUM' ? 'border-blue-300 text-blue-700 bg-blue-50' :
+                                'border-gray-300 text-gray-700 bg-gray-50'
+                              }`}
+                            >
+                              {task.priority}
+                            </Badge>
+                            {task.tags.length > 0 && (
+                              <div className="flex gap-1">
+                                {task.tags.slice(0, 2).map((tag, idx) => (
+                                  <span key={idx} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
 
                           {/* Dates */}
-                          <div className="flex items-center justify-between text-xs text-slate-500">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              <span>{new Date(task.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                            </div>
-                            <span>→</span>
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              <span>{new Date(task.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                            </div>
-                          </div>
-
-                          {/* Assignees */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex -space-x-2">
-                              {task.assignees.slice(0, 3).map((assignee, idx) => (
-                                <div
-                                  key={idx}
-                                  className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 border-2 border-white flex items-center justify-center text-white text-[10px] font-bold shadow-sm"
-                                  title={assignee}
-                                >
-                                  {assignee.split(" ").map((n: string) => n[0]).join("")}
+                          {(task.startDate || task.endDate) && (
+                            <div className="flex items-center justify-between text-xs text-slate-500">
+                              {task.startDate && (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  <span>{new Date(task.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                                 </div>
-                              ))}
-                              {task.assignees.length > 3 && (
-                                <div className="w-6 h-6 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-slate-600 text-[10px] font-bold shadow-sm">
-                                  +{task.assignees.length - 3}
+                              )}
+                              {task.startDate && task.endDate && <span>→</span>}
+                              {task.endDate && (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  <span>{new Date(task.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                                 </div>
                               )}
                             </div>
-                          </div>
+                          )}
+
+                          {/* Assignee */}
+                          {task.assignee && (
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 border-2 border-white flex items-center justify-center text-white text-[10px] font-bold shadow-sm"
+                                title={task.assignee.name}
+                              >
+                                {task.assignee.name.split(" ").map((n: string) => n[0]).join("")}
+                              </div>
+                              <span className="text-xs text-slate-600">{task.assignee.name}</span>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     ))
@@ -239,7 +263,8 @@ const KanbanBoardAutoSync = ({ projectMembers }: KanbanBoardAutoSyncProps) => {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {selectedTask && (
         <TaskModal
