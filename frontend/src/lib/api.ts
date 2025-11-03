@@ -247,6 +247,8 @@ export interface Project {
 	status: "ACTIVE" | "ARCHIVED" | "COMPLETED";
 	workflowType: "CUSTOM" | "AUTOMATED";
 	ownerId: number;
+	startDate?: string | null;
+	endDate?: string | null;
 	createdAt: string;
 	updatedAt: string;
 	owner?: {

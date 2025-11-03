@@ -21,21 +21,59 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Send, X, Edit3, Save, Calendar, Clock } from "lucide-react";
 
 interface TaskModalProps {
-  task: any;
+  task: {
+    id: number;
+    title: string;
+    description?: string | null;
+    status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "COMPLETED" | "BLOCKED";
+    priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+    startDate?: string | null;
+    endDate?: string | null;
+    projectId: number;
+    assigneeId?: number | null;
+    tags: string[];
+    columnId?: string | null;
+    order: number;
+    createdAt: string;
+    updatedAt: string;
+    assignee?: {
+      id: number;
+      name: string;
+      email: string;
+      avatar?: string | null;
+    } | null;
+    subtasks?: Array<{
+      id: number;
+      title: string;
+      completed: boolean;
+    }>;
+    comments?: Array<{
+      id: number;
+      content: string;
+      createdAt: string;
+      author: {
+        id: number;
+        name: string;
+        email: string;
+      };
+    }>;
+    progress?: number;
+  };
   open: boolean;
   onClose: () => void;
-  projectMembers: any[];
+  projectMembers: Array<{
+    id: number;
+    name: string;
+    email: string;
+    avatar?: string | null;
+  }>;
 }
 
 const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>(
-    task.assignees || []
+    task.assignee ? [task.assignee.name] : []
   );
-  const [subtasks, setSubtasks] = useState([
-    { id: 1, title: "Research design patterns", completed: true },
-    { id: 2, title: "Create wireframes", completed: true },
-    { id: 3, title: "Design mockups", completed: false },
-  ]);
+  const [subtasks, setSubtasks] = useState(task.subtasks || []);
 
   const [newSubtask, setNewSubtask] = useState("");
   const [comment, setComment] = useState("");
@@ -43,10 +81,10 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
 
   // Editable field states
   const [editableTitle, setEditableTitle] = useState(task.title || "");
-  const [editableStatus, setEditableStatus] = useState(task.status || "upcoming");
+  const [editableStatus, setEditableStatus] = useState(task.status || "TODO");
   const [editableStartDate, setEditableStartDate] = useState(task.startDate || "");
   const [editableEndDate, setEditableEndDate] = useState(task.endDate || "");
-  const [editableDescription, setEditableDescription] = useState("");
+  const [editableDescription, setEditableDescription] = useState(task.description || "");
   const [editableTags, setEditableTags] = useState<string[]>(task.tags || []);
   const [newTag, setNewTag] = useState("");
 
@@ -104,10 +142,10 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
   const handleCancelEdit = () => {
     // Reset to original values
     setEditableTitle(task.title || "");
-    setEditableStatus(task.status || "upcoming");
+    setEditableStatus(task.status || "TODO");
     setEditableStartDate(task.startDate || "");
     setEditableEndDate(task.endDate || "");
-    setEditableDescription("");
+    setEditableDescription(task.description || "");
     setEditableTags(task.tags || []);
     setNewTag("");
     setIsEditing(false);
@@ -115,18 +153,18 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "complete":
-        return "bg-success/20 text-success border-success/30";
-      case "in-progress":
-        return "bg-accent/20 text-accent border-accent/30";
-      case "review":
-        return "bg-warning/20 text-warning border-warning/30";
-      case "upcoming":
-        return "bg-primary/20 text-primary border-primary/30";
-      case "backlog":
-        return "bg-muted/50 text-muted-foreground border-muted/50";
+      case "COMPLETED":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "IN_PROGRESS":
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      case "IN_REVIEW":
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      case "TODO":
+        return "bg-gray-100 text-gray-700 border-gray-200";
+      case "BLOCKED":
+        return "bg-red-100 text-red-700 border-red-200";
       default:
-        return "bg-muted/50 text-muted-foreground border-muted/50";
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
@@ -137,7 +175,7 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
         <div className="relative h-1 bg-slate-100 -mx-6 -mt-6 mb-4">
           <div
             className="absolute top-0 left-0 h-1 bg-blue-500 transition-all duration-500"
-            style={{ width: `${task.progress || progress}%` }}
+            style={{ width: `${Math.round(task.progress || progress)}%` }}
           />
         </div>
 
@@ -196,7 +234,7 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
                 )}
               </div>
               <div className="text-right flex-shrink-0">
-                <div className="text-base font-semibold text-blue-600">{task.progress || progress}%</div>
+                <div className="text-base font-semibold text-blue-600">{Math.round(task.progress || progress)}%</div>
                 <div className="text-[10px] text-slate-500 font-medium tracking-wide">COMPLETE</div>
               </div>
             </div>
@@ -305,17 +343,17 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="upcoming">Upcoming</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="review">Review</SelectItem>
-                    <SelectItem value="complete">Complete</SelectItem>
-                    <SelectItem value="backlog">Backlog</SelectItem>
+                    <SelectItem value="TODO">To Do</SelectItem>
+                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                    <SelectItem value="IN_REVIEW">In Review</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="BLOCKED">Blocked</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
                 <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
                   <Badge className={`${getStatusColor(editableStatus)} text-[10px] font-semibold uppercase tracking-wide`}>
-                    {editableStatus.replace('-', ' ')}
+                    {editableStatus.replace('_', ' ')}
                   </Badge>
                 </div>
               )}
@@ -389,20 +427,30 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
             <div className="space-y-3">
               <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Comments</Label>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
-                        JD
+                {task.comments && task.comments.length > 0 ? (
+                  task.comments.map((comment: any) => (
+                    <div key={comment.id} className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
+                            {comment.author?.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                          </div>
+                          <span className="font-semibold text-xs text-slate-700">{comment.author?.name || "Unknown"}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : ""}
+                        </span>
                       </div>
-                      <span className="font-semibold text-xs text-slate-700">John Doe</span>
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        {comment.content}
+                      </p>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-medium">2h ago</span>
+                  ))
+                ) : (
+                  <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50 text-center">
+                    <p className="text-xs text-slate-400">No comments yet</p>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Looking good! Just a few minor tweaks needed on the layout.
-                  </p>
-                </div>
+                )}
               </div>
 
               <div className="flex gap-2">
