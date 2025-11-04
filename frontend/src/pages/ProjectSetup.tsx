@@ -14,6 +14,7 @@ import {
   Settings,
   Info
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,22 +49,47 @@ const ProjectSetup = () => {
   const [projectDescription, setProjectDescription] = useState("");
   const [projectStartDate, setProjectStartDate] = useState("");
   const [projectEndDate, setProjectEndDate] = useState("");
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    {
-      id: "current-user",
-      name: "You",
-      email: "your.email@example.com",
-      role: "OWNER",
-      avatar: "",
-    }
-  ]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   
   // New state for enhanced UX
   const [currentSection, setCurrentSection] = useState("project-details");
   const [showRolePermissionsModal, setShowRolePermissionsModal] = useState(false);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load existing project data if coming back from template selection
+  // Load current user and existing project data
   useEffect(() => {
+    const loadCurrentUser = async () => {
+      setIsLoadingUser(true);
+      try {
+        const response = await api.getCurrentUser();
+        setCurrentUser(response.user);
+        
+        // Initialize team members with current user
+        const currentUserMember: TeamMember = {
+          id: "current-user",
+          name: response.user.name,
+          email: response.user.email,
+          role: "OWNER",
+          avatar: "",
+        };
+        
+        setTeamMembers([currentUserMember]);
+      } catch (error) {
+        console.error('Failed to load current user:', error);
+        // Fallback if user not authenticated
+        setError('You need to be logged in to create a project. Redirecting to login...');
+        setTimeout(() => navigate('/login'), 2000);
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    loadCurrentUser();
+
+    // Load existing project data if coming back from template selection
     const existingProjectData = location.state?.projectData;
     if (existingProjectData) {
       setProjectName(existingProjectData.name || "");
@@ -74,7 +100,7 @@ const ProjectSetup = () => {
         setTeamMembers(existingProjectData.teamMembers);
       }
     }
-  }, [location.state]);
+  }, [location.state, navigate]);
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<"PROJECT_MANAGER" | "MEMBER" | "VIEWER">("MEMBER");
 
@@ -174,19 +200,86 @@ const ProjectSetup = () => {
     }
   };
 
-  const handleContinue = () => {
-    if (projectName.trim()) {
-      navigate("/template-selection", { 
-        state: { 
-          projectData: {
-            name: projectName,
-            description: projectDescription,
-            startDate: projectStartDate,
-            endDate: projectEndDate,
-            teamMembers: teamMembers
+  const handleContinue = async () => {
+    if (projectName.trim() && !isCreatingProject) {
+      setIsCreatingProject(true);
+      setError(null);
+      
+      try {
+        // Create the project
+        const projectResponse = await api.createProject({
+          title: projectName,
+          description: projectDescription,
+          workflowType: "CUSTOM",
+          startDate: projectStartDate || undefined,
+          endDate: projectEndDate || undefined,
+        });
+
+        console.log('Project creation response:', projectResponse);
+        console.log('Response type:', typeof projectResponse);
+        console.log('Response keys:', Object.keys(projectResponse || {}));
+        console.log('Response id:', projectResponse?.id);
+        
+        // Check if the response has the expected structure
+        if (!projectResponse || !projectResponse.id) {
+          console.error('Invalid project response structure:', projectResponse);
+          throw new Error('Invalid project response from server');
+        }
+
+        // If there are team members to invite (excluding current user)
+        const membersToInvite = teamMembers.filter(member => member.id !== "current-user");
+        
+        if (membersToInvite.length > 0) {
+          try {
+            await api.inviteProjectMembers(
+              projectResponse.id,
+              membersToInvite.map(member => ({
+                email: member.email,
+                role: member.role
+              }))
+            );
+          } catch (inviteError) {
+            console.error('Failed to send some invitations:', inviteError);
+            // Continue anyway, project was created successfully
           }
-        } 
-      });
+        }
+
+        // Navigate to template selection with project data
+        navigate("/template-selection", { 
+          state: { 
+            projectData: {
+              id: projectResponse.id,
+              name: projectName,
+              description: projectDescription,
+              startDate: projectStartDate,
+              endDate: projectEndDate,
+              teamMembers: teamMembers
+            }
+          } 
+        });
+      } catch (error: any) {
+        console.error('Project creation error:', error);
+        
+        // If it's an authentication error, redirect to login
+        if (error?.status === 401 || error?.message?.includes('Unauthorized') || error?.message?.includes('Not authenticated')) {
+          navigate('/login');
+          return;
+        }
+        
+        // More detailed error message
+        let errorMessage = 'Failed to create project. Please try again.';
+        if (error?.message) {
+          errorMessage = error.message;
+        } else if (error?.error) {
+          errorMessage = error.error;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setIsCreatingProject(false);
+      }
     }
   };
 
@@ -218,6 +311,20 @@ const ProjectSetup = () => {
       isRequired: false
     }
   ];
+
+  if (isLoadingUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+        <Navbar />
+        <div className="max-w-4xl mx-auto px-6 py-12 mt-16 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-slate-600">Loading your profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
@@ -615,6 +722,24 @@ const ProjectSetup = () => {
           </div>
         </div>
 
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mt-0.5">
+                <span className="text-white text-xs">!</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-red-800 mb-1">
+                  Error Creating Project
+                </p>
+                <p className="text-sm text-red-700">
+                  {error}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between p-6 bg-white rounded-xl border-2 border-slate-200 shadow-sm mt-8">
           <div>
             <p className="text-sm text-slate-700 font-medium">
@@ -632,12 +757,21 @@ const ProjectSetup = () => {
           </div>
           <Button
             size="lg"
-            disabled={!projectName.trim()}
+            disabled={!projectName.trim() || isCreatingProject || isLoadingUser}
             onClick={handleContinue}
             className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md"
           >
-            Continue to Template Selection
-            <ArrowRight className="w-4 h-4 ml-2" />
+{isCreatingProject ? (
+              <>
+                Creating Project...
+                <div className="w-4 h-4 ml-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              </>
+            ) : (
+              <>
+                Continue to Template Selection
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            )}
           </Button>
         </div>
         

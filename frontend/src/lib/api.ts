@@ -166,6 +166,19 @@ class ApiClient {
 		});
 	}
 
+	async inviteProjectMembers(projectId: number, members: Array<{ email: string; role: string }>) {
+		return this.request(`/projects/${projectId}/invite`, {
+			method: "POST",
+			body: JSON.stringify({ members }),
+		});
+	}
+
+	async getProjectMembers(projectId: number) {
+		return this.request(`/projects/${projectId}/members`, {
+			method: "GET",
+		});
+	}
+
 	// Task endpoints
 	async getTasksByProject(projectId: number) {
 		return this.request(`/projects/${projectId}/tasks`, {
@@ -303,4 +316,24 @@ export interface Task {
 export interface TaskResponse {
 	tasks?: Task[];
 	task?: Task;
+}
+
+export interface InvitationResponse {
+	success: string[];
+	errors: string[];
+}
+
+export interface MembersResponse {
+	members: Array<{
+		id: number;
+		role: string;
+		joinedAt: string;
+		user: {
+			id: number;
+			name: string;
+			email: string;
+			avatar?: string | null;
+			username: string;
+		};
+	}>;
 }
