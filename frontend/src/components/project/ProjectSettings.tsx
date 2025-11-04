@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, UserPlus, Activity, Crown, User, Mail, Copy } from "lucide-react";
+import { Trash2, UserPlus, Activity, Crown, User, Mail, Copy, Lock, Users, Palette, Calendar, Shield, ChevronDown, RefreshCw, Check } from "lucide-react";
 import MemberDetailModal from "./MemberDetailModal";
 
 interface ProjectSettingsProps {
@@ -40,6 +40,37 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [isVisibilityExpanded, setIsVisibilityExpanded] = useState(false);
+  const [selectedVisibility, setSelectedVisibility] = useState("private");
+  const [inviteCode, setInviteCode] = useState("WR2024-ABC123");
+  const [isCopied, setIsCopied] = useState(false);
+  const [isDangerZoneExpanded, setIsDangerZoneExpanded] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Generate a new invitation code
+  const generateInviteCode = () => {
+    const prefix = "WR2024";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let code = "";
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const newCode = `${prefix}-${code}`;
+    setInviteCode(newCode);
+    // TODO: Send new code to backend to save
+    console.log("Generated new invite code:", newCode);
+  };
+
+  // Copy invite code to clipboard
+  const copyInviteCode = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
   // Mock detailed member data - will be replaced with real data from backend
   const detailedMembers: TeamMember[] = [
@@ -160,68 +191,318 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
         <TabsTrigger value="activity">Activity Log</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="general" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Information</CardTitle>
-            <CardDescription>Basic information about your project</CardDescription>
+      <TabsContent value="general" className="space-y-6">
+        {/* Project Identity Section */}
+        <Card className="border-2 hover:border-primary/20 transition-all duration-300">
+          <CardHeader className="bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Palette className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Project Identity</CardTitle>
+                <CardDescription>Define your project's core information</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="space-y-6 pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="project-name">Project Name</Label>
-                <Input id="project-name" defaultValue={project.name} />
+                <Label htmlFor="project-name" className="flex items-center gap-2 text-sm font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Project Name
+                </Label>
+                <Input 
+                  id="project-name" 
+                  defaultValue={project.name}
+                  className="border-2 focus:border-primary transition-all"
+                />
               </div>
               <div className="space-y-2">
-                <Label>Invitation Code</Label>
+                <Label className="flex items-center gap-2 text-sm font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                  Invitation Code
+                </Label>
                 <div className="flex gap-2">
-                  <Input value={projectData.inviteCode} readOnly />
-                  <Button variant="outline" size="sm">
-                    <Copy className="w-4 h-4" />
+                  <div className="relative flex-1">
+                    <Input 
+                      value={inviteCode} 
+                      readOnly 
+                      className="pr-10 font-mono text-sm bg-muted/50 border-2"
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="border-2 hover:border-primary hover:bg-primary/5"
+                    onClick={copyInviteCode}
+                  >
+                    {isCopied ? (
+                      <Check className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="border-2 hover:border-accent hover:bg-accent/5"
+                    onClick={generateInviteCode}
+                  >
+                    <RefreshCw className="w-4 h-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Share this code with team members to invite them to the project
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Shield className="w-3 h-3" />
+                  Generate new code for each invite • Click refresh to create new code
                 </p>
               </div>
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="project-description">Description</Label>
+              <Label htmlFor="project-description" className="flex items-center gap-2 text-sm font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                Description
+              </Label>
               <Textarea
                 id="project-description"
                 defaultValue={project.description}
                 rows={4}
+                className="border-2 focus:border-primary transition-all resize-none"
+                placeholder="Describe your project's goals and objectives..."
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="project-visibility">Visibility</Label>
-              <select
-                id="project-visibility"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="private">Private</option>
-                <option value="team">Team Only</option>
-                <option value="public">Public</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline">Cancel</Button>
-              <Button>Save Changes</Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Danger Zone</CardTitle>
-            <CardDescription>Irreversible actions for this project</CardDescription>
+        {/* Privacy & Access Section */}
+        <Card className="border-2 hover:border-primary/20 transition-all duration-300">
+          <CardHeader className="bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <Lock className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle>Privacy & Access</CardTitle>
+                <CardDescription>Control who can view and access this project</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <Button variant="destructive">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Project
-            </Button>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              {/* Visibility Selector Button */}
+              <button
+                type="button"
+                onClick={() => setIsVisibilityExpanded(!isVisibilityExpanded)}
+                className="w-full flex items-center justify-between p-4 rounded-lg border-2 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <Lock className="w-5 h-5 text-blue-600 group-hover:text-primary transition-colors" />
+                  <div className="text-left">
+                    <span className="font-semibold text-sm">Visibility Settings</span>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedVisibility === "private" ? "Private - Only you can access" : "Team Only - Accessible to team members"}
+                    </p>
+                  </div>
+                </div>
+                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${isVisibilityExpanded ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Expandable Options */}
+              {isVisibilityExpanded && (
+                <div className="grid gap-3 animate-in slide-in-from-top-2 duration-200">
+                  {/* Private Option */}
+                  <label 
+                    className={`relative flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group ${
+                      selectedVisibility === "private" ? "border-primary bg-primary/5" : ""
+                    }`}
+                    onClick={() => {
+                      setSelectedVisibility("private");
+                      setIsVisibilityExpanded(false);
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="visibility" 
+                      value="private" 
+                      checked={selectedVisibility === "private"}
+                      onChange={() => setSelectedVisibility("private")}
+                      className="mt-1 w-4 h-4 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Lock className="w-4 h-4 text-gray-700 group-hover:text-primary transition-colors" />
+                        <span className="font-semibold text-sm">Private</span>
+                        <Badge variant="secondary" className="text-xs">Recommended</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Only you can access this project. Perfect for personal work and confidential projects.
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Team Only Option */}
+                  <label 
+                    className={`relative flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group ${
+                      selectedVisibility === "team" ? "border-primary bg-primary/5" : ""
+                    }`}
+                    onClick={() => {
+                      setSelectedVisibility("team");
+                      setIsVisibilityExpanded(false);
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="visibility" 
+                      value="team"
+                      checked={selectedVisibility === "team"}
+                      onChange={() => setSelectedVisibility("team")}
+                      className="mt-1 w-4 h-4 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="w-4 h-4 text-blue-600 group-hover:text-primary transition-colors" />
+                        <span className="font-semibold text-sm">Team Only</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Accessible to invited team members only. Ideal for collaborative team projects.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </div>
           </CardContent>
+        </Card>
+
+        {/* Danger Zone */}
+        <Card className="border-2 border-red-200 hover:border-red-300 transition-all duration-300">
+          <CardHeader className="bg-gradient-to-r from-red-50 to-orange-50">
+            <button
+              type="button"
+              onClick={() => setIsDangerZoneExpanded(!isDangerZoneExpanded)}
+              className="w-full flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-red-100">
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </div>
+                <div className="text-left">
+                  <CardTitle className="text-red-900">Danger Zone</CardTitle>
+                  <CardDescription className="text-red-700">Irreversible actions - proceed with caution</CardDescription>
+                </div>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-red-600 transition-transform duration-200 ${isDangerZoneExpanded ? 'rotate-180' : ''}`} />
+            </button>
+          </CardHeader>
+          
+          {isDangerZoneExpanded && (
+            <CardContent className="pt-6 animate-in slide-in-from-top-2 duration-200">
+              <div className="space-y-6">
+                {/* Save/Cancel Actions */}
+                <div className="p-4 rounded-lg bg-blue-50/50 border border-blue-200">
+                  <div className="flex items-start gap-3 mb-4">
+                    <Calendar className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm text-blue-900">Save or discard changes</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Save your project settings or cancel to discard changes.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 border-2 hover:border-primary/30"
+                      onClick={() => {
+                        // TODO: Implement cancel logic
+                        console.log("Canceling changes...");
+                        setIsDangerZoneExpanded(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
+                      onClick={() => {
+                        // TODO: Implement save logic
+                        console.log("Saving changes...");
+                        alert("Changes saved successfully!");
+                        setIsDangerZoneExpanded(false);
+                      }}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Save Changes
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Separator */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-red-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-red-600 font-semibold">Danger Zone</span>
+                  </div>
+                </div>
+
+                {/* Delete Project */}
+                <div className="p-4 rounded-lg bg-red-50/50 border border-red-200">
+                  <div className="flex items-start gap-3 mb-4">
+                    <Trash2 className="w-5 h-5 text-red-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm text-red-900">Delete this project</p>
+                      <p className="text-xs text-red-700 mt-1">
+                        Once deleted, all data will be permanently removed and cannot be recovered.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {!showDeleteConfirm ? (
+                    <Button 
+                      onClick={() => setShowDeleteConfirm(true)}
+                      variant="outline" 
+                      className="w-full border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      I want to delete this project
+                    </Button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
+                        <p className="text-sm font-semibold text-red-900 mb-1">⚠️ Are you absolutely sure?</p>
+                        <p className="text-xs text-red-700">
+                          This action cannot be undone. This will permanently delete the project and all associated data.
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <Button 
+                          variant="destructive" 
+                          className="flex-1 shadow-lg shadow-red-500/20"
+                          onClick={() => {
+                            // TODO: Implement delete logic
+                            console.log("Deleting project...");
+                            alert("Project deletion would happen here");
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Yes, Delete Project
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="flex-1"
+                          onClick={() => setShowDeleteConfirm(false)}
+                        >
+                          Cancel Delete
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          )}
         </Card>
       </TabsContent>
 

@@ -19,27 +19,15 @@ model User {
   avatar           String?
   resetToken       String?
   resetTokenExpiry DateTime?
-<<<<<<< HEAD
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  username         String          @unique
   
   // Relations
-  ownedProjects   Project[]        @relation("ProjectOwner")
-  projectMembers  ProjectMember[]
-  tasks           Task[]
-  comments        Comment[]
-  refreshTokens   RefreshToken[]
-  notifications  Notification[]
-  
-=======
-  username         String          @unique
   comments         Comment[]
   ownedProjects    Project[]       @relation("ProjectOwner")
   projectMembers   ProjectMember[]
   refreshTokens    RefreshToken[]
   tasks            Task[]
-
->>>>>>> 0d43750bd79ea4c71c4385b8a9a261801cf22ab0
+  notifications    Notification[]
   @@index([email])
   @@index([username])
 }

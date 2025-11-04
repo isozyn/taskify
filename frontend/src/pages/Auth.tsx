@@ -32,11 +32,14 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
+      console.log('Auth: Attempting login...');
       const response = await api.login({
         email: loginEmail,
         password: loginPassword,
         rememberMe: true,
       }) as AuthResponse;
+
+      console.log('Auth: Login response:', response);
 
       toast({
         title: "Success",
@@ -45,12 +48,16 @@ const Auth = () => {
 
       // Store user data in context (tokens are in HttpOnly cookies)
       if (response.user) {
+        console.log('Auth: Setting user in context:', response.user);
         setUser(response.user);
+      } else {
+        console.error('Auth: No user in response!');
       }
 
       // Navigate to dashboard
       navigate("/dashboard");
     } catch (error: any) {
+      console.error('Auth: Login error:', error);
       toast({
         title: "Login Failed",
         description: error.message || "Invalid email or password",

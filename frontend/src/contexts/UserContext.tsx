@@ -12,13 +12,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log('UserContext: Checking authentication...');
         const response = await api.getCurrentUser() as { user: User };
+        console.log('UserContext: API response:', response);
         if (response.user) {
+          console.log('UserContext: Setting user:', response.user);
           setUser(response.user);
         }
       } catch (error) {
         // User is not authenticated or token expired
-        console.log('Not authenticated');
+        console.log('UserContext: Not authenticated', error);
       } finally {
         setLoading(false);
       }

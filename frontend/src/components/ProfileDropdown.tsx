@@ -43,14 +43,19 @@ export const ProfileDropdown = () => {
     return user?.username.slice(0, 2).toUpperCase() || 'U';
   };
 
-  if (!user) return null;
+  if (!user) {
+    console.log('ProfileDropdown: No user found');
+    return null;
+  }
+
+  console.log('ProfileDropdown: User loaded', user);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#0052CC] rounded-full">
           <Avatar className="h-9 w-9 cursor-pointer hover:ring-2 hover:ring-[#0052CC] transition-all">
-            <AvatarImage src={user.avatar} alt={user.username} />
+            {user.avatar && <AvatarImage src={user.avatar} alt={user.username} />}
             <AvatarFallback className="bg-gradient-to-br from-[#0052CC] to-[#0065FF] text-white text-sm font-semibold">
               {getInitials()}
             </AvatarFallback>

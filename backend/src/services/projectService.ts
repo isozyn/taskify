@@ -1,66 +1,14 @@
-<<<<<<< HEAD
-import { PrismaClient, Project, ProjectStatus } from '@prisma/client';
-import prisma from '../config/db';
-import { notificationService } from './notificationService';
-
-class ProjectService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = prisma;
-  }
-
-  async updateProjectStatus(projectId: number, status: ProjectStatus): Promise<Project> {
-    const project = await this.prisma.project.update({
-      where: { id: projectId },
-      data: { status },
-      include: {
-        members: {
-          include: {
-            user: true
-          }
-        }
-      }
-    });
-
-    // If the project is marked as completed, notify all project members
-    if (status === ProjectStatus.COMPLETED) {
-      // Get all project members including the owner
-      const memberIds = project.members.map(member => member.userId);
-      memberIds.push(project.ownerId); // Add the owner to the notification list
-
-      // Remove duplicates
-      const uniqueMemberIds = [...new Set(memberIds)];
-
-      // Create notifications for all members
-      await Promise.all(
-        uniqueMemberIds.map(userId =>
-          notificationService.createProjectCompletionNotification(
-            userId,
-            project.title,
-            project.id
-          )
-        )
-      );
-    }
-
-    return project;
-  }
-
-  // Other project service methods...
-}
-
-export const projectService = new ProjectService();
-=======
 // Project business logic
 
 import prisma from "../config/db";
+import { ProjectStatus } from '@prisma/client';
 import {
 	ProjectCreateInput,
 	ProjectUpdateInput,
 	ProjectResponse,
 } from "../models";
 import { CustomColumnService } from "./customColumnService";
+import { notificationService } from './notificationService';
 
 export class ProjectService {
 	/**
@@ -163,6 +111,46 @@ export class ProjectService {
 	}
 
 	/**
+	 * Update project status and send notifications if completed
+	 */
+	static async updateProjectStatus(projectId: number, status: ProjectStatus): Promise<ProjectResponse> {
+		const project = await prisma.project.update({
+			where: { id: projectId },
+			data: { status },
+			include: {
+				members: {
+					include: {
+						user: true
+					}
+				}
+			}
+		});
+
+		// If the project is marked as completed, notify all project members
+		if (status === ProjectStatus.COMPLETED) {
+			// Get all project members including the owner
+			const memberIds = project.members.map(member => member.userId);
+			memberIds.push(project.ownerId); // Add the owner to the notification list
+
+			// Remove duplicates
+			const uniqueMemberIds = [...new Set(memberIds)];
+
+			// Create notifications for all members
+			await Promise.all(
+				uniqueMemberIds.map(userId =>
+					notificationService.createProjectCompletionNotification(
+						userId,
+						project.title,
+						project.id
+					)
+				)
+			);
+		}
+
+		return project;
+	}
+
+	/**
 	 * Delete project
 	 */
 	static async deleteProject(projectId: number): Promise<void> {
@@ -192,4 +180,3 @@ export class ProjectService {
 		return projects;
 	}
 }
->>>>>>> 0d43750bd79ea4c71c4385b8a9a261801cf22ab0

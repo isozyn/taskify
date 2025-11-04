@@ -1,5 +1,5 @@
 import { PrismaClient, NotificationType, Notification } from '@prisma/client';
-import { prisma } from '../config/db';
+import prisma from '../config/db';
 
 export interface CreateNotificationData {
   userId: number;
