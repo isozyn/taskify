@@ -14,13 +14,15 @@ import {
   Plus,
   MoreHorizontal,
   Search,
-  Filter
+  Filter,
+  MessageSquare
 } from "lucide-react";
 import KanbanBoard from "@/components/project/KanbanBoard";
 import TimelineView from "@/components/project/TimelineView";
 import CalendarView from "@/components/project/CalendarView";
 import ProjectOverview from "@/components/project/ProjectOverview";
 import ProjectSettings from "@/components/project/ProjectSettings";
+import MessagesView from "@/components/project/MessagesView";
 import StickyNotes from "@/components/ui/StickyNotes";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { useUser } from "@/contexts/UserContext";
@@ -96,6 +98,13 @@ const ProjectWorkspace = () => {
     }))
   ] : [];
 
+  // Debug logging
+  console.log('🔍 ProjectWorkspace Debug:');
+  console.log('  - project:', project);
+  console.log('  - project.owner:', project?.owner);
+  console.log('  - project.members:', project?.members);
+  console.log('  - projectMembers array:', projectMembers);
+
   const navItems = [
     {
       id: "overview",
@@ -116,6 +125,11 @@ const ProjectWorkspace = () => {
       id: "calendar",
       label: "Calendar",
       icon: CalendarDays,
+    },
+    {
+      id: "messages",
+      label: "Messages",
+      icon: MessageSquare,
     },
     {
       id: "settings",
@@ -150,6 +164,8 @@ const ProjectWorkspace = () => {
         return <TimelineView projectMembers={projectMembers} />;
       case "calendar":
         return <CalendarView projectMembers={projectMembers} />;
+      case "messages":
+        return <MessagesView projectMembers={projectMembers} project={project ? { id: project.id, title: project.title, description: project.description } : undefined} />;
       case "settings":
         return <ProjectSettings project={project} />;
       default:

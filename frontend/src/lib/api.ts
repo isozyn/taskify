@@ -214,6 +214,86 @@ class ApiClient {
 			method: "DELETE",
 		});
 	}
+
+	// Conversation endpoints
+	async getProjectConversations(projectId: number) {
+		return this.request(`/projects/${projectId}/conversations`, {
+			method: "GET",
+		});
+	}
+
+	async getConversationById(conversationId: number) {
+		return this.request(`/conversations/${conversationId}`, {
+			method: "GET",
+		});
+	}
+
+	async createConversation(data: {
+		name?: string;
+		type: "DIRECT" | "GROUP";
+		projectId: number;
+		memberIds: number[];
+	}) {
+		return this.request(`/conversations`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async getOrCreateDirectConversation(projectId: number, userId: number) {
+		return this.request(`/conversations/direct`, {
+			method: "POST",
+			body: JSON.stringify({ projectId, userId }),
+		});
+	}
+
+	async addConversationMember(conversationId: number, userId: number) {
+		return this.request(`/conversations/${conversationId}/members`, {
+			method: "POST",
+			body: JSON.stringify({ userId }),
+		});
+	}
+
+	async removeConversationMember(conversationId: number, userId: number) {
+		return this.request(`/conversations/${conversationId}/members`, {
+			method: "DELETE",
+			body: JSON.stringify({ userId }),
+		});
+	}
+
+	// Message endpoints
+	async getConversationMessages(conversationId: number, limit?: number, before?: Date) {
+		const params = new URLSearchParams();
+		if (limit) params.append('limit', limit.toString());
+		if (before) params.append('before', before.toISOString());
+		
+		return this.request(`/conversations/${conversationId}/messages?${params.toString()}`, {
+			method: "GET",
+		});
+	}
+
+	async sendMessage(data: {
+		conversationId: number;
+		content: string;
+	}) {
+		return this.request(`/messages`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async updateMessage(messageId: number, content: string) {
+		return this.request(`/messages/${messageId}`, {
+			method: "PUT",
+			body: JSON.stringify({ content }),
+		});
+	}
+
+	async deleteMessage(messageId: number) {
+		return this.request(`/messages/${messageId}`, {
+			method: "DELETE",
+		});
+	}
 }
 
 // Export a singleton instance
@@ -301,4 +381,50 @@ export interface Task {
 export interface TaskResponse {
 	tasks?: Task[];
 	task?: Task;
+}
+
+export interface Conversation {
+	id: number;
+	name: string | null;
+	type: "DIRECT" | "GROUP";
+	projectId: number;
+	createdBy?: number;
+	createdAt: string;
+	updatedAt: string;
+	members: Array<{
+		id: number;
+		name: string;
+		username: string;
+		email: string;
+		avatar?: string | null;
+	}>;
+	lastMessage?: Message;
+	unreadCount?: number;
+}
+
+export interface Message {
+	id: number;
+	content: string;
+	senderId: number;
+	conversationId: number;
+	isEdited: boolean;
+	createdAt: string;
+	updatedAt: string;
+	sender: {
+		id: number;
+		name: string;
+		username: string;
+		email: string;
+		avatar?: string | null;
+	};
+}
+
+export interface ConversationResponse {
+	conversations?: Conversation[];
+	conversation?: Conversation;
+}
+
+export interface MessagesResponse {
+	messages?: Message[];
+	messageData?: Message;
 }
