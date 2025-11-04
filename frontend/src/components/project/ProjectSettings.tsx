@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, UserPlus, Activity, Crown, User, Mail, Copy, Lock, Users, Palette, Calendar, Shield, ChevronDown, RefreshCw, Check } from "lucide-react";
+import { Trash2, UserPlus, Activity, Crown, User, Mail, Copy, Lock, Users, Palette, Calendar, Shield, ChevronDown, RefreshCw, Check, Save } from "lucide-react";
 import MemberDetailModal from "./MemberDetailModal";
 
 interface ProjectSettingsProps {
@@ -46,6 +46,7 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isDangerZoneExpanded, setIsDangerZoneExpanded] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
 
   // Generate a new invitation code
   const generateInviteCode = () => {
@@ -208,19 +209,17 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
           <CardContent className="space-y-6 pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="project-name" className="flex items-center gap-2 text-sm font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                <Label htmlFor="project-name" className="text-sm font-semibold">
                   Project Name
                 </Label>
                 <Input 
                   id="project-name" 
                   defaultValue={project.name}
-                  className="border-2 focus:border-primary transition-all"
+                  className="focus:border-primary transition-all"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                <Label className="text-sm font-semibold">
                   Invitation Code
                 </Label>
                 <div className="flex gap-2">
@@ -228,13 +227,13 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
                     <Input 
                       value={inviteCode} 
                       readOnly 
-                      className="pr-10 font-mono text-sm bg-muted/50 border-2"
+                      className="pr-10 font-mono text-sm bg-muted/50"
                     />
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="border-2 hover:border-primary hover:bg-primary/5"
+                    className="hover:bg-primary/5"
                     onClick={copyInviteCode}
                   >
                     {isCopied ? (
@@ -246,29 +245,24 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="border-2 hover:border-accent hover:bg-accent/5"
+                    className="hover:bg-accent/5"
                     onClick={generateInviteCode}
                   >
                     <RefreshCw className="w-4 h-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <Shield className="w-3 h-3" />
-                  Generate new code for each invite • Click refresh to create new code
-                </p>
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="project-description" className="flex items-center gap-2 text-sm font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              <Label htmlFor="project-description" className="text-sm font-semibold">
                 Description
               </Label>
               <Textarea
                 id="project-description"
                 defaultValue={project.description}
                 rows={4}
-                className="border-2 focus:border-primary transition-all resize-none"
+                className="focus:border-primary transition-all resize-none"
                 placeholder="Describe your project's goals and objectives..."
               />
             </div>
@@ -277,24 +271,33 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
 
         {/* Privacy & Access Section */}
         <Card className="border-2 hover:border-primary/20 transition-all duration-300">
-          <CardHeader className="bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Lock className="w-5 h-5 text-blue-600" />
+          <CardHeader className="bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 border-b-0">
+            <button
+              type="button"
+              onClick={() => setIsPrivacyExpanded(!isPrivacyExpanded)}
+              className="w-full flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <Lock className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="text-left">
+                  <CardTitle>Privacy & Access</CardTitle>
+                  <CardDescription>Control who can view and access this project</CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle>Privacy & Access</CardTitle>
-                <CardDescription>Control who can view and access this project</CardDescription>
-              </div>
-            </div>
+              <ChevronDown className={`w-5 h-5 text-blue-600 transition-transform duration-200 ${isPrivacyExpanded ? 'rotate-180' : ''}`} />
+            </button>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
+          
+          {isPrivacyExpanded && (
+            <CardContent className="pt-6 animate-in slide-in-from-top-2 duration-200">
+              <div className="space-y-4">
               {/* Visibility Selector Button */}
               <button
                 type="button"
                 onClick={() => setIsVisibilityExpanded(!isVisibilityExpanded)}
-                className="w-full flex items-center justify-between p-4 rounded-lg border-2 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                className="w-full flex items-center justify-between p-4 rounded-lg border hover:border-primary/50 hover:bg-primary/5 transition-all group"
               >
                 <div className="flex items-center gap-3">
                   <Lock className="w-5 h-5 text-blue-600 group-hover:text-primary transition-colors" />
@@ -313,7 +316,7 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
                 <div className="grid gap-3 animate-in slide-in-from-top-2 duration-200">
                   {/* Private Option */}
                   <label 
-                    className={`relative flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group ${
+                    className={`relative flex items-start gap-4 p-4 rounded-lg border cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group ${
                       selectedVisibility === "private" ? "border-primary bg-primary/5" : ""
                     }`}
                     onClick={() => {
@@ -343,7 +346,7 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
 
                   {/* Team Only Option */}
                   <label 
-                    className={`relative flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group ${
+                    className={`relative flex items-start gap-4 p-4 rounded-lg border cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group ${
                       selectedVisibility === "team" ? "border-primary bg-primary/5" : ""
                     }`}
                     onClick={() => {
@@ -371,8 +374,9 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
                   </label>
                 </div>
               )}
-            </div>
-          </CardContent>
+              </div>
+            </CardContent>
+          )}
         </Card>
 
         {/* Danger Zone */}
@@ -413,7 +417,7 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
                   <div className="flex gap-3">
                     <Button 
                       variant="outline" 
-                      className="flex-1 border-2 hover:border-primary/30"
+                      className="flex-1"
                       onClick={() => {
                         // TODO: Implement cancel logic
                         console.log("Canceling changes...");
@@ -504,6 +508,22 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
             </CardContent>
           )}
         </Card>
+
+        {/* Save All Changes Button */}
+        <div className="flex justify-center pt-6">
+          <Button 
+            size="lg"
+            className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-xl shadow-primary/30 px-12 h-14 text-lg font-semibold"
+            onClick={() => {
+              // TODO: Implement save all changes logic
+              console.log("Saving all changes...");
+              alert("All changes saved successfully!");
+            }}
+          >
+            <Save className="w-5 h-5 mr-2" />
+            Save All Changes
+          </Button>
+        </div>
       </TabsContent>
 
       <TabsContent value="team" className="space-y-4">

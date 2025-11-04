@@ -30,6 +30,7 @@ const Profile = () => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [showStatsDialog, setShowStatsDialog] = useState(false);
   const [selectedStatType, setSelectedStatType] = useState<'projects' | 'tasks' | 'members' | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -104,7 +105,14 @@ const Profile = () => {
 
   const startCamera = async () => {
     try {
-      console.log('Starting camera...');
+      console.log('🎥 Starting camera...');
+      
+      // Check if browser supports getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Your browser does not support camera access. Please use a modern browser like Chrome, Firefox, or Safari.');
+        return;
+      }
+      
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'user', 
@@ -114,27 +122,59 @@ const Profile = () => {
         audio: false
       });
       
-      console.log('Media stream obtained');
+      console.log('✅ Media stream obtained');
+      console.log('📹 Stream tracks:', mediaStream.getTracks().length);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         setStream(mediaStream);
+        setShowCamera(true); // Show camera immediately
         
-        // Wait for video to be ready
+        // Wait for video to be ready and play
         videoRef.current.onloadedmetadata = async () => {
-          console.log('Video metadata loaded');
+          console.log('📺 Video metadata loaded');
+          console.log('📐 Video dimensions:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
+          
           try {
             await videoRef.current?.play();
-            console.log('Video playing');
-            setShowCamera(true);
+            console.log('▶️ Video playing successfully');
           } catch (playError) {
-            console.error('Error playing video:', playError);
+            console.error('❌ Error playing video:', playError);
+            // Try to play again
+            setTimeout(async () => {
+              try {
+                await videoRef.current?.play();
+                console.log('▶️ Video playing after retry');
+              } catch (retryError) {
+                console.error('❌ Retry failed:', retryError);
+              }
+            }, 100);
           }
         };
+        
+        // Also try to play immediately
+        try {
+          await videoRef.current.play();
+          console.log('▶️ Video started playing immediately');
+        } catch (immediatePlayError) {
+          console.log('⏳ Waiting for metadata before playing...');
+        }
       }
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please allow camera permissions in your browser.');
+    } catch (error: any) {
+      console.error('❌ Error accessing camera:', error);
+      let errorMessage = 'Unable to access camera. ';
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage += 'Please allow camera permissions in your browser.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage += 'No camera found on your device.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage += 'Camera is already in use by another application.';
+      } else {
+        errorMessage += error.message || 'Please check your camera settings.';
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -149,61 +189,83 @@ const Profile = () => {
   };
 
   const capturePhoto = () => {
-    console.log('Capture photo clicked');
+    console.log('🎥 Capture photo function called');
+    
+    if (isCapturing) {
+      console.log('Already capturing, please wait...');
+      return;
+    }
+    
+    setIsCapturing(true);
     
     if (!videoRef.current || !canvasRef.current) {
-      console.error('Video or canvas ref not available');
+      console.error('❌ Video or canvas ref not available');
       alert('Camera not ready. Please try again.');
+      setIsCapturing(false);
       return;
     }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
-    console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
+    console.log('📐 Video dimensions:', video.videoWidth, 'x', video.videoHeight);
+    console.log('📹 Video ready state:', video.readyState);
+    console.log('▶️ Video paused:', video.paused);
     
     // Check if video has loaded
     if (video.videoWidth === 0 || video.videoHeight === 0) {
-      console.error('Video not ready yet');
+      console.error('❌ Video not ready yet');
       alert('Camera is still loading. Please wait a moment and try again.');
+      setIsCapturing(false);
       return;
     }
     
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+    console.log('🖼️ Canvas dimensions set:', canvas.width, 'x', canvas.height);
     
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      console.error('Could not get canvas context');
+      console.error('❌ Could not get canvas context');
       alert('Unable to capture photo. Please try again.');
+      setIsCapturing(false);
       return;
     }
 
-    // Save the current context state
-    ctx.save();
-    
-    // Flip horizontally for front camera (mirror effect)
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    
-    // Draw the video frame to canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Restore context state
-    ctx.restore();
-    
-    // Convert canvas to image data
-    const photoData = canvas.toDataURL('image/jpeg', 0.9);
-    console.log('Photo captured, data length:', photoData.length);
-    
-    if (photoData && photoData.length > 100) {
-      setCapturedPhoto(photoData);
-      stopCamera();
-      console.log('Photo set successfully');
-    } else {
-      console.error('Failed to capture photo data');
-      alert('Failed to capture photo. Please try again.');
+    try {
+      // Save the current context state
+      ctx.save();
+      
+      // Flip horizontally for front camera (mirror effect)
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      
+      // Draw the video frame to canvas
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Restore context state
+      ctx.restore();
+      
+      console.log('✅ Image drawn to canvas');
+      
+      // Convert canvas to image data
+      const photoData = canvas.toDataURL('image/jpeg', 0.9);
+      console.log('📸 Photo data generated, length:', photoData.length);
+      
+      if (photoData && photoData.length > 100) {
+        setCapturedPhoto(photoData);
+        stopCamera();
+        console.log('✅ Photo captured and set successfully!');
+      } else {
+        console.error('❌ Failed to capture photo data');
+        alert('Failed to capture photo. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error during capture:', error);
+      alert('Error capturing photo. Please try again.');
+    } finally {
+      setIsCapturing(false);
     }
   };
 
@@ -344,25 +406,42 @@ const Profile = () => {
                   {/* Live Camera View */}
                   {showCamera && !capturedPhoto && (
                     <div className="space-y-4">
-                      <div className="relative rounded-lg overflow-hidden bg-black shadow-2xl">
+                      <div className="relative rounded-lg overflow-hidden bg-black shadow-2xl min-h-[400px] flex items-center justify-center">
                         <video
                           ref={videoRef}
                           autoPlay
                           playsInline
                           muted
-                          className="w-full h-auto transform scale-x-[-1]"
+                          className="w-full min-h-[400px] object-cover transform scale-x-[-1]"
+                          style={{ maxHeight: '600px' }}
                         />
                         {/* Live Indicator */}
-                        <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg">
+                        <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg z-20">
                           <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
                           LIVE
                         </div>
                         
+                        {/* Camera Frame Guide */}
+                        <div className="absolute inset-0 pointer-events-none">
+                          <div className="absolute inset-8 border-2 border-white/30 rounded-lg"></div>
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-white/50 rounded-full"></div>
+                        </div>
+                        
+                        {/* Instructions Overlay */}
+                        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm">
+                          Position your face in the circle
+                        </div>
+                        
                         {/* Circular Capture Button Overlay */}
-                        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
+                        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
                           <button
-                            onClick={capturePhoto}
-                            className="w-20 h-20 rounded-full bg-white border-4 border-primary shadow-2xl hover:scale-110 transition-transform duration-200 flex items-center justify-center group"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              console.log('Circular button clicked');
+                              capturePhoto();
+                            }}
+                            className="w-20 h-20 rounded-full bg-white border-4 border-primary shadow-2xl hover:scale-110 active:scale-95 transition-transform duration-200 flex items-center justify-center group cursor-pointer"
                           >
                             <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
                               <Camera className="w-8 h-8 text-white" />
@@ -374,9 +453,14 @@ const Profile = () => {
                       {/* Bottom Action Buttons */}
                       <div className="flex gap-3">
                         <Button
-                          onClick={capturePhoto}
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            console.log('Bottom button clicked');
+                            capturePhoto();
+                          }}
                           size="lg"
-                          className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg h-12 text-base font-semibold"
+                          className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 active:opacity-80 shadow-lg h-12 text-base font-semibold"
                         >
                           <Camera className="w-5 h-5 mr-2" />
                           Capture Photo
@@ -458,8 +542,7 @@ const Profile = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Name */}
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-semibold flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                    <Label htmlFor="name" className="text-sm font-semibold">
                       Full Name
                     </Label>
                     <Input
@@ -476,8 +559,7 @@ const Profile = () => {
 
                   {/* Email */}
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-semibold flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                    <Label htmlFor="email" className="text-sm font-semibold">
                       Email Address
                     </Label>
                     <Input
@@ -496,8 +578,7 @@ const Profile = () => {
 
                 {/* Job Title */}
                 <div className="space-y-2">
-                  <Label htmlFor="jobTitle" className="text-sm font-semibold flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                  <Label htmlFor="jobTitle" className="text-sm font-semibold">
                     Job Title
                   </Label>
                   <Input
@@ -514,8 +595,7 @@ const Profile = () => {
 
                 {/* Description/Bio */}
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-semibold flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                  <Label htmlFor="description" className="text-sm font-semibold">
                     About Me
                   </Label>
                   <Textarea
