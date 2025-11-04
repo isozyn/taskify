@@ -8,6 +8,7 @@ datasource db {
 }
 
 model User {
+<<<<<<< HEAD
   id                   Int                   @id @default(autoincrement())
   name                 String
   email                String                @unique
@@ -27,6 +28,27 @@ model User {
   refreshTokens        RefreshToken[]
   tasks                Task[]
   conversationMembers  ConversationMember[]
+=======
+  id                    Int                    @id @default(autoincrement())
+  name                  String
+  email                 String                 @unique
+  password              String
+  role                  Role                   @default(USER)
+  isEmailVerified       Boolean                @default(false)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  avatar                String?
+  resetToken            String?
+  resetTokenExpiry      DateTime?
+  username              String                 @unique
+  comments              Comment[]
+  ownedProjects         Project[]              @relation("ProjectOwner")
+  projectMembers        ProjectMember[]
+  refreshTokens         RefreshToken[]
+  tasks                 Task[]
+  messages              Message[]
+  conversationMembers   ConversationMember[]
+>>>>>>> d270cccae8bd1e0fe8d8519278ced2da791d7b32
 
   @@index([email])
   @@index([username])
@@ -60,6 +82,7 @@ model Project {
   owner         User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members       ProjectMember[]
   tasks         Task[]
+  conversations Conversation[]
 
   @@index([ownerId])
   @@index([status])
@@ -184,6 +207,7 @@ enum WorkflowType {
   AUTOMATED
 }
 
+<<<<<<< HEAD
 enum NotificationType {
   TASK_ASSIGNED
   TASK_COMPLETED
@@ -215,10 +239,25 @@ model Conversation {
   updatedAt DateTime              @updatedAt
   members   ConversationMember[]
   messages  Message[]
+=======
+model Conversation {
+  id          Int                   @id @default(autoincrement())
+  name        String?
+  type        ConversationType      @default(PROJECT)
+  projectId   Int
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  project     Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  members     ConversationMember[]
+  messages    Message[]
+
+  @@index([projectId])
+>>>>>>> d270cccae8bd1e0fe8d8519278ced2da791d7b32
 }
 
 model ConversationMember {
   id             Int          @id @default(autoincrement())
+<<<<<<< HEAD
   conversationId Int
   userId         Int
   joinedAt       DateTime     @default(now())
@@ -228,18 +267,49 @@ model ConversationMember {
 
   @@index([conversationId])
   @@index([userId])
+=======
+  userId         Int
+  conversationId Int
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime?
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId])
+  @@index([userId])
+  @@index([conversationId])
+>>>>>>> d270cccae8bd1e0fe8d8519278ced2da791d7b32
 }
 
 model Message {
   id             Int          @id @default(autoincrement())
   content        String
+<<<<<<< HEAD
   conversationId Int
   senderId       Int
   isEdited       Boolean      @default(false)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+=======
+  senderId       Int
+  conversationId Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  isEdited       Boolean      @default(false)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+>>>>>>> d270cccae8bd1e0fe8d8519278ced2da791d7b32
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@index([senderId])
+<<<<<<< HEAD
+=======
+  @@index([createdAt])
+}
+
+enum ConversationType {
+  PROJECT
+  DIRECT
+  GROUP
+>>>>>>> d270cccae8bd1e0fe8d8519278ced2da791d7b32
 }

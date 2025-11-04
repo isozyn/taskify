@@ -1,6 +1,7 @@
 // Application entry point
 
 import express, { Express, Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import cors from "cors";
 import dotenv from "dotenv";
 import morgan from "morgan";
@@ -16,10 +17,19 @@ import authRoutes from "./routes/authRoutes";
 import customColumnRoutes from "./routes/customColumnRoutes";
 import projectRoutes from "./routes/projectRoutes";
 import taskRoutes from "./routes/taskRoutes";
+import messageRoutes from "./routes/messageRoutes";
+import conversationRoutes from "./routes/conversationRoutes";
 
-// Create Express app
+// Import Socket.IO setup
+import { setupSocketIO } from "./services/socketService";
+
+// Create Express app and HTTP server
 const app: Express = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Setup Socket.IO
+setupSocketIO(httpServer);
 
 // ============================================
 // MIDDLEWARE SETUP
@@ -71,6 +81,12 @@ app.use("/api/v1", projectRoutes);
 // Task routes
 app.use("/api/v1", taskRoutes);
 
+// Message routes
+app.use("/api/v1", messageRoutes);
+
+// Conversation routes
+app.use("/api/v1", conversationRoutes);
+
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);
 
@@ -107,13 +123,14 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 const startServer = async () => {
   try {
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`
         ╔════════════════════════════════════════╗
         ║   Taskify Backend Server Started       ║
         ║   Port: ${PORT}                            ║
         ║   Environment: ${process.env.NODE_ENV}            ║
         ║   Frontend URL: ${process.env.FRONTEND_URL}   ║
+        ║   Socket.IO: Enabled                   ║
         ╚════════════════════════════════════════╝
       `);
     });
