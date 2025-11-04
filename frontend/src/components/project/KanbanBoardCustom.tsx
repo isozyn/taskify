@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,100 +16,171 @@ import {
 } from "lucide-react";
 import TaskModal from "./TaskModal";
 import TaskFormModal from "./TaskFormModal";
-
-interface Task {
-  id: number;
-  title: string;
-  assignees: string[];
-  startDate: string;
-  endDate: string;
-  columnId: string; // Which custom column it belongs to
-  progress: number;
-}
-
-interface CustomColumn {
-  id: string;
-  title: string;
-  color: string;
-}
+import { api, Task as ApiTask, CustomColumn } from "@/lib/api";
 
 interface KanbanBoardCustomProps {
   projectMembers: any[];
   projectId?: number;
   onTasksChange?: () => void;
+  onColumnsChange?: () => void;
 }
 
-const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange }: KanbanBoardCustomProps) => {
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumnsChange }: KanbanBoardCustomProps) => {
+  const [selectedTask, setSelectedTask] = useState<ApiTask | null>(null);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
-  const [addingCardInColumn, setAddingCardInColumn] = useState<string | null>(null);
+  const [addingCardInColumn, setAddingCardInColumn] = useState<number | string | null>(null);
   const [newCardTitle, setNewCardTitle] = useState("");
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState("");
-  const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  const [editingColumnId, setEditingColumnId] = useState<number | string | null>(null);
   const [editingColumnTitle, setEditingColumnTitle] = useState("");
+  const [tasks, setTasks] = useState<ApiTask[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Custom columns - user can create/edit/delete these
-  const [customColumns, setCustomColumns] = useState<CustomColumn[]>([
-    { id: "todo", title: "To Do", color: "slate" },
-    { id: "in-progress", title: "In Progress", color: "blue" },
-    { id: "done", title: "Done", color: "green" },
-  ]);
+  const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
 
-  // Mock tasks - will be replaced with real data
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: 1,
-      title: "Design landing page mockup",
-      assignees: ["John Doe", "Jane Smith"],
-      startDate: "2024-01-15",
-      endDate: "2024-01-20",
-      columnId: "done",
-      progress: 100,
-    },
-    {
-      id: 2,
-      title: "Implement authentication",
-      assignees: ["Jane Smith", "Mike Johnson"],
-      startDate: "2024-01-10",
-      endDate: "2024-01-18",
-      columnId: "in-progress",
-      progress: 60,
-    },
-    {
-      id: 3,
-      title: "Write API documentation",
-      assignees: ["Mike Johnson"],
-      startDate: "2024-01-20",
-      endDate: "2024-01-25",
-      columnId: "todo",
-      progress: 0,
-    },
-  ]);
-
-  const handleCreateTask = (taskData: any) => {
-    // TODO: Implement create task logic with backend
-    console.log("Creating custom task:", taskData);
+  // Helper function to map column title to valid TaskStatus enum
+  const mapColumnTitleToStatus = (columnTitle: string): string => {
+    // Map common column titles to valid enum values
+    const titleLower = columnTitle.toLowerCase().trim();
+    
+    if (titleLower.includes('to do') || titleLower === 'todo' || titleLower === 'backlog') {
+      return 'TODO';
+    }
+    if (titleLower.includes('in progress') || titleLower === 'doing' || titleLower === 'in development') {
+      return 'IN_PROGRESS';
+    }
+    if (titleLower.includes('review') || titleLower === 'in review') {
+      return 'IN_REVIEW';
+    }
+    if (titleLower.includes('done') || titleLower === 'complete' || titleLower === 'completed' || titleLower === 'finished') {
+      return 'COMPLETED';
+    }
+    if (titleLower.includes('block') || titleLower === 'blocked' || titleLower === 'on hold') {
+      return 'BLOCKED';
+    }
+    
+    // Default fallback to TODO for any other custom column
+    return 'TODO';
   };
 
-  const handleQuickAddCard = (columnId: string) => {
-    if (newCardTitle.trim()) {
-      // TODO: Implement quick add task logic with backend
-      const newTask: Task = {
-        id: Date.now(),
-        title: newCardTitle,
-        assignees: [],
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        columnId: columnId,
-        progress: 0,
-      };
-      setTasks([...tasks, newTask]);
-      console.log("Quick adding task:", newTask);
+  // Fetch tasks from API
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!projectId) return;
       
-      // Reset
-      setNewCardTitle("");
-      setAddingCardInColumn(null);
+      try {
+        setIsLoading(true);
+        const response: any = await api.getTasksByProject(projectId);
+        console.log("KanbanBoardCustom - Fetched tasks:", response);
+        
+        const tasksArray = Array.isArray(response) ? response : [];
+        setTasks(tasksArray);
+      } catch (error) {
+        console.error('Failed to fetch tasks:', error);
+        setTasks([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, [projectId]);
+
+  // Fetch custom columns from API
+  useEffect(() => {
+    const fetchColumns = async () => {
+      if (!projectId) return;
+      
+      try {
+        const response: any = await api.getCustomColumns(projectId);
+        console.log("KanbanBoardCustom - Fetched columns:", response);
+        
+        const columnsArray = Array.isArray(response) ? response : response?.columns || [];
+        
+        // If no columns exist, create default ones
+        if (columnsArray.length === 0) {
+          console.log("No columns found, creating defaults...");
+          const defaultColumns = [
+            { title: "To Do", color: "slate", order: 0 },
+            { title: "In Progress", color: "blue", order: 1 },
+            { title: "Done", color: "green", order: 2 },
+          ];
+          
+          for (const col of defaultColumns) {
+            try {
+              await api.createCustomColumn(projectId, col);
+            } catch (error) {
+              console.error('Failed to create default column:', error);
+            }
+          }
+          
+          // Fetch again after creating defaults
+          const newResponse: any = await api.getCustomColumns(projectId);
+          const newColumnsArray = Array.isArray(newResponse) ? newResponse : newResponse?.columns || [];
+          setCustomColumns(newColumnsArray);
+        } else {
+          setCustomColumns(columnsArray);
+        }
+      } catch (error) {
+        console.error('Failed to fetch columns:', error);
+        setCustomColumns([]);
+      }
+    };
+
+    fetchColumns();
+  }, [projectId]);
+
+  const handleCreateTask = async (taskData: any) => {
+    if (!projectId) return;
+    
+    try {
+      const newTask = await api.createTask(projectId, taskData);
+      console.log("Created custom task:", newTask);
+      
+      // Refresh tasks list
+      const response: any = await api.getTasksByProject(projectId);
+      const tasksArray = Array.isArray(response) ? response : [];
+      setTasks(tasksArray);
+      
+      // Notify parent to refresh
+      onTasksChange?.();
+    } catch (error) {
+      console.error('Failed to create task:', error);
+    }
+  };
+
+  const handleQuickAddCard = async (columnId: number | string) => {
+    if (newCardTitle.trim() && projectId) {
+      try {
+        // Find the column to get its title
+        const column = customColumns.find(col => col.id === columnId);
+        const columnTitle = column ? column.title : 'To Do';
+        const statusValue = mapColumnTitleToStatus(columnTitle);
+        
+        await api.createTask(projectId, {
+          title: newCardTitle,
+          status: statusValue,
+          priority: 'MEDIUM',
+          startDate: new Date().toISOString().split('T')[0],
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        });
+        
+        // Refresh tasks list
+        const response: any = await api.getTasksByProject(projectId);
+        const tasksArray = Array.isArray(response) ? response : [];
+        setTasks(tasksArray);
+        
+        // Notify parent to refresh
+        onTasksChange?.();
+        
+        // Reset
+        setNewCardTitle("");
+        setAddingCardInColumn(null);
+      } catch (error) {
+        console.error('Failed to quick add task:', error);
+      }
     }
   };
 
@@ -118,18 +189,31 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange }: KanbanB
     setAddingCardInColumn(null);
   };
 
-  const handleAddColumn = () => {
-    if (newColumnTitle.trim()) {
-      const newColumn: CustomColumn = {
-        id: `custom-${Date.now()}`,
-        title: newColumnTitle,
-        color: "slate",
-      };
-      setCustomColumns([...customColumns, newColumn]);
-      setNewColumnTitle("");
-      setIsAddingColumn(false);
-      // TODO: Save to backend
-      console.log("Column added:", newColumn);
+  const handleAddColumn = async () => {
+    if (newColumnTitle.trim() && projectId) {
+      try {
+        const newColumnData = {
+          title: newColumnTitle,
+          color: "slate",
+          order: customColumns.length, // Add at the end
+        };
+        
+        const newColumn = await api.createCustomColumn(projectId, newColumnData);
+        console.log("Column created:", newColumn);
+        
+        // Refresh columns list
+        const response: any = await api.getCustomColumns(projectId);
+        const columnsArray = Array.isArray(response) ? response : response?.columns || [];
+        setCustomColumns(columnsArray);
+        
+        setNewColumnTitle("");
+        setIsAddingColumn(false);
+        
+        // Notify parent that columns have changed
+        onColumnsChange?.();
+      } catch (error) {
+        console.error('Failed to create column:', error);
+      }
     }
   };
 
@@ -138,29 +222,72 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange }: KanbanB
     setEditingColumnTitle(column.title);
   };
 
-  const handleSaveColumnEdit = (columnId: string) => {
-    if (editingColumnTitle.trim()) {
-      setCustomColumns(customColumns.map(col => 
-        col.id === columnId ? { ...col, title: editingColumnTitle } : col
-      ));
-      setEditingColumnId(null);
-      setEditingColumnTitle("");
-      // TODO: Save to backend
-      console.log("Column edited:", columnId);
+  const handleSaveColumnEdit = async (columnId: number | string) => {
+    if (editingColumnTitle.trim() && projectId) {
+      try {
+        await api.updateCustomColumn(typeof columnId === 'number' ? columnId : parseInt(columnId), {
+          title: editingColumnTitle,
+        });
+        console.log("Column updated:", columnId);
+        
+        // Refresh columns list
+        const response: any = await api.getCustomColumns(projectId);
+        const columnsArray = Array.isArray(response) ? response : response?.columns || [];
+        setCustomColumns(columnsArray);
+        
+        setEditingColumnId(null);
+        setEditingColumnTitle("");
+        
+        // Notify parent that columns have changed
+        onColumnsChange?.();
+      } catch (error) {
+        console.error('Failed to update column:', error);
+      }
     }
   };
 
-  const handleDeleteColumn = (columnId: string) => {
-    // Move tasks from deleted column to first column
-    const firstColumnId = customColumns[0]?.id;
-    if (firstColumnId) {
-      setTasks(tasks.map(task => 
-        task.columnId === columnId ? { ...task, columnId: firstColumnId } : task
-      ));
+  const handleDeleteColumn = async (columnId: number | string) => {
+    if (!projectId) return;
+    
+    try {
+      // Find the column being deleted and the first column
+      const deletedColumn = customColumns.find(col => col.id === columnId);
+      const firstColumn = customColumns[0];
+      
+      // Move tasks from deleted column to first column (if not deleting the first column)
+      if (firstColumn && firstColumn.id !== columnId && deletedColumn) {
+        const deletedStatus = mapColumnTitleToStatus(deletedColumn.title);
+        const firstColumnStatus = mapColumnTitleToStatus(firstColumn.title);
+        const tasksToMove = tasks.filter(task => task.status === deletedStatus);
+        
+        for (const task of tasksToMove) {
+          try {
+            await api.updateTask(task.id, { status: firstColumnStatus });
+          } catch (error) {
+            console.error('Failed to move task:', error);
+          }
+        }
+        
+        // Refresh tasks
+        const tasksResponse: any = await api.getTasksByProject(projectId);
+        const tasksArray = Array.isArray(tasksResponse) ? tasksResponse : [];
+        setTasks(tasksArray);
+      }
+      
+      // Delete the column from backend
+      await api.deleteCustomColumn(typeof columnId === 'number' ? columnId : parseInt(columnId));
+      console.log("Column deleted:", columnId);
+      
+      // Refresh columns list
+      const columnsResponse: any = await api.getCustomColumns(projectId);
+      const columnsArray = Array.isArray(columnsResponse) ? columnsResponse : columnsResponse?.columns || [];
+      setCustomColumns(columnsArray);
+      
+      // Notify parent that columns have changed
+      onColumnsChange?.();
+    } catch (error) {
+      console.error('Failed to delete column:', error);
     }
-    setCustomColumns(customColumns.filter(col => col.id !== columnId));
-    // TODO: Remove from backend
-    console.log("Column deleted:", columnId);
   };
 
   // Drag and drop handlers (simplified - you'll want to add a library like @dnd-kit/core)
@@ -174,21 +301,41 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange }: KanbanB
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, columnId: string) => {
+  const handleDrop = async (e: React.DragEvent, columnId: number | string) => {
     e.preventDefault();
     const taskId = parseInt(e.dataTransfer.getData("taskId"));
     
-    // Move task to new column
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, columnId } : task
-    ));
+    if (!projectId) return;
     
-    // TODO: Save to backend
-    console.log(`Moved task ${taskId} to column ${columnId}`);
+    try {
+      // Find the column to get its title
+      const column = customColumns.find(col => col.id === columnId);
+      const columnTitle = column ? column.title : 'To Do';
+      const statusValue = mapColumnTitleToStatus(columnTitle);
+      
+      // Update task status via API
+      await api.updateTask(taskId, { status: statusValue });
+      
+      // Refresh tasks
+      const response: any = await api.getTasksByProject(projectId);
+      const tasksArray = Array.isArray(response) ? response : [];
+      setTasks(tasksArray);
+      
+      // Notify parent to refresh
+      onTasksChange?.();
+      
+      console.log(`Moved task ${taskId} to column ${columnId}`);
+    } catch (error) {
+      console.error('Failed to move task:', error);
+    }
   };
 
-  const getTasksByColumn = (columnId: string) => {
-    return tasks.filter((task) => task.columnId === columnId);
+  const getTasksByColumn = (columnId: number | string) => {
+    // Find the column to get its title
+    const column = customColumns.find(col => col.id === columnId);
+    const columnTitle = column ? column.title : '';
+    const statusValue = mapColumnTitleToStatus(columnTitle);
+    return tasks.filter((task) => task.status === statusValue);
   };
 
   const getColumnColor = (color: string) => {
@@ -201,6 +348,34 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange }: KanbanB
       purple: "bg-purple-50 border-purple-300",
     };
     return colors[color] || colors.slate;
+  };
+
+  const handleTaskUpdated = async () => {
+    if (!projectId) return;
+    
+    try {
+      const response: any = await api.getTasksByProject(projectId);
+      const tasksArray = Array.isArray(response) ? response : [];
+      setTasks(tasksArray);
+      onTasksChange?.();
+      setSelectedTask(null);
+    } catch (error) {
+      console.error('Failed to refresh tasks:', error);
+    }
+  };
+
+  const handleTaskDeleted = async () => {
+    if (!projectId) return;
+    
+    try {
+      const response: any = await api.getTasksByProject(projectId);
+      const tasksArray = Array.isArray(response) ? response : [];
+      setTasks(tasksArray);
+      onTasksChange?.();
+      setSelectedTask(null);
+    } catch (error) {
+      console.error('Failed to refresh tasks:', error);
+    }
   };
 
   return (
@@ -216,13 +391,22 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange }: KanbanB
         <p className="text-sm text-slate-500 mt-1">Create custom columns and move tasks manually</p>
       </div>
 
-      {/* Kanban Board with Drag & Drop */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {customColumns.map((column) => {
-          const columnTasks = getTasksByColumn(column.id);
+      {isLoading ? (
+        <div className="text-center py-20">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-4">
+            <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500">Loading tasks...</p>
+        </div>
+      ) : (
+        <>
+          {/* Kanban Board with Drag & Drop */}
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {customColumns.map((column) => {
+              const columnTasks = getTasksByColumn(column.id);
 
-          return (
-            <div 
+              return (
+                <div 
               key={column.id} 
               className="flex-shrink-0 w-80 bg-slate-50 rounded-lg border border-slate-200"
               onDragOver={handleDragOver}
@@ -318,46 +502,38 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange }: KanbanB
                           </div>
 
                           {/* Progress Bar */}
-                          {task.progress > 0 && (
+                          {task.status === 'COMPLETED' && (
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between">
                                 <span className="text-xs text-slate-500 font-medium">Progress</span>
-                                <span className="text-xs font-semibold text-slate-700">{task.progress}%</span>
+                                <span className="text-xs font-semibold text-slate-700">100%</span>
                               </div>
                               <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
                                 <div 
                                   className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all"
-                                  style={{ width: `${task.progress}%` }}
+                                  style={{ width: '100%' }}
                                 />
                               </div>
                             </div>
                           )}
 
-                          {/* Footer: Dates & Assignees */}
+                          {/* Footer: Dates & Assignee */}
                           <div className="flex items-center justify-between">
                             {/* Dates */}
                             <div className="flex items-center gap-1 text-xs text-slate-500">
                               <Calendar className="w-3 h-3" />
-                              <span>{new Date(task.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                              <span>{task.endDate ? new Date(task.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'}</span>
                             </div>
 
-                            {/* Assignees */}
-                            {task.assignees.length > 0 && (
-                              <div className="flex -space-x-2">
-                                {task.assignees.slice(0, 3).map((assignee, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 border-2 border-white flex items-center justify-center text-white text-[10px] font-bold shadow-sm"
-                                    title={assignee}
-                                  >
-                                    {assignee.split(" ").map((n: string) => n[0]).join("")}
-                                  </div>
-                                ))}
-                                {task.assignees.length > 3 && (
-                                  <div className="w-6 h-6 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-slate-600 text-[10px] font-bold shadow-sm">
-                                    +{task.assignees.length - 3}
-                                  </div>
-                                )}
+                            {/* Assignee */}
+                            {task.assignee && (
+                              <div className="flex">
+                                <div
+                                  className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 border-2 border-white flex items-center justify-center text-white text-[10px] font-bold shadow-sm"
+                                  title={task.assignee.name}
+                                >
+                                  {task.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -476,7 +652,17 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange }: KanbanB
         <TaskModal
           task={selectedTask}
           open={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
+          onClose={() => {
+            setSelectedTask(null);
+            // Refresh tasks when modal closes
+            if (projectId) {
+              api.getTasksByProject(projectId).then((response: any) => {
+                const tasksArray = Array.isArray(response) ? response : [];
+                setTasks(tasksArray);
+                onTasksChange?.();
+              });
+            }
+          }}
           projectMembers={projectMembers}
         />
       )}
@@ -489,6 +675,8 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange }: KanbanB
         projectMembers={projectMembers}
         mode="create"
       />
+        </>
+      )}
     </>
   );
 };

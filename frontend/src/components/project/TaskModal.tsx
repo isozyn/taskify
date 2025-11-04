@@ -338,7 +338,7 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Status</Label>
               {isEditing ? (
-                <Select value={editableStatus} onValueChange={setEditableStatus}>
+                <Select value={editableStatus} onValueChange={(value) => setEditableStatus(value as typeof editableStatus)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 focus:border-blue-500">
                     <SelectValue />
                   </SelectTrigger>

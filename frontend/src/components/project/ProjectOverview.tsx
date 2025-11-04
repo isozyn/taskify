@@ -14,14 +14,16 @@ import {
   BarChart3,
   Activity,
   Target,
-  ArrowUpRight
+  ArrowUpRight,
+  Layers
 } from "lucide-react";
 import MemberDetailModal from "./MemberDetailModal";
-import { api, Task } from "@/lib/api";
+import { api, Task, CustomColumn } from "@/lib/api";
 
 interface ProjectOverviewProps {
   project: any;
   workflowType?: "auto-sync" | "custom";
+  onNavigateToBoard?: () => void;
 }
 
 interface TeamMember {
@@ -41,21 +43,35 @@ interface TeamMember {
   }>;
 }
 
-const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOverviewProps) => {
+const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoard }: ProjectOverviewProps) => {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
 
-  // Fetch tasks when component mounts
+  // Fetch tasks and custom columns when component mounts
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response: any = await api.getTasksByProject(project.id);
-        console.log("ProjectOverview - Fetched tasks:", response);
-        // Response is directly an array of tasks
-        setTasks(Array.isArray(response) ? response : []);
+        
+        // Fetch tasks
+        const tasksResponse: any = await api.getTasksByProject(project.id);
+        console.log("ProjectOverview - Fetched tasks:", tasksResponse);
+        setTasks(Array.isArray(tasksResponse) ? tasksResponse : []);
+        
+        // Fetch custom columns if it's a custom workflow
+        if (workflowType === "custom") {
+          try {
+            const columnsResponse: any = await api.getCustomColumns(project.id);
+            console.log("ProjectOverview - Fetched columns:", columnsResponse);
+            setCustomColumns(Array.isArray(columnsResponse) ? columnsResponse : columnsResponse?.columns || []);
+          } catch (error) {
+            console.error("Failed to fetch custom columns:", error);
+            setCustomColumns([]);
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch tasks:", error);
       } finally {
@@ -63,8 +79,8 @@ const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOvervie
       }
     };
 
-    fetchTasks();
-  }, [project.id]);
+    fetchData();
+  }, [project.id, workflowType]);
 
   // Calculate stats from real task data
   const stats = {
@@ -104,6 +120,50 @@ const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOvervie
     return completionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  // Helper function to map column title to valid TaskStatus enum
+  const mapColumnTitleToStatus = (columnTitle: string): string => {
+    // Map common column titles to valid enum values
+    const titleLower = columnTitle.toLowerCase().trim();
+    
+    if (titleLower.includes('to do') || titleLower === 'todo' || titleLower === 'backlog') {
+      return 'TODO';
+    }
+    if (titleLower.includes('in progress') || titleLower === 'doing' || titleLower === 'in development') {
+      return 'IN_PROGRESS';
+    }
+    if (titleLower.includes('review') || titleLower === 'in review') {
+      return 'IN_REVIEW';
+    }
+    if (titleLower.includes('done') || titleLower === 'complete' || titleLower === 'completed' || titleLower === 'finished') {
+      return 'COMPLETED';
+    }
+    if (titleLower.includes('block') || titleLower === 'blocked' || titleLower === 'on hold') {
+      return 'BLOCKED';
+    }
+    
+    // Default fallback to TODO for any other custom column
+    return 'TODO';
+  };
+
+  // Group tasks by custom column
+  const getTasksByColumn = (columnTitle: string) => {
+    const statusValue = mapColumnTitleToStatus(columnTitle);
+    return tasks.filter(task => task.status === statusValue);
+  };
+
+  // Get color class for column
+  const getColumnColorClass = (color: string) => {
+    const colorMap: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+      slate: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: 'bg-slate-100' },
+      blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', icon: 'bg-blue-100' },
+      green: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', icon: 'bg-green-100' },
+      yellow: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', icon: 'bg-yellow-100' },
+      red: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: 'bg-red-100' },
+      purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', icon: 'bg-purple-100' },
+    };
+    return colorMap[color] || colorMap.slate;
+  };
+
   // Determine theme colors based on workflow type
   const handleMemberClick = (memberId: number) => {
     // TODO: Fetch member details from API
@@ -112,68 +172,173 @@ const ProjectOverview = ({ project, workflowType = "auto-sync" }: ProjectOvervie
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Quick Stats Grid - Jira Style */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-600">In Progress</p>
-                <p className="text-3xl font-bold text-slate-900">{stats.inProgress}</p>
-                <p className="text-xs text-slate-500">Active tasks</p>
+      {/* Quick Stats Grid - Only for Auto-Sync workflow */}
+      {workflowType === "auto-sync" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600">In Progress</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.inProgress}</p>
+                  <p className="text-xs text-slate-500">Active tasks</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                </div>
               </div>
-              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-600">Completed</p>
-                <p className="text-3xl font-bold text-slate-900">{stats.completed}</p>
-                <p className="text-xs text-slate-500">{Math.round(progress)}% of total</p>
+          <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600">Completed</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.completed}</p>
+                  <p className="text-xs text-slate-500">{Math.round(progress)}% of total</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                </div>
               </div>
-              <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-600">Overdue</p>
-                <p className="text-3xl font-bold text-slate-900">{stats.overdue}</p>
-                <p className="text-xs text-slate-500">Need attention</p>
+          <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600">Overdue</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.overdue}</p>
+                  <p className="text-xs text-slate-500">Need attention</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                </div>
               </div>
-              <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-600">Total Tasks</p>
-                <p className="text-3xl font-bold text-slate-900">{stats.totalTasks}</p>
-                <p className="text-xs text-slate-500">All work items</p>
+          <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600">Total Tasks</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.totalTasks}</p>
+                  <p className="text-xs text-slate-500">All work items</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-slate-600" />
+                </div>
               </div>
-              <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center">
-                <Target className="w-5 h-5 text-slate-600" />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Custom Workflow Status Section */}
+      {workflowType === "custom" && customColumns.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Workflow Status</h3>
+              <p className="text-sm text-slate-600">Task distribution across custom columns</p>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {customColumns.length} columns
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {customColumns
+              .sort((a, b) => a.order - b.order)
+              .map((column) => {
+                const columnTasks = getTasksByColumn(column.title);
+                const percentage = stats.totalTasks > 0 
+                  ? Math.round((columnTasks.length / stats.totalTasks) * 100) 
+                  : 0;
+                const colors = getColumnColorClass(column.color);
+
+                return (
+                  <Card 
+                    key={column.id} 
+                    className={`border-2 ${colors.border} ${colors.bg} hover:shadow-md transition-all duration-200 cursor-pointer group`}
+                  >
+                    <CardContent className="p-5">
+                      <div className="space-y-3">
+                        {/* Icon and Title */}
+                        <div className="flex items-start justify-between">
+                          <div className={`w-10 h-10 rounded-lg ${colors.icon} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                            <Layers className={`w-5 h-5 ${colors.text}`} />
+                          </div>
+                        </div>
+
+                        {/* Column Name */}
+                        <div>
+                          <h4 className={`text-sm font-semibold ${colors.text} truncate`}>
+                            {column.title}
+                          </h4>
+                        </div>
+
+                        {/* Task Count */}
+                        <div className="space-y-1">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-bold text-slate-900">
+                              {columnTasks.length}
+                            </span>
+                            <span className="text-sm text-slate-500">
+                              tasks
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600">
+                            {percentage}% of total
+                          </p>
+                        </div>
+
+                        {/* Mini Progress Bar */}
+                        <div className="pt-2">
+                          <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full ${colors.icon} transition-all duration-300`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State for Custom Workflow with No Columns */}
+      {workflowType === "custom" && customColumns.length === 0 && !loading && (
+        <Card className="border-2 border-dashed border-slate-300 bg-slate-50">
+          <CardContent className="p-12">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center">
+                  <Layers className="w-8 h-8 text-slate-400" />
+                </div>
               </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  No Workflow Columns Yet
+                </h3>
+                <p className="text-sm text-slate-600 max-w-md mx-auto">
+                  Create columns in the Board tab to start tracking your workflow progress here
+                </p>
+              </div>
+              <Button variant="outline" className="mt-4" onClick={onNavigateToBoard}>
+                Go to Board →
+              </Button>
             </div>
           </CardContent>
         </Card>
-      </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

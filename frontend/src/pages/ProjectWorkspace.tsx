@@ -149,9 +149,9 @@ const ProjectWorkspace = () => {
 
     switch (activeView) {
       case "overview":
-        return <ProjectOverview key={refreshKey} project={project} workflowType={workflowType} />;
+        return <ProjectOverview key={refreshKey} project={project} workflowType={workflowType} onNavigateToBoard={() => setActiveView("kanban")} />;
       case "kanban":
-        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={project.id} onTasksChange={refreshProject} />;
+        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={project.id} onTasksChange={refreshProject} onColumnsChange={refreshProject} />;
       case "timeline":
         return <TimelineView projectMembers={projectMembers} />;
       case "calendar":
@@ -159,7 +159,7 @@ const ProjectWorkspace = () => {
       case "settings":
         return <ProjectSettings project={project} />;
       default:
-        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={project.id} onTasksChange={refreshProject} />;
+        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={project.id} onTasksChange={refreshProject} onColumnsChange={refreshProject} />;
     }
   };
 

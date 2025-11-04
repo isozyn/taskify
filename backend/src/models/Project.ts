@@ -35,7 +35,7 @@ export interface ProjectUpdateInput {
 	status?: ProjectStatus;
 	startDate?: string;
 	endDate?: string;
-	// workflowType cannot be changed after creation
+	workflowType?: WorkflowType;
 }
 
 export interface ProjectResponse {

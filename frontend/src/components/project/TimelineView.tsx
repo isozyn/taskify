@@ -6,7 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 import TaskModal from "./TaskModal";
 import { api, Task } from "@/lib/api";
-
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface TimelineViewProps {
   projectMembers: any[];
@@ -95,23 +100,32 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
   };
 
   // Calculate task position on timeline based on dates
-  const calculateTaskPosition = (task: Task, totalWeeks: number) => {
-    if (!task.startDate || !task.endDate) return { left: 0, width: 0 };
+  const calculateTaskPosition = (task: Task, weeks: Array<{ label: string; date: Date }>) => {
+    if (!task.startDate || !task.endDate || weeks.length === 0) return { left: 0, width: 0 };
 
-    const projectStart = new Date('2024-01-01'); // You might want to get this from project data
+    const timelineStart = weeks[0].date;
+    const timelineEnd = new Date(weeks[weeks.length - 1].date);
+    timelineEnd.setDate(timelineEnd.getDate() + 7); // Add 7 days to get end of last week
+
     const taskStart = new Date(task.startDate);
     const taskEnd = new Date(task.endDate);
 
-    const totalDays = totalWeeks * 7;
-    const daysSinceProjectStart = Math.floor((taskStart.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24));
-    const taskDuration = Math.floor((taskEnd.getTime() - taskStart.getTime()) / (1000 * 60 * 60 * 24));
+    // Calculate total timeline duration in days
+    const totalTimelineDays = Math.floor((timelineEnd.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Calculate days from timeline start to task start
+    const daysSinceTimelineStart = Math.floor((taskStart.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Calculate task duration in days
+    const taskDuration = Math.floor((taskEnd.getTime() - taskStart.getTime()) / (1000 * 60 * 60 * 24)) + 1; // +1 to include end date
 
-    const left = (daysSinceProjectStart / totalDays) * 100;
-    const width = (taskDuration / totalDays) * 100;
+    // Calculate percentages
+    const left = (daysSinceTimelineStart / totalTimelineDays) * 100;
+    const width = (taskDuration / totalTimelineDays) * 100;
 
     return {
       left: Math.max(0, Math.min(left, 95)),
-      width: Math.max(5, Math.min(width, 100 - left))
+      width: Math.max(2, Math.min(width, 100 - left))
     };
   };
 
@@ -154,7 +168,10 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
       return Array.from({ length: 18 }, (_, i) => {
         const date = new Date(startOfMonth);
         date.setDate(startOfMonth.getDate() + (i * 7)); // Weekly intervals
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return {
+          label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          date: new Date(date)
+        };
       });
     }
 
@@ -170,15 +187,29 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
     const daysDiff = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
     const weeksNeeded = Math.max(18, Math.ceil(daysDiff / 7) + 2); // Add buffer
 
-    // Generate weekly date labels
+    // Generate weekly date labels with actual date objects
     return Array.from({ length: Math.min(weeksNeeded, 24) }, (_, i) => {
       const date = new Date(minDate);
       date.setDate(minDate.getDate() + (i * 7));
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return {
+        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: new Date(date)
+      };
     });
   };
 
   const weeks = generateDateColumns();
+
+  // Check if a date column represents the current week
+  const isCurrentWeek = (columnDate: Date) => {
+    const today = new Date();
+    const weekStart = new Date(columnDate);
+    const weekEnd = new Date(columnDate);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    
+    return today >= weekStart && today <= weekEnd;
+  };
+
 
   return (
     <div className="space-y-6">
@@ -225,7 +256,7 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 <span className="text-sm font-bold px-4 text-foreground">
-                  {tasks.length > 0 ? weeks[0] + ' - ' + weeks[weeks.length - 1] : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                  {tasks.length > 0 ? weeks[0].label + ' - ' + weeks[weeks.length - 1].label : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </span>
                 <Button variant="ghost" size="icon" className="w-8 h-8 hover:bg-muted/50">
                   <ChevronRight className="w-4 h-4" />
@@ -253,12 +284,16 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
               <div className="flex mb-6 pl-[280px]">
                 {weeks.map((week, idx) => (
                   <div
-                    key={week}
+                    key={week.label + idx}
                     className={`flex-1 text-center text-xs font-bold tracking-wider ${
-                      idx % 2 === 0 ? 'text-primary' : 'text-muted-foreground'
+                      isCurrentWeek(week.date) 
+                        ? 'text-primary bg-primary/10 rounded-lg py-1' 
+                        : idx % 2 === 0 
+                        ? 'text-primary' 
+                        : 'text-muted-foreground'
                     }`}
                   >
-                    {week}
+                    {week.label}
                   </div>
                 ))}
               </div>
@@ -269,7 +304,7 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                   const progress = calculateProgress(task.status);
                   const uiStatus = mapStatusToUI(task.status);
                   const colorGradient = getPriorityColor(task.priority);
-                  const position = calculateTaskPosition(task, weeks.length);
+                  const position = calculateTaskPosition(task, weeks);
                   
                   return (
                   <div key={task.id} className="flex items-center gap-6 group">
@@ -309,38 +344,66 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                       <div className="absolute inset-0 grid grid-cols-18">
                         {weeks.map((week, idx) => (
                           <div
-                            key={week}
+                            key={week.label + idx}
                             className={`border-r ${
                               idx === 0 ? "border-l" : ""
-                            } ${idx % 4 === 0 ? 'border-slate-300' : 'border-slate-200'}`}
+                            } ${isCurrentWeek(week.date) 
+                              ? 'border-primary bg-primary/5' 
+                              : idx % 4 === 0 
+                              ? 'border-slate-300' 
+                              : 'border-slate-200'
+                            }`}
                           />
                         ))}
                       </div>
 
-                      {/* Premium Progress Bar */}
-                      <div
-                        className="absolute h-10 rounded-xl shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:-translate-y-1"
-                        style={{
-                          left: `${position.left}%`,
-                          width: `${position.width}%`,
-                        }}
-                        onClick={() => handleTaskClick(task)}
-                      >
-                        <div className={`h-full rounded-xl bg-gradient-to-r ${colorGradient} flex items-center justify-between px-4 shadow-lg border border-white/20`}>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-white/80"></div>
-                            <span className="text-white text-xs font-bold tracking-wide">
-                              {progress}%
-                            </span>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-white/80" />
-                        </div>
-                        {/* Progress Fill */}
-                        <div 
-                          className="absolute top-0 left-0 h-full rounded-xl bg-gradient-to-r from-white/20 to-transparent transition-all duration-700"
-                          style={{ width: `${progress}%` }}
-                        ></div>
-                      </div>
+                      {/* Premium Progress Bar with Tooltip */}
+                      <TooltipProvider>
+                        <Tooltip delayDuration={100}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className="absolute h-10 rounded-xl shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:-translate-y-1"
+                              style={{
+                                left: `${position.left}%`,
+                                width: `${position.width}%`,
+                              }}
+                              onClick={() => handleTaskClick(task)}
+                            >
+                              <div className={`h-full rounded-xl bg-gradient-to-r ${colorGradient} flex items-center justify-between px-4 shadow-lg border border-white/20`}>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-white/80"></div>
+                                  <span className="text-white text-xs font-bold tracking-wide">
+                                    {progress}%
+                                  </span>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-white/80" />
+                              </div>
+                              {/* Progress Fill */}
+                              <div 
+                                className="absolute top-0 left-0 h-full rounded-xl bg-gradient-to-r from-white/20 to-transparent transition-all duration-700"
+                                style={{ width: `${progress}%` }}
+                              ></div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs p-3 bg-popover border border-border shadow-xl">
+                            <div className="space-y-2">
+                              <div className="font-semibold text-sm">{task.title}</div>
+                              {task.description && (
+                                <div className="text-xs text-muted-foreground line-clamp-2">{task.description}</div>
+                              )}
+                              <div className="flex items-center gap-2 text-xs">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                  {task.priority}
+                                </Badge>
+                                <span className="text-muted-foreground">{uiStatus}</span>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(task.startDate!).toLocaleDateString()} - {new Date(task.endDate!).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                   );
@@ -354,12 +417,16 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
               <div className="flex mb-4 pl-[176px]">
                 {weeks.map((week, idx) => (
                   <div
-                    key={week}
+                    key={week.label + idx}
                     className={`flex-1 text-center text-xs font-bold tracking-wider ${
-                      idx % 3 === 0 ? 'text-primary' : 'text-muted-foreground'
+                      isCurrentWeek(week.date)
+                        ? 'text-primary bg-primary/10 rounded-lg py-1'
+                        : idx % 3 === 0 
+                        ? 'text-primary' 
+                        : 'text-muted-foreground'
                     }`}
                   >
-                    {week}
+                    {week.label}
                   </div>
                 ))}
               </div>
@@ -370,7 +437,7 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                   const progress = calculateProgress(task.status);
                   const uiStatus = mapStatusToUI(task.status);
                   const colorGradient = getPriorityColor(task.priority);
-                  const position = calculateTaskPosition(task, weeks.length);
+                  const position = calculateTaskPosition(task, weeks);
                   
                   return (
                     <div key={task.id} className="flex items-center gap-4 group">
@@ -417,34 +484,62 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
                         <div className="absolute inset-0 grid grid-cols-18">
                           {weeks.map((week, idx) => (
                             <div
-                              key={week}
+                              key={week.label + idx}
                               className={`border-r ${
                                 idx === 0 ? "border-l" : ""
-                              } ${idx % 6 === 0 ? 'border-slate-300' : 'border-slate-200'}`}
+                              } ${isCurrentWeek(week.date)
+                                ? 'border-primary bg-primary/5'
+                                : idx % 6 === 0 
+                                ? 'border-slate-300' 
+                                : 'border-slate-200'
+                              }`}
                             />
                           ))}
                         </div>
 
-                        {/* Compact Progress Bar */}
-                        <div
-                          className="absolute h-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group-hover:scale-105"
-                          style={{
-                            left: `${position.left}%`,
-                            width: `${position.width}%`,
-                          }}
-                          onClick={() => handleTaskClick(task)}
-                        >
-                          <div className={`h-full rounded-lg bg-gradient-to-r ${colorGradient} flex items-center justify-center px-2 shadow-md border border-white/20`}>
-                            <span className="text-white text-xs font-bold tracking-wide">
-                              {progress}%
-                            </span>
-                          </div>
-                          {/* Progress Fill */}
-                          <div 
-                            className="absolute top-0 left-0 h-full rounded-lg bg-gradient-to-r from-white/20 to-transparent transition-all duration-500"
-                            style={{ width: `${progress}%` }}
-                          ></div>
-                        </div>
+                        {/* Compact Progress Bar with Tooltip */}
+                        <TooltipProvider>
+                          <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                              <div
+                                className="absolute h-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group-hover:scale-105"
+                                style={{
+                                  left: `${position.left}%`,
+                                  width: `${position.width}%`,
+                                }}
+                                onClick={() => handleTaskClick(task)}
+                              >
+                                <div className={`h-full rounded-lg bg-gradient-to-r ${colorGradient} flex items-center justify-center px-2 shadow-md border border-white/20`}>
+                                  <span className="text-white text-xs font-bold tracking-wide">
+                                    {progress}%
+                                  </span>
+                                </div>
+                                {/* Progress Fill */}
+                                <div 
+                                  className="absolute top-0 left-0 h-full rounded-lg bg-gradient-to-r from-white/20 to-transparent transition-all duration-500"
+                                  style={{ width: `${progress}%` }}
+                                ></div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs p-3 bg-popover border border-border shadow-xl">
+                              <div className="space-y-2">
+                                <div className="font-semibold text-sm">{task.title}</div>
+                                {task.description && (
+                                  <div className="text-xs text-muted-foreground line-clamp-2">{task.description}</div>
+                                )}
+                                <div className="flex items-center gap-2 text-xs">
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                    {task.priority}
+                                  </Badge>
+                                  <span className="text-muted-foreground">{uiStatus}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(task.startDate!).toLocaleDateString()} - {new Date(task.endDate!).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                   );

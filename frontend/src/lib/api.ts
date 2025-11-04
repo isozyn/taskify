@@ -152,6 +152,7 @@ class ApiClient {
 			description?: string;
 			color?: string;
 			status?: string;
+			workflowType?: "AUTOMATED" | "CUSTOM";
 		}
 	) {
 		return this.request(`/projects/${projectId}`, {
@@ -217,6 +218,41 @@ class ApiClient {
 
 	async deleteTask(taskId: number) {
 		return this.request(`/tasks/${taskId}`, {
+			method: "DELETE",
+		});
+	}
+
+	// Custom Columns API
+	async getCustomColumns(projectId: number) {
+		return this.request(`/projects/${projectId}/columns`, {
+			method: "GET",
+		});
+	}
+
+	async createCustomColumn(projectId: number, data: {
+		title: string;
+		color?: string;
+		order?: number;
+	}) {
+		return this.request(`/projects/${projectId}/columns`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async updateCustomColumn(columnId: number, data: {
+		title?: string;
+		color?: string;
+		order?: number;
+	}) {
+		return this.request(`/columns/${columnId}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async deleteCustomColumn(columnId: number) {
+		return this.request(`/columns/${columnId}`, {
 			method: "DELETE",
 		});
 	}
@@ -309,4 +345,18 @@ export interface Task {
 export interface TaskResponse {
 	tasks?: Task[];
 	task?: Task;
+}
+
+export interface CustomColumn {
+	id: number;
+	title: string;
+	color: string;
+	order: number;
+	projectId: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface CustomColumnsResponse {
+	columns: CustomColumn[];
 }

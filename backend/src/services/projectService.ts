@@ -31,7 +31,13 @@ export class ProjectService {
 
 		// If CUSTOM workflow, create default columns
 		if (project.workflowType === "CUSTOM") {
-			await CustomColumnService.createDefaultColumns(project.id);
+			try {
+				await CustomColumnService.createDefaultColumns(project.id);
+			} catch (error) {
+				console.error('Failed to create default columns:', error);
+				// Don't fail the entire project creation if columns fail
+				// Columns can be created later by the user
+			}
 		}
 
 		return project;
@@ -80,7 +86,6 @@ export class ProjectService {
 
 	/**
 	 * Update project
-	 * Note: workflowType cannot be changed after creation
 	 */
 	static async updateProject(
 		projectId: number,
@@ -101,7 +106,7 @@ export class ProjectService {
 				...(data.endDate !== undefined && {
 					endDate: data.endDate ? new Date(data.endDate) : null,
 				}),
-				// workflowType is intentionally excluded
+				...(data.workflowType && { workflowType: data.workflowType }),
 			},
 		});
 
