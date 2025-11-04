@@ -15,6 +15,7 @@ import MemberDetailModal from "./MemberDetailModal";
 
 interface ProjectSettingsProps {
   project: any;
+  onProjectDeleted?: () => void;
 }
 
 interface TeamMember {
@@ -34,12 +35,13 @@ interface TeamMember {
   }>;
 }
 
-const ProjectSettings = ({ project }: ProjectSettingsProps) => {
+const ProjectSettings = ({ project, onProjectDeleted }: ProjectSettingsProps) => {
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("member");
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Mock detailed member data - will be replaced with real data from backend
   const detailedMembers: TeamMember[] = [
@@ -152,6 +154,38 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!window.confirm('Are you sure you want to move this project to trash? You can restore it within 30 days.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/v1/projects/${project.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete project');
+      }
+
+      // Call the callback to notify parent component
+      if (onProjectDeleted) {
+        onProjectDeleted();
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <Tabs defaultValue="general" className="w-full">
       <TabsList>
@@ -214,13 +248,23 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
         <Card>
           <CardHeader>
             <CardTitle>Danger Zone</CardTitle>
-            <CardDescription>Irreversible actions for this project</CardDescription>
+            <CardDescription>Actions that affect project availability</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button variant="destructive">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Project
-            </Button>
+          <CardContent className="space-y-4">
+            <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+              <h4 className="font-medium text-red-900 mb-2">Delete Project</h4>
+              <p className="text-sm text-red-700 mb-3">
+                This will move the project to trash. You can restore it within 30 days, after which it will be permanently deleted.
+              </p>
+              <Button 
+                variant="destructive"
+                onClick={handleDeleteProject}
+                disabled={isDeleting}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {isDeleting ? 'Moving to Trash...' : 'Move to Trash'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>

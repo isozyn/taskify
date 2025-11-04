@@ -38,13 +38,16 @@ export class ProjectService {
 	}
 
 	/**
-	 * Get project by ID with workflow info
+	 * Get project by ID with workflow info (excluding deleted projects)
 	 */
 	static async getProjectById(
 		projectId: number
 	): Promise<ProjectResponse | null> {
 		const project = await prisma.project.findUnique({
-			where: { id: projectId },
+			where: { 
+				id: projectId,
+				isDeleted: false,
+			},
 			include: {
 				customColumns: {
 					orderBy: { order: "asc" },
@@ -86,23 +89,63 @@ export class ProjectService {
 	}
 
 	/**
-	 * Delete project
+	 * Soft delete project (move to trash)
 	 */
-	static async deleteProject(projectId: number): Promise<void> {
+	static async deleteProject(projectId: number, deletedBy: number): Promise<void> {
+		await prisma.project.update({
+			where: { id: projectId },
+			data: {
+				isDeleted: true,
+				deletedAt: new Date(),
+				deletedBy: deletedBy,
+			},
+		});
+	}
+
+	/**
+	 * Permanently delete project (hard delete)
+	 */
+	static async permanentlyDeleteProject(projectId: number): Promise<void> {
 		await prisma.project.delete({
 			where: { id: projectId },
 		});
 	}
 
 	/**
-	 * Get all projects for a user
+	 * Restore project from trash
+	 */
+	static async restoreProject(projectId: number): Promise<ProjectResponse> {
+		const project = await prisma.project.update({
+			where: { id: projectId },
+			data: {
+				isDeleted: false,
+				deletedAt: null,
+				deletedBy: null,
+			},
+			include: {
+				customColumns: {
+					orderBy: { order: "asc" },
+				},
+			},
+		});
+
+		return project;
+	}
+
+	/**
+	 * Get all active projects for a user (excluding deleted)
 	 */
 	static async getProjectsByUserId(
 		userId: number
 	): Promise<ProjectResponse[]> {
 		const projects = await prisma.project.findMany({
 			where: {
-				OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+				AND: [
+					{ isDeleted: false },
+					{
+						OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+					},
+				],
 			},
 			include: {
 				customColumns: {
@@ -113,5 +156,61 @@ export class ProjectService {
 		});
 
 		return projects;
+	}
+
+	/**
+	 * Get deleted projects for a user (trash)
+	 */
+	static async getDeletedProjectsByUserId(
+		userId: number
+	): Promise<ProjectResponse[]> {
+		const projects = await prisma.project.findMany({
+			where: {
+				AND: [
+					{ isDeleted: true },
+					{
+						OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+					},
+				],
+			},
+			include: {
+				customColumns: {
+					orderBy: { order: "asc" },
+				},
+			},
+			orderBy: { deletedAt: "desc" },
+		});
+
+		return projects;
+	}
+
+	/**
+	 * Clean up projects deleted more than 30 days ago
+	 */
+	static async cleanupExpiredProjects(): Promise<number> {
+		const thirtyDaysAgo = new Date();
+		thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+		const expiredProjects = await prisma.project.findMany({
+			where: {
+				isDeleted: true,
+				deletedAt: {
+					lt: thirtyDaysAgo,
+				},
+			},
+			select: { id: true },
+		});
+
+		if (expiredProjects.length > 0) {
+			await prisma.project.deleteMany({
+				where: {
+					id: {
+						in: expiredProjects.map(p => p.id),
+					},
+				},
+			});
+		}
+
+		return expiredProjects.length;
 	}
 }

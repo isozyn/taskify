@@ -101,9 +101,55 @@ export class ProjectController {
   }
 
   /**
-   * Delete a project
+   * Delete a project (move to trash)
    */
   static async deleteProject(req: Request, res: Response): Promise<void> {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const userId = (req as any).user?.id;
+      
+      if (isNaN(projectId)) {
+        res.status(400).json({ error: 'Invalid project ID' });
+        return;
+      }
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      await ProjectService.deleteProject(projectId, userId);
+      res.status(200).json({ message: 'Project moved to trash successfully' });
+    } catch (error: any) {
+      console.error('Delete project error:', error);
+      res.status(400).json({ error: error.message || 'Failed to delete project' });
+    }
+  }
+
+  /**
+   * Get deleted projects (trash)
+   */
+  static async getDeletedProjects(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const projects = await ProjectService.getDeletedProjectsByUserId(userId);
+      res.status(200).json(projects);
+    } catch (error: any) {
+      console.error('Get deleted projects error:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch deleted projects' });
+    }
+  }
+
+  /**
+   * Restore a project from trash
+   */
+  static async restoreProject(req: Request, res: Response): Promise<void> {
     try {
       const projectId = parseInt(req.params.projectId);
       
@@ -112,11 +158,31 @@ export class ProjectController {
         return;
       }
 
-      await ProjectService.deleteProject(projectId);
-      res.status(200).json({ message: 'Project deleted successfully' });
+      const project = await ProjectService.restoreProject(projectId);
+      res.status(200).json({ message: 'Project restored successfully', project });
     } catch (error: any) {
-      console.error('Delete project error:', error);
-      res.status(400).json({ error: error.message || 'Failed to delete project' });
+      console.error('Restore project error:', error);
+      res.status(400).json({ error: error.message || 'Failed to restore project' });
+    }
+  }
+
+  /**
+   * Permanently delete a project
+   */
+  static async permanentlyDeleteProject(req: Request, res: Response): Promise<void> {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      
+      if (isNaN(projectId)) {
+        res.status(400).json({ error: 'Invalid project ID' });
+        return;
+      }
+
+      await ProjectService.permanentlyDeleteProject(projectId);
+      res.status(200).json({ message: 'Project permanently deleted' });
+    } catch (error: any) {
+      console.error('Permanently delete project error:', error);
+      res.status(400).json({ error: error.message || 'Failed to permanently delete project' });
     }
   }
 }

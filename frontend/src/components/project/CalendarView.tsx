@@ -6,6 +6,7 @@ import moment from 'moment';
 import { Filter, Download, Video, Calendar as CalendarIcon } from "lucide-react";
 import TaskModal from "./TaskModal";
 import SimpleGoogleMeetModal from "./SimpleGoogleMeetModal";
+import MeetingNotesModal from "./MeetingNotesModal";
 import ErrorBoundary from "../ErrorBoundary";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar-styles.css';
@@ -40,6 +41,8 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
     const [showDateActionModal, setShowDateActionModal] = useState(false);
     const [showEventModal, setShowEventModal] = useState(false);
     const [showDayAgenda, setShowDayAgenda] = useState(false);
+    const [showMeetingNotes, setShowMeetingNotes] = useState(false);
+    const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
     const [filters, setFilters] = useState({
         status: [] as string[],
         priority: [] as string[],

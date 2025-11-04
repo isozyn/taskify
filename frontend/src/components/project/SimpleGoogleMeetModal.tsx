@@ -282,6 +282,12 @@ const SimpleGoogleMeetModal: React.FC<SimpleGoogleMeetModalProps> = ({
 
       // Show success message
       console.log(`Meeting created successfully! Invitations sent to ${result.invitationsSent} people.`);
+      
+      // Optionally open meeting notes
+      if (window.confirm('Meeting created! Would you like to open meeting notes?')) {
+        // You can implement navigation to meeting notes here
+        console.log('Opening meeting notes for:', result.meeting.id);
+      }
 
     } catch (error) {
       console.error('Error creating meeting:', error);

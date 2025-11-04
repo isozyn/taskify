@@ -25,6 +25,7 @@ model User {
   projectMembers   ProjectMember[]
   refreshTokens    RefreshToken[]
   tasks            Task[]
+  documents        Document[]
 
   @@index([email])
   @@index([username])
@@ -54,13 +55,19 @@ model Project {
   color         String?
   title         String
   workflowType  WorkflowType    @default(CUSTOM)
+  isDeleted     Boolean         @default(false)
+  deletedAt     DateTime?
+  deletedBy     Int?
   customColumns CustomColumn[]
   owner         User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members       ProjectMember[]
   tasks         Task[]
+  documents     Document[]
 
   @@index([ownerId])
   @@index([status])
+  @@index([isDeleted])
+  @@index([deletedAt])
 }
 
 model ProjectMember {
@@ -93,6 +100,7 @@ model Task {
   endDate     DateTime?
   startDate   DateTime?
   comments    Comment[]
+  documents   Document[]
   assignee    User?      @relation(fields: [assigneeId], references: [id])
   project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -128,6 +136,41 @@ model CustomColumn {
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+}
+
+model Document {
+  id          String      @id @default(cuid())
+  title       String
+  content     Json        // Rich text content as JSON blocks
+  type        DocumentType @default(PAGE)
+  projectId   Int?        // Optional: associate with project
+  meetingId   String?     // Optional: associate with meeting
+  taskId      Int?        // Optional: associate with task
+  createdBy   Int
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  isTemplate  Boolean     @default(false)
+  templateName String?    // Name if this is a template
+  tags        String[]    @default([])
+  
+  // Relations
+  project     Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task        Task?       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author      User        @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([meetingId])
+  @@index([taskId])
+  @@index([createdBy])
+  @@index([type])
+}
+
+enum DocumentType {
+  PAGE
+  WIKI
+  MEETING_NOTES
+  TASK_DESCRIPTION
+  TEMPLATE
 }
 
 enum Role {

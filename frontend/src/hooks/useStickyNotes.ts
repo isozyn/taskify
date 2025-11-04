@@ -55,7 +55,7 @@ export const useStickyNotes = (projectId: string = 'default') => {
 
   const createNote = useCallback((defaultColor?: string) => {
     const newNote: Note = {
-      id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       content: '',
       color: defaultColor || 'bg-blue-50 border-blue-200',
       position: { 
@@ -93,7 +93,7 @@ export const useStickyNotes = (projectId: string = 'default') => {
 
     const duplicatedNote: Note = {
       ...noteToClone,
-      id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       position: {
         x: noteToClone.position.x + 20,
         y: noteToClone.position.y + 20,

@@ -16,6 +16,11 @@ import authRoutes from "./routes/authRoutes";
 import customColumnRoutes from "./routes/customColumnRoutes";
 import projectRoutes from "./routes/projectRoutes";
 import meetingRoutes from "./routes/meetingRoutes";
+import documentRoutes from "./routes/documentRoutes";
+import projectDocumentRoutes from "./routes/projectDocumentRoutes";
+
+// Import services
+import { CleanupService } from "./services/cleanupService";
 
 // Create Express app
 const app: Express = express();
@@ -71,6 +76,12 @@ app.use("/api/v1", projectRoutes);
 // Meeting routes
 app.use("/api/v1/meetings", meetingRoutes);
 
+// Document routes
+app.use("/api/v1/documents", documentRoutes);
+
+// Project document routes
+app.use("/api/v1/projects", projectDocumentRoutes);
+
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);
 
@@ -119,6 +130,9 @@ const startServer = async () => {
         ║   Frontend URL: ${process.env.FRONTEND_URL}   ║
         ╚════════════════════════════════════════╝
       `);
+      
+      // Start cleanup service for expired projects
+      CleanupService.scheduleCleanup();
     });
   } catch (error) {
     console.error("Failed to start server:", error);

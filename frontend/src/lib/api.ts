@@ -204,6 +204,9 @@ export interface Project {
 	ownerId: number;
 	createdAt: string;
 	updatedAt: string;
+	isDeleted?: boolean;
+	deletedAt?: string;
+	deletedBy?: number;
 }
 
 export interface ProjectResponse {

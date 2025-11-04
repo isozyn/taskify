@@ -14,13 +14,15 @@ import {
   Plus,
   MoreHorizontal,
   Search,
-  Filter
+  Filter,
+  FileText
 } from "lucide-react";
 import KanbanBoard from "@/components/project/KanbanBoard";
 import TimelineView from "@/components/project/TimelineView";
 import CalendarView from "@/components/project/CalendarView";
 import ProjectOverview from "@/components/project/ProjectOverview";
 import ProjectSettings from "@/components/project/ProjectSettings";
+import ProjectWiki from "@/components/project/ProjectWiki";
 import StickyNotes from "@/components/ui/StickyNotes";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { useUser } from "@/contexts/UserContext";
@@ -102,6 +104,11 @@ const ProjectWorkspace = () => {
       icon: CalendarDays,
     },
     {
+      id: "wiki",
+      label: "Wiki",
+      icon: FileText,
+    },
+    {
       id: "settings",
       label: "Settings",
       icon: Settings,
@@ -134,6 +141,8 @@ const ProjectWorkspace = () => {
         return <TimelineView projectMembers={mockMembers} />;
       case "calendar":
         return <CalendarView projectMembers={mockMembers} />;
+      case "wiki":
+        return <ProjectWiki projectId={parseInt(id!)} />;
       case "settings":
         return <ProjectSettings project={project} />;
       default:

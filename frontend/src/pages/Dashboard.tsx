@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/Navbar";
 import { api, Project } from "@/lib/api";
+import TrashModal from "@/components/project/TrashModal";
 import {
 	Plus,
 	Layers,
@@ -47,6 +48,9 @@ import {
 	Check,
 	Sparkles,
 	ArrowLeft,
+	Trash2,
+	AlertTriangle,
+	RotateCcw,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -65,6 +69,8 @@ const Dashboard = () => {
 	const [activeTab, setActiveTab] = useState("recent");
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+	const [deletedProjects, setDeletedProjects] = useState<Project[]>([]);
+	const [isLoadingDeletedProjects, setIsLoadingDeletedProjects] = useState(false);
 	const [newProject, setNewProject] = useState({
 		name: "",
 		description: "",
@@ -74,21 +80,51 @@ const Dashboard = () => {
 	});
 
 	// Fetch projects from database
-	useEffect(() => {
-		const fetchProjects = async () => {
-			try {
-				setIsLoadingProjects(true);
-				const response: any = await api.getProjects();
-				setProjects(response || []);
-			} catch (error) {
-				console.error("Failed to fetch projects:", error);
-			} finally {
-				setIsLoadingProjects(false);
-			}
-		};
+	const fetchProjects = async () => {
+		try {
+			setIsLoadingProjects(true);
+			const response: any = await api.getProjects();
+			setProjects(response || []);
+		} catch (error) {
+			console.error("Failed to fetch projects:", error);
+		} finally {
+			setIsLoadingProjects(false);
+		}
+	};
 
+	// Fetch deleted projects from database
+	const fetchDeletedProjects = async () => {
+		try {
+			setIsLoadingDeletedProjects(true);
+			const token = localStorage.getItem('token');
+			const response = await fetch('/api/v1/projects/trash', {
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json',
+				},
+			});
+
+			if (response.ok) {
+				const deletedProjectsData = await response.json();
+				setDeletedProjects(deletedProjectsData || []);
+			}
+		} catch (error) {
+			console.error("Failed to fetch deleted projects:", error);
+		} finally {
+			setIsLoadingDeletedProjects(false);
+		}
+	};
+
+	useEffect(() => {
 		fetchProjects();
 	}, []);
+
+	// Fetch deleted projects when trash tab is active
+	useEffect(() => {
+		if (activeTab === 'trash') {
+			fetchDeletedProjects();
+		}
+	}, [activeTab]);
 
 	// Mock active tasks data
 	const activeTasks = [
@@ -516,6 +552,170 @@ const Dashboard = () => {
 		);
 	};
 
+	const renderTrashView = () => {
+		if (isLoadingDeletedProjects) {
+			return (
+				<div className="flex items-center justify-center py-12">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+				</div>
+			);
+		}
+
+		if (deletedProjects.length === 0) {
+			return (
+				<div className="text-center py-12 bg-white rounded-lg border border-slate-200">
+					<Trash2 className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+					<h3 className="text-lg font-medium text-slate-900 mb-1">
+						No deleted projects
+					</h3>
+					<p className="text-sm text-slate-500">
+						Deleted projects will appear here and be automatically removed after 30 days
+					</p>
+				</div>
+			);
+		}
+
+		const getDaysUntilExpiry = (deletedAt: string) => {
+			const deletedDate = new Date(deletedAt);
+			const expiryDate = new Date(deletedDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+			const now = new Date();
+			const daysLeft = Math.ceil((expiryDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+			return Math.max(0, daysLeft);
+		};
+
+		const restoreProject = async (projectId: number) => {
+			try {
+				const token = localStorage.getItem('token');
+				const response = await fetch(`/api/v1/projects/${projectId}/restore`, {
+					method: 'PATCH',
+					headers: {
+						'Authorization': `Bearer ${token}`,
+						'Content-Type': 'application/json',
+					},
+				});
+
+				if (!response.ok) {
+					throw new Error('Failed to restore project');
+				}
+
+				// Remove from deleted projects and refresh main projects
+				setDeletedProjects(prev => prev.filter(p => p.id !== projectId));
+				fetchProjects();
+			} catch (error) {
+				console.error('Error restoring project:', error);
+				alert('Failed to restore project. Please try again.');
+			}
+		};
+
+		const permanentlyDeleteProject = async (projectId: number) => {
+			if (!window.confirm('Are you sure you want to permanently delete this project? This action cannot be undone.')) {
+				return;
+			}
+
+			try {
+				const token = localStorage.getItem('token');
+				const response = await fetch(`/api/v1/projects/${projectId}/permanent`, {
+					method: 'DELETE',
+					headers: {
+						'Authorization': `Bearer ${token}`,
+						'Content-Type': 'application/json',
+					},
+				});
+
+				if (!response.ok) {
+					throw new Error('Failed to permanently delete project');
+				}
+
+				// Remove from deleted projects list
+				setDeletedProjects(prev => prev.filter(p => p.id !== projectId));
+			} catch (error) {
+				console.error('Error permanently deleting project:', error);
+				alert('Failed to permanently delete project. Please try again.');
+			}
+		};
+
+		return (
+			<div className="space-y-4">
+				<div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+					<div className="flex items-center space-x-2">
+						<AlertTriangle className="w-4 h-4 text-yellow-600" />
+						<p className="text-yellow-800 text-sm">
+							Projects in trash will be permanently deleted after 30 days
+						</p>
+					</div>
+				</div>
+
+				{deletedProjects.map((project) => {
+					const daysLeft = getDaysUntilExpiry(project.deletedAt);
+					return (
+						<Card
+							key={project.id}
+							className="border border-gray-200 hover:shadow-sm transition-shadow"
+						>
+							<CardContent className="p-4">
+								<div className="flex items-start justify-between">
+									<div className="flex-1">
+										<div className="flex items-center space-x-3">
+											<div
+												className="w-4 h-4 rounded-full"
+												style={{ backgroundColor: project.color || '#6B7280' }}
+											/>
+											<h3 className="font-medium text-gray-900">{project.title}</h3>
+										</div>
+										
+										{project.description && (
+											<p className="text-sm text-gray-600 mt-2 ml-7">
+												{project.description}
+											</p>
+										)}
+										
+										<div className="flex items-center space-x-4 mt-3 ml-7 text-xs text-gray-500">
+											<div className="flex items-center space-x-1">
+												<Calendar className="w-3 h-3" />
+												<span>Deleted {new Date(project.deletedAt).toLocaleDateString()}</span>
+											</div>
+											<span className={`px-2 py-1 rounded-full ${
+												daysLeft <= 7 
+													? 'bg-red-100 text-red-700' 
+													: daysLeft <= 14 
+														? 'bg-yellow-100 text-yellow-700'
+														: 'bg-gray-100 text-gray-700'
+											}`}>
+												{daysLeft} days left
+											</span>
+										</div>
+									</div>
+
+									<div className="flex items-center space-x-2 ml-4">
+										<Button
+											onClick={() => restoreProject(project.id)}
+											size="sm"
+											variant="outline"
+											className="text-blue-700 border-blue-200 hover:bg-blue-50"
+										>
+											<RotateCcw className="w-3 h-3 mr-1" />
+											Restore
+										</Button>
+										
+										<Button
+											onClick={() => permanentlyDeleteProject(project.id)}
+											size="sm"
+											variant="outline"
+											className="text-red-700 border-red-200 hover:bg-red-50"
+										>
+											<Trash2 className="w-3 h-3 mr-1" />
+											Delete Forever
+										</Button>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					);
+				})}
+			</div>
+		);
+	};
+
 	return (
 		<div className="min-h-screen bg-slate-50">
 			{/* Navbar */}
@@ -612,6 +812,13 @@ const Dashboard = () => {
 							>
 								All projects
 							</TabsTrigger>
+							<TabsTrigger
+								value="trash"
+								className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none px-4 py-2 data-[state=active]:text-blue-600 text-slate-600 font-medium"
+							>
+								<Trash2 className="w-4 h-4 mr-1.5" />
+								Trash
+							</TabsTrigger>
 						</TabsList>
 
 						<TabsContent value="recent" className="mt-6">
@@ -633,6 +840,10 @@ const Dashboard = () => {
 
 						<TabsContent value="all" className="mt-6">
 							{renderProjectsView()}
+						</TabsContent>
+
+						<TabsContent value="trash" className="mt-6">
+							{renderTrashView()}
 						</TabsContent>
 					</Tabs>
 				</div>
