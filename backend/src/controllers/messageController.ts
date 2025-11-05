@@ -44,10 +44,33 @@ export class MessageController {
         conversationId,
       });
 
-      // Broadcast to conversation room via Socket.IO
+      // Broadcast to conversation room AND all members' personal rooms via Socket.IO
       try {
         const io = getIO();
+        
+        // Get all conversation members
+        const conversation = await prisma.conversation.findUnique({
+          where: { id: conversationId },
+          include: {
+            members: {
+              include: {
+                user: {
+                  select: { id: true }
+                }
+              }
+            }
+          }
+        });
+
+        // Broadcast to conversation room (for users currently viewing the chat)
         io.to(`conversation:${conversationId}`).emit('message:new', message);
+        
+        // Also broadcast to all members' personal rooms (for real-time notifications even if not in conversation)
+        if (conversation?.members) {
+          conversation.members.forEach((member: any) => {
+            io.to(`user:${member.user.id}`).emit('message:new', message);
+          });
+        }
         
         // Update conversation's updatedAt timestamp
         await prisma.conversation.update({
@@ -108,3 +131,5 @@ export class MessageController {
     }
   }
 }
+
+

@@ -428,28 +428,33 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-3">
-                {project.members.map((member: any) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-all cursor-pointer group border border-transparent hover:border-slate-200"
-                    onClick={() => handleMemberClick(member.id)}
-                  >
-                    <Avatar className="w-10 h-10 group-hover:ring-2 group-hover:ring-blue-500/20 transition-all">
-                      <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-semibold">
-                        {member.name
-                          .split(" ")
-                          .map((n: string) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
-                        {member.name}
-                      </p>
-                      <p className="text-xs text-slate-500">Member</p>
+                {project.members.map((member: any) => {
+                  const memberName = member.user?.name || member.name || 'Unknown';
+                  const memberId = member.user?.id || member.id;
+                  
+                  return (
+                    <div
+                      key={memberId}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-all cursor-pointer group border border-transparent hover:border-slate-200"
+                      onClick={() => handleMemberClick(memberId)}
+                    >
+                      <Avatar className="w-10 h-10 group-hover:ring-2 group-hover:ring-blue-500/20 transition-all">
+                        <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-semibold">
+                          {memberName
+                            .split(" ")
+                            .map((n: string) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
+                          {memberName}
+                        </p>
+                        <p className="text-xs text-slate-500">{member.role || 'Member'}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

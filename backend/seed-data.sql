@@ -13,7 +13,7 @@ INSERT INTO "User" (name, email, username, password, role, "isEmailVerified", "c
 VALUES 
   (
     'Byron Young',
-    'byron@taskify.com',
+    'devbybyron@gmail.com',
     'byron',
     '$2b$10$8DY8G8aeK9n5WDX5R5ZUC.NE5lVZ5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z',
     'USER',

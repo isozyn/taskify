@@ -86,91 +86,29 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 	const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	// Initialize Socket.IO connection
+	// Store selectedConversation and user in refs so callbacks always see the latest values
+	const selectedConversationRef = useRef(selectedConversation);
+	const userRef = useRef(user);
+	
 	useEffect(() => {
-		if (!socketService.isConnected()) {
-			socketService.connect();
+		selectedConversationRef.current = selectedConversation;
+	}, [selectedConversation]);
 
-			// Set up socket callbacks
-			socketService.setCallbacks({
-				onMessageNew: (message: Message) => {
-					// Only add message if it's not from current user (to avoid duplicates with optimistic update)
-					if (
-						message.conversationId === selectedConversation?.id &&
-						message.senderId !== user?.id
-					) {
-						setMessages((prev) => {
-							// Check if message already exists
-							if (prev.some((m) => m.id === message.id)) {
-								return prev;
-							}
-							return [...prev, message];
-						});
-						scrollToBottom();
-					}
+	useEffect(() => {
+		userRef.current = user;
+	}, [user]);
 
-					// Update conversation list only if not currently viewing this conversation
-					if (message.conversationId !== selectedConversation?.id) {
-						fetchConversations();
-					}
-				},
-				onMessageEdited: (message: Message) => {
-					setMessages((prev) =>
-						prev.map((m) => (m.id === message.id ? message : m))
-					);
-				},
-				onMessageDeleted: (data: { messageId: number }) => {
-					setMessages((prev) =>
-						prev.filter((m) => m.id !== data.messageId)
-					);
-				},
-				onUserTyping: (data: {
-					userId: number;
-					conversationId: number;
-				}) => {
-					if (
-						data.conversationId === selectedConversation?.id &&
-						data.userId !== user?.id
-					) {
-						setTypingUsers((prev) =>
-							new Set(prev).add(data.userId)
-						);
-					}
-				},
-				onUserStopped: (data: {
-					userId: number;
-					conversationId: number;
-				}) => {
-					if (data.conversationId === selectedConversation?.id) {
-						setTypingUsers((prev) => {
-							const newSet = new Set(prev);
-							newSet.delete(data.userId);
-							return newSet;
-						});
-					}
-				},
-				onError: (error: { message: string }) => {
-					toast({
-						title: "Connection Error",
-						description: error.message,
-						variant: "destructive",
-					});
-				},
-			});
-
-			if (projectId) {
-				socketService.joinProject(parseInt(projectId));
+	// Scroll to bottom helper
+	const scrollToBottom = () => {
+		requestAnimationFrame(() => {
+			if (scrollRef.current) {
+				scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 			}
-		}
+		});
+	};
 
-		return () => {
-			if (projectId) {
-				socketService.leaveProject(parseInt(projectId));
-			}
-		};
-	}, [projectId, user?.id]);
-
-	// Fetch conversations - OPTIMIZED (no loading state)
-	const fetchConversations = useCallback(async () => {
+	// Fetch conversations - defined early so we can use in callbacks
+	const fetchConversationsInternal = useCallback(async () => {
 		if (!projectId) return;
 
 		try {
@@ -186,6 +124,100 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			});
 		}
 	}, [projectId, toast]);
+
+	useEffect(() => {
+		if (!socketService.isConnected()) {
+			socketService.connect();
+		}
+
+		// Set up socket callbacks - using refs to always get latest values
+		socketService.setCallbacks({
+			onMessageNew: (message: Message) => {
+				console.log('📨 Message received via Socket.IO:', message);
+				console.log('Current conversation ID:', selectedConversationRef.current?.id);
+				console.log('Current user ID:', userRef.current?.id);
+				console.log('Message sender ID:', message.senderId);
+				
+				// Add message to UI if it's for the currently selected conversation
+				// and not from current user (to avoid duplicates with optimistic update)
+				if (
+					message.conversationId === selectedConversationRef.current?.id &&
+					message.senderId !== userRef.current?.id
+				) {
+					console.log('✅ Adding message to current conversation');
+					setMessages((prev) => {
+						// Check if message already exists
+						if (prev.some((m) => m.id === message.id)) {
+							console.log('⚠️ Message already exists, skipping');
+							return prev;
+						}
+						return [...prev, message];
+					});
+					scrollToBottom();
+				} else {
+					console.log('⏭️ Message is for different conversation or from self');
+				}
+
+				// ALWAYS update conversation list to refresh unread counts and last message
+				fetchConversationsInternal();
+			},
+			onMessageEdited: (message: Message) => {
+				setMessages((prev) =>
+					prev.map((m) => (m.id === message.id ? message : m))
+				);
+			},
+			onMessageDeleted: (data: { messageId: number }) => {
+				setMessages((prev) =>
+					prev.filter((m) => m.id !== data.messageId)
+				);
+			},
+			onUserTyping: (data: {
+				userId: number;
+				conversationId: number;
+			}) => {
+				if (
+					data.conversationId === selectedConversationRef.current?.id &&
+					data.userId !== userRef.current?.id
+				) {
+					setTypingUsers((prev) =>
+						new Set(prev).add(data.userId)
+					);
+				}
+			},
+			onUserStopped: (data: {
+				userId: number;
+				conversationId: number;
+			}) => {
+				if (data.conversationId === selectedConversationRef.current?.id) {
+					setTypingUsers((prev) => {
+						const newSet = new Set(prev);
+						newSet.delete(data.userId);
+						return newSet;
+					});
+				}
+			},
+			onError: (error: { message: string }) => {
+				toast({
+					title: "Connection Error",
+					description: error.message,
+					variant: "destructive",
+				});
+			},
+		});
+
+		if (projectId) {
+			socketService.joinProject(parseInt(projectId));
+		}
+
+		return () => {
+			if (projectId) {
+				socketService.leaveProject(parseInt(projectId));
+			}
+		};
+	}, [projectId, toast, fetchConversationsInternal]);
+
+	// Alias for internal function
+	const fetchConversations = fetchConversationsInternal;
 
 	// Fetch messages for selected conversation (memoized)
 	const fetchMessages = useCallback(
@@ -233,16 +265,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			}
 		};
 	}, [selectedConversation?.id]);
-
-	// Scroll to bottom
-	const scrollToBottom = () => {
-		// Use requestAnimationFrame for smooth, immediate scrolling
-		requestAnimationFrame(() => {
-			if (scrollRef.current) {
-				scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-			}
-		});
-	};
 
 	// Handle send message
 	const handleSendMessage = async () => {
@@ -508,6 +530,9 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 														)
 												);
 
+											// Get unread count for this member's conversation
+											const unreadCount = existingConversation?.unreadCount || 0;
+
 											return (
 												<button
 													key={member.id}
@@ -568,22 +593,30 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 															}
 														}
 													}}
-													className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50"
+													className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50 relative"
 												>
 													<div className="flex items-center gap-3">
-														<Avatar className="w-12 h-12">
-															<AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white font-medium">
-																{getInitials(
-																	member.name
-																)}
-															</AvatarFallback>
-														</Avatar>
+														<div className="relative">
+															<Avatar className="w-12 h-12">
+																<AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white font-medium">
+																	{getInitials(
+																		member.name
+																	)}
+																</AvatarFallback>
+															</Avatar>
+															{/* Unread badge - WhatsApp style */}
+															{unreadCount > 0 && (
+																<div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 shadow-lg">
+																	{unreadCount > 99 ? '99+' : unreadCount}
+																</div>
+															)}
+														</div>
 														<div className="flex-1 min-w-0">
 															<h3 className="font-medium text-sm text-slate-900 truncate">
 																{member.name}
 															</h3>
 															<p className="text-xs text-slate-500 truncate">
-																Click to message
+																{existingConversation?.lastMessage?.content || 'Click to message'}
 															</p>
 														</div>
 													</div>
