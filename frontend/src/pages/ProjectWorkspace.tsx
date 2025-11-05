@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -82,34 +82,19 @@ const ProjectWorkspace = () => {
     bg: workflowType === "custom" ? "bg-purple-600" : "bg-blue-600",
   };
 
-  // Get real project members from the project data
-  const projectMembers = project ? [
-    // Include the project owner
-    ...(project.owner ? [{
-      id: project.owner.id,
-      name: project.owner.name,
-      email: project.owner.email,
-      avatar: project.owner.avatar,
-      username: project.owner.username,
-      role: 'OWNER'
-    }] : []),
-    // Include all project members
-    ...(project.members || []).map((member: any) => ({
+  // Get real project members from the project data - OPTIMIZED with useMemo
+  const projectMembers = useMemo(() => {
+    if (!project?.members) return [];
+    
+    return project.members.map((member: any) => ({
       id: member.user.id,
       name: member.user.name,
       email: member.user.email,
       avatar: member.user.avatar,
       username: member.user.username,
       role: member.role
-    }))
-  ] : [];
-
-  // Debug logging
-  console.log('🔍 ProjectWorkspace Debug:');
-  console.log('  - project:', project);
-  console.log('  - project.owner:', project?.owner);
-  console.log('  - project.members:', project?.members);
-  console.log('  - projectMembers array:', projectMembers);
+    }));
+  }, [project?.members]);
 
   const navItems = [
     {
