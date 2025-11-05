@@ -40,7 +40,19 @@ export class ConversationService {
       },
     });
 
-    return conversation;
+    // Transform members to match frontend expectations
+    const transformedConversation = {
+      ...conversation,
+      members: conversation.members.map((m: any) => ({
+        id: m.user.id,
+        name: m.user.name,
+        username: m.user.username,
+        email: m.user.email || '',
+        avatar: m.user.avatar,
+      })),
+    };
+
+    return transformedConversation as any;
   }
 
   /**
@@ -77,7 +89,23 @@ export class ConversationService {
       },
     });
 
-    return conversation;
+    if (!conversation) {
+      return null;
+    }
+
+    // Transform members to match frontend expectations
+    const transformedConversation = {
+      ...conversation,
+      members: conversation.members.map((m: any) => ({
+        id: m.user.id,
+        name: m.user.name,
+        username: m.user.username,
+        email: m.user.email || '',
+        avatar: m.user.avatar,
+      })),
+    };
+
+    return transformedConversation as any;
   }
 
   /**
@@ -148,7 +176,7 @@ export class ConversationService {
       },
     });
 
-    // Calculate unread count for each conversation
+    // Calculate unread count for each conversation and transform members
     const conversationsWithUnread = await Promise.all(
       conversations.map(async (conversation) => {
         const member = conversation.members.find((m) => m.userId === userId);
@@ -166,14 +194,22 @@ export class ConversationService {
           },
         });
 
+        // Transform members to match frontend expectations
         return {
           ...conversation,
+          members: conversation.members.map((m: any) => ({
+            id: m.user.id,
+            name: m.user.name,
+            username: m.user.username,
+            email: m.user.email || '',
+            avatar: m.user.avatar,
+          })),
           unreadCount,
         };
       })
     );
 
-    return conversationsWithUnread;
+    return conversationsWithUnread as any;
   }
 
   /**
@@ -214,7 +250,18 @@ export class ConversationService {
     });
 
     if (existingConversation && existingConversation.members.length === 2) {
-      return existingConversation;
+      // Transform members to match frontend expectations
+      const transformedConversation = {
+        ...existingConversation,
+        members: existingConversation.members.map((m: any) => ({
+          id: m.user.id,
+          name: m.user.name,
+          username: m.user.username,
+          email: m.user.email || '',
+          avatar: m.user.avatar,
+        })),
+      };
+      return transformedConversation as any;
     }
 
     // Create new conversation

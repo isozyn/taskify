@@ -77,7 +77,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [messageInput, setMessageInput] = useState("");
 	const [searchQuery, setSearchQuery] = useState("");
-	const [isInitialLoading, setIsInitialLoading] = useState(true);
 	const [isCreatingConversation, setIsCreatingConversation] = useState(false);
 	const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
 	const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
@@ -170,14 +169,11 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		};
 	}, [projectId, user?.id]);
 
-	// Fetch conversations
-	const fetchConversations = async (showLoading = false) => {
+	// Fetch conversations - OPTIMIZED (no loading state)
+	const fetchConversations = useCallback(async () => {
 		if (!projectId) return;
 
 		try {
-			if (showLoading) {
-				setIsInitialLoading(true);
-			}
 			const response: any = await api.getProjectConversations(
 				parseInt(projectId)
 			);
@@ -188,12 +184,8 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 				description: error.message || "Failed to load conversations",
 				variant: "destructive",
 			});
-		} finally {
-			if (showLoading) {
-				setIsInitialLoading(false);
-			}
 		}
-	};
+	}, [projectId, toast]);
 
 	// Fetch messages for selected conversation (memoized)
 	const fetchMessages = useCallback(
@@ -224,10 +216,10 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		[toast]
 	);
 
-	// Load conversations on mount
+	// Load conversations on mount - OPTIMIZED (no loading spinner)
 	useEffect(() => {
-		fetchConversations(true); // Show loading only on initial mount
-	}, [projectId]);
+		fetchConversations();
+	}, [fetchConversations]);
 
 	// Load messages when conversation is selected
 	useEffect(() => {
@@ -463,14 +455,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		return null;
 	};
 
-	if (isInitialLoading) {
-		return (
-			<div className="flex items-center justify-center h-[calc(100vh-180px)]">
-				<Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-			</div>
-		);
-	}
-
 	return (
 		<div className="flex h-[calc(100vh-180px)] bg-white rounded-lg overflow-hidden border border-slate-200">
 			{/* Left Sidebar - Team Members List */}
@@ -536,58 +520,13 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 																existingConversation
 															);
 														} else {
-															// Create new conversation with optimistic update
+															// Create new conversation - NO OPTIMISTIC UPDATE
 															try {
 																setIsCreatingConversation(
 																	true
 																);
 
-																// Create optimistic conversation object to show immediately
-																const optimisticConversation: Conversation =
-																	{
-																		id: Date.now(), // Temporary ID
-																		name: null,
-																		type: "DIRECT",
-																		projectId:
-																			parseInt(
-																				projectId!
-																			),
-																		members:
-																			[
-																				{
-																					id: member.id,
-																					name: member.name,
-																					username:
-																						member.username,
-																					email: member.email,
-																				},
-																				{
-																					id: user!
-																						.id,
-																					name:
-																						user!
-																							.name ||
-																						"",
-																					username:
-																						user!
-																							.username ||
-																						"",
-																					email: user!
-																						.email,
-																				},
-																			],
-																		createdAt:
-																			new Date().toISOString(),
-																		updatedAt:
-																			new Date().toISOString(),
-																	};
-
-																// Immediately show the conversation
-																setSelectedConversation(
-																	optimisticConversation
-																);
-
-																// Create in background
+																// Create conversation and wait for response
 																const response: any =
 																	await api.createConversation(
 																		{
@@ -606,17 +545,14 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 																		}
 																	);
 
-																// Update with real conversation data
+																// Set the real conversation with valid ID
 																setSelectedConversation(
 																	response
 																);
 
-																// Refresh conversations list in background
-																fetchConversations();
+																// Add to conversations list
+																setConversations(prev => [...prev, response]);
 															} catch (error: any) {
-																setSelectedConversation(
-																	null
-																);
 																toast({
 																	title: "Error",
 																	description:
@@ -657,106 +593,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 								</div>
 							)}
 
-						{/* Conversations Section */}
-						{filteredConversations.length > 0 && (
-							<div className="mt-2">
-								<div className="px-4 py-2">
-									<h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-										Recent
-									</h3>
-								</div>
-								{filteredConversations.map((conversation) => {
-									const isSelected =
-										selectedConversation?.id ===
-										conversation.id;
-									const isDirect =
-										conversation.type === "DIRECT";
-									const lastMessageText =
-										conversation.lastMessage?.content ||
-										"No messages yet";
-									const lastMessageTime =
-										conversation.lastMessage
-											? formatTime(
-													conversation.lastMessage
-														.createdAt
-											  )
-											: "";
-
-									// Get the other person's name for direct messages
-									const otherMember = isDirect
-										? conversation.members.find(
-												(m) => m.id !== user?.id
-										  )
-										: null;
-									const displayName =
-										isDirect && otherMember
-											? otherMember.name
-											: conversation.name ||
-											  "Conversation";
-
-									return (
-										<button
-											key={conversation.id}
-											onClick={() =>
-												setSelectedConversation(
-													conversation
-												)
-											}
-											className={`w-full px-4 py-3 text-left transition-colors ${
-												isSelected
-													? "bg-slate-100"
-													: "hover:bg-slate-50"
-											}`}
-										>
-											<div className="flex items-start gap-3">
-												{/* Avatar */}
-												<div className="relative flex-shrink-0">
-													{isDirect ? (
-														<Avatar className="w-12 h-12">
-															<AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white font-medium">
-																{getInitials(
-																	displayName
-																)}
-															</AvatarFallback>
-														</Avatar>
-													) : (
-														<div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-															<Hash className="w-5 h-5 text-white" />
-														</div>
-													)}
-												</div>
-
-												{/* Conversation Info */}
-												<div className="flex-1 min-w-0">
-													<div className="flex items-center justify-between mb-1">
-														<h3 className="font-medium text-sm text-slate-900 truncate">
-															{displayName}
-														</h3>
-														<span className="text-xs text-slate-500 flex-shrink-0 ml-2">
-															{lastMessageTime}
-														</span>
-													</div>
-													<div className="flex items-center justify-between">
-														<p className="text-xs text-slate-600 truncate pr-2">
-															{lastMessageText}
-														</p>
-														{conversation.unreadCount &&
-															conversation.unreadCount >
-																0 && (
-																<Badge className="bg-green-500 hover:bg-green-600 text-white h-5 min-w-5 px-1.5 text-xs flex-shrink-0 rounded-full">
-																	{
-																		conversation.unreadCount
-																	}
-																</Badge>
-															)}
-													</div>
-												</div>
-											</div>
-										</button>
-									);
-								})}
-							</div>
-						)}
+						
 
 						{/* Empty State */}
 						{projectMembers.filter((m) => m.id !== user?.id)
@@ -777,7 +614,14 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			</div>
 
 			{/* Main Chat Area */}
-			{selectedConversation ? (
+			{isCreatingConversation ? (
+				<div className="flex-1 flex items-center justify-center bg-slate-50">
+					<div className="text-center">
+						<Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-3" />
+						<p className="text-sm text-slate-600">Starting conversation...</p>
+					</div>
+				</div>
+			) : selectedConversation ? (
 				<div className="flex-1 flex flex-col bg-slate-50">
 					{/* Chat Header */}
 					<div className="px-6 py-4 bg-white border-b border-slate-200 flex items-center justify-between">
