@@ -14,8 +14,18 @@ interface AuthenticatedSocket extends Socket {
   };
 }
 
+// Export io instance globally for use in controllers
+let io: SocketIOServer;
+
+export const getIO = (): SocketIOServer => {
+  if (!io) {
+    throw new Error('Socket.IO not initialized');
+  }
+  return io;
+};
+
 export const setupSocketIO = (httpServer: HTTPServer): SocketIOServer => {
-  const io = new SocketIOServer(httpServer, {
+  io = new SocketIOServer(httpServer, {
     cors: {
       origin: process.env.FRONTEND_URL || 'http://localhost:8080',
       credentials: true,
