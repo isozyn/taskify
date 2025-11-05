@@ -106,6 +106,11 @@ export class TaskService {
 
     const tasks = await prisma.task.findMany({
       where: { projectId },
+      include: {
+        subtasks: {
+          orderBy: { order: 'asc' },
+        },
+      },
       orderBy: { order: 'asc' },
     });
 
@@ -140,6 +145,9 @@ export class TaskService {
             email: true,
             avatar: true,
           },
+        },
+        subtasks: {
+          orderBy: { order: 'asc' },
         },
       },
     });

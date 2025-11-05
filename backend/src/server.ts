@@ -17,6 +17,7 @@ import authRoutes from "./routes/authRoutes";
 import customColumnRoutes from "./routes/customColumnRoutes";
 import projectRoutes from "./routes/projectRoutes";
 import taskRoutes from "./routes/taskRoutes";
+import subtaskRoutes from "./routes/subtaskRoutes";
 import messageRoutes from "./routes/messageRoutes";
 import conversationRoutes from "./routes/conversationRoutes";
 
@@ -80,6 +81,9 @@ app.use("/api/v1", projectRoutes);
 
 // Task routes
 app.use("/api/v1", taskRoutes);
+
+// Subtask routes
+app.use("/api/v1", subtaskRoutes);
 
 // Message routes
 app.use("/api/v1", messageRoutes);

@@ -222,6 +222,40 @@ class ApiClient {
 		});
 	}
 
+	// Subtask API
+	async getSubtasks(taskId: number) {
+		return this.request(`/tasks/${taskId}/subtasks`, {
+			method: "GET",
+		});
+	}
+
+	async createSubtask(taskId: number, data: {
+		title: string;
+		order?: number;
+	}) {
+		return this.request(`/tasks/${taskId}/subtasks`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async updateSubtask(subtaskId: number, data: {
+		title?: string;
+		completed?: boolean;
+		order?: number;
+	}) {
+		return this.request(`/subtasks/${subtaskId}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async deleteSubtask(subtaskId: number) {
+		return this.request(`/subtasks/${subtaskId}`, {
+			method: "DELETE",
+		});
+	}
+
 	// Custom Columns API
 	async getCustomColumns(projectId: number) {
 		return this.request(`/projects/${projectId}/columns`, {
@@ -420,11 +454,26 @@ export interface Task {
 		email: string;
 		avatar?: string | null;
 	} | null;
+	subtasks?: Subtask[];
 }
 
 export interface TaskResponse {
 	tasks?: Task[];
 	task?: Task;
+}
+
+export interface Subtask {
+	id: number;
+	title: string;
+	completed: boolean;
+	order: number;
+	taskId: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface SubtasksResponse {
+	subtasks: Subtask[];
 }
 
 export interface CustomColumn {

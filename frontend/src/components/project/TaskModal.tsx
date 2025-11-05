@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Send, X, Edit3, Save, Calendar, Clock } from "lucide-react";
+import { Plus, Trash2, Send, X } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface TaskModalProps {
   task: {
@@ -74,12 +75,12 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
     task.assignee ? [task.assignee.name] : []
   );
   const [subtasks, setSubtasks] = useState(task.subtasks || []);
+  const [isLoadingSubtasks, setIsLoadingSubtasks] = useState(false);
 
   const [newSubtask, setNewSubtask] = useState("");
   const [comment, setComment] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
 
-  // Editable field states
+  // Editable field states - always editable, no edit mode
   const [editableTitle, setEditableTitle] = useState(task.title || "");
   const [editableStatus, setEditableStatus] = useState(task.status || "TODO");
   const [editableStartDate, setEditableStartDate] = useState(task.startDate || "");
@@ -88,29 +89,118 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
   const [editableTags, setEditableTags] = useState<string[]>(task.tags || []);
   const [newTag, setNewTag] = useState("");
 
+  // Fetch subtasks when task changes
+  useEffect(() => {
+    const fetchSubtasks = async () => {
+      if (task.id && open) {
+        try {
+          setIsLoadingSubtasks(true);
+          const response: any = await api.getSubtasks(task.id);
+          if (response.subtasks) {
+            setSubtasks(response.subtasks);
+          }
+        } catch (error) {
+          console.error('Failed to fetch subtasks:', error);
+        } finally {
+          setIsLoadingSubtasks(false);
+        }
+      }
+    };
+
+    fetchSubtasks();
+  }, [task.id, open]);
+
   const completedSubtasks = subtasks.filter((st) => st.completed).length;
   const progress = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0;
 
-  const addSubtask = () => {
-    if (newSubtask.trim()) {
-      setSubtasks([
-        ...subtasks,
-        { id: Date.now(), title: newSubtask, completed: false },
-      ]);
-      setNewSubtask("");
+  // Auto-save functions
+  const handleSaveTitle = async () => {
+    if (editableTitle !== task.title) {
+      try {
+        await api.updateTask(task.id, { title: editableTitle });
+      } catch (error) {
+        console.error('Failed to update title:', error);
+      }
     }
   };
 
-  const toggleSubtask = (id: number) => {
-    setSubtasks(
-      subtasks.map((st) =>
-        st.id === id ? { ...st, completed: !st.completed } : st
-      )
-    );
+  const handleSaveStatus = async (newStatus: string) => {
+    try {
+      await api.updateTask(task.id, { status: newStatus as any });
+      setEditableStatus(newStatus as any);
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
   };
 
-  const deleteSubtask = (id: number) => {
-    setSubtasks(subtasks.filter((st) => st.id !== id));
+  const handleSaveDate = async (field: 'startDate' | 'endDate', value: string) => {
+    try {
+      await api.updateTask(task.id, { [field]: value || null });
+    } catch (error) {
+      console.error(`Failed to update ${field}:`, error);
+    }
+  };
+
+  const handleSaveDescription = async () => {
+    if (editableDescription !== task.description) {
+      try {
+        await api.updateTask(task.id, { description: editableDescription });
+      } catch (error) {
+        console.error('Failed to update description:', error);
+      }
+    }
+  };
+
+  const handleSaveTags = async (newTags: string[]) => {
+    try {
+      await api.updateTask(task.id, { tags: newTags });
+    } catch (error) {
+      console.error('Failed to update tags:', error);
+    }
+  };
+
+  const addSubtask = async () => {
+    if (newSubtask.trim()) {
+      try {
+        const response: any = await api.createSubtask(task.id, {
+          title: newSubtask,
+          order: subtasks.length,
+        });
+        if (response.subtask) {
+          setSubtasks([...subtasks, response.subtask]);
+          setNewSubtask("");
+        }
+      } catch (error) {
+        console.error('Failed to create subtask:', error);
+      }
+    }
+  };
+
+  const toggleSubtask = async (id: number) => {
+    const subtask = subtasks.find((st) => st.id === id);
+    if (!subtask) return;
+
+    try {
+      await api.updateSubtask(id, {
+        completed: !subtask.completed,
+      });
+      setSubtasks(
+        subtasks.map((st) =>
+          st.id === id ? { ...st, completed: !st.completed } : st
+        )
+      );
+    } catch (error) {
+      console.error('Failed to update subtask:', error);
+    }
+  };
+
+  const deleteSubtask = async (id: number) => {
+    try {
+      await api.deleteSubtask(id);
+      setSubtasks(subtasks.filter((st) => st.id !== id));
+    } catch (error) {
+      console.error('Failed to delete subtask:', error);
+    }
   };
 
   const addAssignee = (memberName: string) => {
@@ -125,30 +215,17 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
 
   const addTag = () => {
     if (newTag.trim() && !editableTags.includes(newTag.trim())) {
-      setEditableTags([...editableTags, newTag.trim()]);
+      const newTags = [...editableTags, newTag.trim()];
+      setEditableTags(newTags);
+      handleSaveTags(newTags);
       setNewTag("");
     }
   };
 
   const removeTag = (tagToRemove: string) => {
-    setEditableTags(editableTags.filter((tag) => tag !== tagToRemove));
-  };
-
-  const handleSaveEdit = () => {
-    // TODO: Save the edited values to backend
-    setIsEditing(false);
-  };
-
-  const handleCancelEdit = () => {
-    // Reset to original values
-    setEditableTitle(task.title || "");
-    setEditableStatus(task.status || "TODO");
-    setEditableStartDate(task.startDate || "");
-    setEditableEndDate(task.endDate || "");
-    setEditableDescription(task.description || "");
-    setEditableTags(task.tags || []);
-    setNewTag("");
-    setIsEditing(false);
+    const newTags = editableTags.filter((tag) => tag !== tagToRemove);
+    setEditableTags(newTags);
+    handleSaveTags(newTags);
   };
 
   const getStatusColor = (status: string) => {
@@ -183,15 +260,13 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
           <DialogHeader className="mb-5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                {isEditing ? (
-                  <Input
-                    value={editableTitle}
-                    onChange={(e) => setEditableTitle(e.target.value)}
-                    className="text-lg font-semibold border-slate-200 focus:border-blue-500"
-                  />
-                ) : (
-                  <DialogTitle className="text-lg font-semibold text-slate-900">{editableTitle}</DialogTitle>
-                )}
+                <Input
+                  value={editableTitle}
+                  onChange={(e) => setEditableTitle(e.target.value)}
+                  onBlur={handleSaveTitle}
+                  className="text-lg font-semibold border-slate-200 focus:border-blue-500"
+                  placeholder="Task title..."
+                />
                 {/* Tags next to title */}
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {editableTags.map((tag) => (
@@ -201,37 +276,33 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
                       className="gap-1.5 px-2 py-0.5 bg-purple-100 text-purple-700 border border-purple-200 text-[10px]"
                     >
                       {tag}
-                      {isEditing && (
-                        <button
-                          onClick={() => removeTag(tag)}
-                          className="ml-1 hover:text-red-500 transition-colors"
-                        >
-                          <X className="w-2 h-2" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => removeTag(tag)}
+                        className="ml-1 hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-2 h-2" />
+                      </button>
                     </Badge>
                   ))}
                 </div>
-                {/* Add tag input in edit mode */}
-                {isEditing && (
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      placeholder="Add tag..."
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addTag();
-                        }
-                      }}
-                      className="h-8 text-xs border-slate-200 focus:border-blue-500"
-                    />
-                    <Button onClick={addTag} className="bg-purple-500 hover:bg-purple-600 text-white h-8 px-3">
-                      <Plus className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
+                {/* Add tag input */}
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    placeholder="Add tag..."
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addTag();
+                      }
+                    }}
+                    className="h-8 text-xs border-slate-200 focus:border-blue-500"
+                  />
+                  <Button onClick={addTag} className="bg-purple-500 hover:bg-purple-600 text-white h-8 px-3">
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
               <div className="text-right flex-shrink-0">
                 <div className="text-base font-semibold text-blue-600">{Math.round(task.progress || progress)}%</div>
@@ -337,90 +408,58 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
             {/* Status */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Status</Label>
-              {isEditing ? (
-                <Select value={editableStatus} onValueChange={(value) => setEditableStatus(value as typeof editableStatus)}>
-                  <SelectTrigger className="h-9 text-xs border-slate-200 focus:border-blue-500">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TODO">To Do</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="IN_REVIEW">In Review</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                    <SelectItem value="BLOCKED">Blocked</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
-                  <Badge className={`${getStatusColor(editableStatus)} text-[10px] font-semibold uppercase tracking-wide`}>
-                    {editableStatus.replace('_', ' ')}
-                  </Badge>
-                </div>
-              )}
+              <Select 
+                value={editableStatus} 
+                onValueChange={(value) => handleSaveStatus(value)}
+              >
+                <SelectTrigger className="h-9 text-xs border-slate-200 focus:border-blue-500">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODO">To Do</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="IN_REVIEW">In Review</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="BLOCKED">Blocked</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Start Date</Label>
-                {isEditing ? (
-                  <Input
-                    type="date"
-                    value={editableStartDate}
-                    onChange={(e) => setEditableStartDate(e.target.value)}
-                    className="h-9 text-xs border-slate-200 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-3 h-3 text-blue-500" />
-                      <span className="text-xs text-slate-700">
-                        {editableStartDate ? new Date(editableStartDate).toLocaleDateString() : "Not set"}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                <Input
+                  type="date"
+                  value={editableStartDate}
+                  onChange={(e) => setEditableStartDate(e.target.value)}
+                  onBlur={() => handleSaveDate('startDate', editableStartDate)}
+                  className="h-9 text-xs border-slate-200 focus:border-blue-500"
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">End Date</Label>
-                {isEditing ? (
-                  <Input
-                    type="date"
-                    value={editableEndDate}
-                    onChange={(e) => setEditableEndDate(e.target.value)}
-                    className="h-9 text-xs border-slate-200 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-blue-500" />
-                      <span className="text-xs text-slate-700">
-                        {editableEndDate ? new Date(editableEndDate).toLocaleDateString() : "Not set"}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                <Input
+                  type="date"
+                  value={editableEndDate}
+                  onChange={(e) => setEditableEndDate(e.target.value)}
+                  onBlur={() => handleSaveDate('endDate', editableEndDate)}
+                  className="h-9 text-xs border-slate-200 focus:border-blue-500"
+                />
               </div>
             </div>
 
             {/* Description */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Description</Label>
-              {isEditing ? (
-                <Textarea
-                  value={editableDescription}
-                  onChange={(e) => setEditableDescription(e.target.value)}
-                  placeholder="Add task description..."
-                  rows={4}
-                  className="text-xs border-slate-200 focus:border-blue-500 resize-none"
-                />
-              ) : (
-                <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50 min-h-[80px]">
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {editableDescription || "No description provided"}
-                  </p>
-                </div>
-              )}
+              <Textarea
+                value={editableDescription}
+                onChange={(e) => setEditableDescription(e.target.value)}
+                onBlur={handleSaveDescription}
+                placeholder="Add task description..."
+                rows={4}
+                className="text-xs border-slate-200 focus:border-blue-500 resize-none"
+              />
             </div>
 
             {/* Comments */}
@@ -471,29 +510,9 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
               <Button variant="destructive" onClick={onClose} className="text-xs font-semibold h-9 px-4">
                 Delete Task
               </Button>
-              <div className="flex gap-2">
-                {isEditing ? (
-                  <>
-                    <Button variant="outline" onClick={handleCancelEdit} className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4">
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSaveEdit} className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold h-9 px-4">
-                      <Save className="w-3 h-3 mr-1.5" />
-                      Save Changes
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button variant="outline" onClick={onClose} className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4">
-                      Close
-                    </Button>
-                    <Button onClick={() => setIsEditing(true)} className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold h-9 px-4">
-                      <Edit3 className="w-3 h-3 mr-1.5" />
-                      Edit Task
-                    </Button>
-                  </>
-                )}
-              </div>
+              <Button variant="outline" onClick={onClose} className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4">
+                Close
+              </Button>
             </div>
           </div>
         </div>
