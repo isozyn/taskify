@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit } from "lucide-react";
+import { Plus, Edit, X, Check } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Task {
   id: number;
@@ -26,6 +27,7 @@ interface TaskFormData {
   endDate: string;
   assignees: string[];
   priority: string;
+  subtasks?: Array<{ title: string; completed: boolean }>;
 }
 
 interface TaskFormModalProps {
@@ -35,6 +37,7 @@ interface TaskFormModalProps {
   projectMembers: any[];
   editTask?: Task | null;
   mode?: "create" | "edit";
+  workflowType?: "AUTOMATED" | "CUSTOM";
 }
 
 const TaskFormModal = ({
@@ -44,6 +47,7 @@ const TaskFormModal = ({
   projectMembers,
   editTask = null,
   mode = "create",
+  workflowType = "CUSTOM",
 }: TaskFormModalProps) => {
   const [taskData, setTaskData] = useState<TaskFormData>({
     title: "",
@@ -53,7 +57,10 @@ const TaskFormModal = ({
     endDate: "",
     assignees: [],
     priority: "medium",
+    subtasks: [],
   });
+
+  const [newSubtask, setNewSubtask] = useState("");
 
   // Reset or populate form when modal opens or editTask changes
   useEffect(() => {
@@ -66,6 +73,7 @@ const TaskFormModal = ({
         endDate: editTask.endDate,
         assignees: editTask.assignees,
         priority: editTask.priority,
+        subtasks: [],
       });
     } else {
       setTaskData({
@@ -76,6 +84,7 @@ const TaskFormModal = ({
         endDate: "",
         assignees: [],
         priority: "medium",
+        subtasks: [],
       });
     }
   }, [editTask, mode, isOpen]);
@@ -98,6 +107,32 @@ const TaskFormModal = ({
         assignees: [...taskData.assignees, memberName]
       });
     }
+  };
+
+  const addSubtask = () => {
+    if (newSubtask.trim()) {
+      setTaskData({
+        ...taskData,
+        subtasks: [...(taskData.subtasks || []), { title: newSubtask.trim(), completed: false }]
+      });
+      setNewSubtask("");
+    }
+  };
+
+  const removeSubtask = (index: number) => {
+    setTaskData({
+      ...taskData,
+      subtasks: taskData.subtasks?.filter((_, i) => i !== index) || []
+    });
+  };
+
+  const toggleSubtask = (index: number) => {
+    const updatedSubtasks = [...(taskData.subtasks || [])];
+    updatedSubtasks[index].completed = !updatedSubtasks[index].completed;
+    setTaskData({
+      ...taskData,
+      subtasks: updatedSubtasks
+    });
   };
 
   const isFormValid = taskData.title.trim() && taskData.endDate;
@@ -162,27 +197,29 @@ const TaskFormModal = ({
             </div>
 
             {/* Status and Priority */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="task-status" className="text-sm font-semibold text-slate-900">
-                  Status
-                </Label>
-                <Select 
-                  value={taskData.status} 
-                  onValueChange={(value: Task["status"]) => setTaskData({ ...taskData, status: value })}
-                >
-                  <SelectTrigger className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="backlog">Backlog</SelectItem>
-                    <SelectItem value="upcoming">Upcoming</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="review">Review</SelectItem>
-                    <SelectItem value="complete">Complete</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className={`grid ${workflowType === "AUTOMATED" ? "grid-cols-1" : "grid-cols-2"} gap-4`}>
+              {workflowType !== "AUTOMATED" && (
+                <div className="space-y-2">
+                  <Label htmlFor="task-status" className="text-sm font-semibold text-slate-900">
+                    Status
+                  </Label>
+                  <Select 
+                    value={taskData.status} 
+                    onValueChange={(value: Task["status"]) => setTaskData({ ...taskData, status: value })}
+                  >
+                    <SelectTrigger className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="backlog">Backlog</SelectItem>
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                      <SelectItem value="in-progress">In Progress</SelectItem>
+                      <SelectItem value="review">Review</SelectItem>
+                      <SelectItem value="complete">Complete</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="task-priority" className="text-sm font-semibold text-slate-900">
@@ -230,6 +267,69 @@ const TaskFormModal = ({
                   onChange={(e) => setTaskData({ ...taskData, endDate: e.target.value })}
                   className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all"
                 />
+              </div>
+            </div>
+
+            {/* Subtasks */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-slate-900">
+                Subtasks
+              </Label>
+              <div className="space-y-2">
+                {taskData.subtasks && taskData.subtasks.length > 0 && (
+                  <div className="space-y-2 max-h-40 overflow-y-auto p-3 border border-slate-200 rounded-lg bg-slate-50/50">
+                    {taskData.subtasks.map((subtask, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-md hover:border-blue-300 transition-colors"
+                      >
+                        <Checkbox
+                          checked={subtask.completed}
+                          onCheckedChange={() => toggleSubtask(index)}
+                          className="border-slate-300"
+                        />
+                        <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                          {subtask.title}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeSubtask(index)}
+                          className="h-7 w-7 hover:bg-red-50 hover:text-red-500"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Add a subtask..."
+                    value={newSubtask}
+                    onChange={(e) => setNewSubtask(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addSubtask();
+                      }
+                    }}
+                    className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addSubtask}
+                    className="h-10 px-4 bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                {taskData.subtasks && taskData.subtasks.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    {taskData.subtasks.filter(st => st.completed).length} of {taskData.subtasks.length} completed
+                  </p>
+                )}
               </div>
             </div>
 

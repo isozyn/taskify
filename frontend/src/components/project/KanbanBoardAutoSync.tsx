@@ -55,7 +55,7 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
         assigneeId = assignee ? assignee.id : null;
       }
 
-      const newTask = await api.createTask(projectId, {
+      const newTask: any = await api.createTask(projectId, {
         title: taskData.title,
         description: taskData.description,
         startDate: taskData.startDate,
@@ -66,6 +66,19 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
       });
       
       console.log("Task created successfully:", newTask);
+
+      // Create subtasks if any
+      if (taskData.subtasks && taskData.subtasks.length > 0 && newTask.task?.id) {
+        const taskId = newTask.task.id;
+        for (let i = 0; i < taskData.subtasks.length; i++) {
+          const subtask = taskData.subtasks[i];
+          await api.createSubtask(taskId, {
+            title: subtask.title,
+            order: i,
+          });
+        }
+        console.log(`Created ${taskData.subtasks.length} subtasks`);
+      }
       
       // Refresh tasks list
       const response: any = await api.getTasksByProject(projectId);
@@ -281,6 +294,10 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
           task={selectedTask}
           open={!!selectedTask}
           onClose={() => setSelectedTask(null)}
+          onDelete={(taskId) => {
+            setTasks(tasks.filter(t => t.id !== taskId));
+            setSelectedTask(null);
+          }}
           projectMembers={projectMembers}
         />
       )}
@@ -292,6 +309,7 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
         onSubmit={handleCreateTask}
         projectMembers={projectMembers}
         mode="create"
+        workflowType="AUTOMATED"
       />
     </>
   );

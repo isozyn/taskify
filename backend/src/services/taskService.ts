@@ -93,6 +93,7 @@ export class TaskService {
   /**
    * Get tasks by project ID
    * For AUTOMATED workflow, calculates real-time status
+   * Moves tasks with incomplete subtasks past end date to BLOCKED (backlog)
    */
   static async getTasksByProjectId(projectId: number, _userId?: number): Promise<TaskResponse[]> {
     // Get project to check workflow type
@@ -114,17 +115,44 @@ export class TaskService {
       orderBy: { order: 'asc' },
     });
 
+    const now = new Date();
+
     // If AUTOMATED workflow, calculate real-time status based on dates
     if (project.workflowType === 'AUTOMATED') {
-      return tasks.map((task: any) => ({
-        ...task,
-        status: calculateAutomatedStatus({
+      const processedTasks = await Promise.all(tasks.map(async (task: any) => {
+        let finalStatus = calculateAutomatedStatus({
           id: task.id,
           startDate: task.startDate,
           endDate: task.endDate,
           status: task.status as TaskStatus,
-        }),
+        });
+
+        // Check if task should move to backlog
+        // If end date has passed and there are incomplete subtasks, move to BLOCKED
+        if (task.endDate && new Date(task.endDate) < now) {
+          const totalSubtasks = task.subtasks.length;
+          const completedSubtasks = task.subtasks.filter((st: any) => st.completed).length;
+          
+          if (totalSubtasks > 0 && completedSubtasks < totalSubtasks) {
+            finalStatus = 'BLOCKED'; // Backlog
+            
+            // Update task status in database if it changed
+            if (task.status !== 'BLOCKED') {
+              await prisma.task.update({
+                where: { id: task.id },
+                data: { status: 'BLOCKED' }
+              });
+            }
+          }
+        }
+
+        return {
+          ...task,
+          status: finalStatus,
+        };
       }));
+
+      return processedTasks;
     }
 
     return tasks;

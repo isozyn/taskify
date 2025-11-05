@@ -136,8 +136,21 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
     if (!projectId) return;
     
     try {
-      const newTask = await api.createTask(projectId, taskData);
+      const newTask: any = await api.createTask(projectId, taskData);
       console.log("Created custom task:", newTask);
+
+      // Create subtasks if any
+      if (taskData.subtasks && taskData.subtasks.length > 0 && newTask.task?.id) {
+        const taskId = newTask.task.id;
+        for (let i = 0; i < taskData.subtasks.length; i++) {
+          const subtask = taskData.subtasks[i];
+          await api.createSubtask(taskId, {
+            title: subtask.title,
+            order: i,
+          });
+        }
+        console.log(`Created ${taskData.subtasks.length} subtasks`);
+      }
       
       // Refresh tasks list
       const response: any = await api.getTasksByProject(projectId);
@@ -662,6 +675,11 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
                 onTasksChange?.();
               });
             }
+          }}
+          onDelete={(taskId) => {
+            setTasks(tasks.filter(t => t.id !== taskId));
+            setSelectedTask(null);
+            onTasksChange?.();
           }}
           projectMembers={projectMembers}
         />

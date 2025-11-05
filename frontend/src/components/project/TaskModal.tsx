@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Send, X } from "lucide-react";
 import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface TaskModalProps {
   task: {
@@ -62,6 +64,7 @@ interface TaskModalProps {
   };
   open: boolean;
   onClose: () => void;
+  onDelete?: (taskId: number) => void;
   projectMembers: Array<{
     id: number;
     name: string;
@@ -70,7 +73,8 @@ interface TaskModalProps {
   }>;
 }
 
-const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
+const TaskModal = ({ task, open, onClose, onDelete, projectMembers }: TaskModalProps) => {
+  const { toast } = useToast();
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>(
     task.assignee ? [task.assignee.name] : []
   );
@@ -196,10 +200,22 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
 
   const deleteSubtask = async (id: number) => {
     try {
-      await api.deleteSubtask(id);
+      console.log('Attempting to delete subtask with ID:', id);
+      const result = await api.deleteSubtask(id);
+      console.log('Delete subtask result:', result);
       setSubtasks(subtasks.filter((st) => st.id !== id));
+      console.log('Subtasks after delete:', subtasks.filter((st) => st.id !== id));
+      toast({
+        title: "Subtask deleted",
+        description: "The subtask has been successfully deleted.",
+      });
     } catch (error) {
       console.error('Failed to delete subtask:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete subtask. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -211,6 +227,29 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
 
   const removeAssignee = (memberName: string) => {
     setSelectedAssignees(selectedAssignees.filter((name) => name !== memberName));
+  };
+
+  const handleDeleteTask = async () => {
+    if (window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+      try {
+        await api.deleteTask(task.id);
+        toast({
+          title: "Task deleted",
+          description: "The task has been successfully deleted.",
+        });
+        if (onDelete) {
+          onDelete(task.id);
+        }
+        onClose();
+      } catch (error) {
+        console.error('Failed to delete task:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete task. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const addTag = () => {
@@ -258,6 +297,10 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
 
         <div className="overflow-y-auto max-h-[80vh] px-1">
           <DialogHeader className="mb-5">
+            <DialogTitle className="sr-only">Task Details</DialogTitle>
+            <DialogDescription className="sr-only">
+              Edit task information, add subtasks, and manage assignees
+            </DialogDescription>
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <Input
@@ -339,9 +382,15 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
                       {subtask.title}
                     </span>
                     <Button
+                      type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => deleteSubtask(subtask.id)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Delete button clicked for subtask:', subtask.id);
+                        deleteSubtask(subtask.id);
+                      }}
                       className="h-7 w-7 hover:bg-red-50 hover:text-red-500"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -355,10 +404,23 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
                   placeholder="Add new subtask..."
                   value={newSubtask}
                   onChange={(e) => setNewSubtask(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addSubtask()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addSubtask();
+                    }
+                  }}
                   className="h-9 text-xs border-slate-200 focus:border-blue-500"
                 />
-                <Button onClick={addSubtask} className="bg-blue-500 hover:bg-blue-600 text-white h-9 px-3">
+                <Button 
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addSubtask();
+                  }} 
+                  className="bg-blue-500 hover:bg-blue-600 text-white h-9 px-3"
+                >
                   <Plus className="w-3 h-3" />
                 </Button>
               </div>
@@ -432,8 +494,11 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
                 <Input
                   type="date"
                   value={editableStartDate}
-                  onChange={(e) => setEditableStartDate(e.target.value)}
-                  onBlur={() => handleSaveDate('startDate', editableStartDate)}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setEditableStartDate(newValue);
+                    handleSaveDate('startDate', newValue);
+                  }}
                   className="h-9 text-xs border-slate-200 focus:border-blue-500"
                 />
               </div>
@@ -442,8 +507,11 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
                 <Input
                   type="date"
                   value={editableEndDate}
-                  onChange={(e) => setEditableEndDate(e.target.value)}
-                  onBlur={() => handleSaveDate('endDate', editableEndDate)}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setEditableEndDate(newValue);
+                    handleSaveDate('endDate', newValue);
+                  }}
                   className="h-9 text-xs border-slate-200 focus:border-blue-500"
                 />
               </div>
@@ -507,10 +575,20 @@ const TaskModal = ({ task, open, onClose, projectMembers }: TaskModalProps) => {
 
             {/* Actions */}
             <div className="flex justify-between pt-4 border-t border-slate-200">
-              <Button variant="destructive" onClick={onClose} className="text-xs font-semibold h-9 px-4">
+              <Button 
+                type="button"
+                variant="destructive" 
+                onClick={handleDeleteTask} 
+                className="text-xs font-semibold h-9 px-4"
+              >
                 Delete Task
               </Button>
-              <Button variant="outline" onClick={onClose} className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4">
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={onClose} 
+                className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4"
+              >
                 Close
               </Button>
             </div>
