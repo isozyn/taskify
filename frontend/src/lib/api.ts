@@ -166,6 +166,19 @@ class ApiClient {
 		});
 	}
 
+	async inviteProjectMembers(projectId: number, members: Array<{ email: string; role: string }>) {
+		return this.request(`/projects/${projectId}/invite`, {
+			method: "POST",
+			body: JSON.stringify({ members }),
+		});
+	}
+
+	async getProjectMembers(projectId: number) {
+		return this.request(`/projects/${projectId}/members`, {
+			method: "GET",
+		});
+	}
+
 	// Task endpoints
 	async getTasksByProject(projectId: number) {
 		return this.request(`/projects/${projectId}/tasks`, {
@@ -327,6 +340,8 @@ export interface Project {
 	status: "ACTIVE" | "ARCHIVED" | "COMPLETED";
 	workflowType: "CUSTOM" | "AUTOMATED";
 	ownerId: number;
+	startDate?: string | null;
+	endDate?: string | null;
 	createdAt: string;
 	updatedAt: string;
 	owner?: {
