@@ -336,6 +336,13 @@ class ApiClient {
 		});
 	}
 
+	async createProjectGroupChat(projectId: number, name: string) {
+		return this.request(`/projects/${projectId}/conversations/group`, {
+			method: "POST",
+			body: JSON.stringify({ name }),
+		});
+	}
+
 	async addConversationMember(conversationId: number, userId: number) {
 		return this.request(`/conversations/${conversationId}/members`, {
 			method: "POST",
