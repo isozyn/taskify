@@ -2,6 +2,8 @@
 
 import { Request, Response } from 'express';
 import { MessageService } from '../services/messageService';
+import { getIO } from '../services/socketService';
+import prisma from '../config/db';
 
 export class MessageController {
   /**
@@ -23,7 +25,7 @@ export class MessageController {
   }
 
   /**
-   * Create a message (fallback for non-socket clients)
+   * Create a message and broadcast via Socket.IO
    */
   static async createMessage(req: Request, res: Response): Promise<void> {
     try {
@@ -35,11 +37,27 @@ export class MessageController {
         return;
       }
 
+      // Create message in database
       const message = await MessageService.createMessage({
         content,
         senderId: userId,
         conversationId,
       });
+
+      // Broadcast to conversation room via Socket.IO
+      try {
+        const io = getIO();
+        io.to(`conversation:${conversationId}`).emit('message:new', message);
+        
+        // Update conversation's updatedAt timestamp
+        await prisma.conversation.update({
+          where: { id: conversationId },
+          data: { updatedAt: new Date() },
+        });
+      } catch (socketError) {
+        console.error('Socket.IO broadcast error:', socketError);
+        // Don't fail the request if socket broadcast fails
+      }
 
       res.status(201).json(message);
     } catch (error: any) {

@@ -286,10 +286,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		scrollToBottom();
 
 		try {
-			// Send via Socket.IO for real-time delivery to others
-			socketService.sendMessage(selectedConversation.id, content);
-
-			// Send via REST API to persist in database (in background)
+			// Send ONLY via REST API - backend will handle Socket.IO broadcast
 			const response: any = await api.sendMessage({
 				conversationId: selectedConversation.id,
 				content,
