@@ -24,4 +24,10 @@ router.put('/projects/:projectId', ProjectController.updateProject);
 // Delete a project
 router.delete('/projects/:projectId', ProjectController.deleteProject);
 
+// Invite members to a project
+router.post('/projects/:projectId/invite', ProjectController.inviteMembers);
+
+// Get project members
+router.get('/projects/:projectId/members', ProjectController.getProjectMembers);
+
 export default router;
