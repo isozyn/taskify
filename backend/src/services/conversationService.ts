@@ -220,18 +220,11 @@ export class ConversationService {
     userId1: number,
     userId2: number
   ): Promise<ConversationWithDetails> {
-    // Check if conversation already exists
-    const existingConversation = await prisma.conversation.findFirst({
+    // Check if conversation already exists between these exact two users
+    const allConversations = await prisma.conversation.findMany({
       where: {
         projectId,
         type: 'DIRECT',
-        members: {
-          every: {
-            userId: {
-              in: [userId1, userId2],
-            },
-          },
-        },
       },
       include: {
         members: {
@@ -246,10 +239,24 @@ export class ConversationService {
             },
           },
         },
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
 
-    if (existingConversation && existingConversation.members.length === 2) {
+    // Find conversation with exactly these two users
+    const existingConversation = allConversations.find((conv) => {
+      const memberIds = conv.members.map((m) => m.userId).sort();
+      const targetIds = [userId1, userId2].sort();
+      return memberIds.length === 2 && 
+             memberIds[0] === targetIds[0] && 
+             memberIds[1] === targetIds[1];
+    });
+
+    if (existingConversation) {
+      console.log(`✅ Found existing conversation ${existingConversation.id} between users ${userId1} and ${userId2}`);
       // Transform members to match frontend expectations
       const transformedConversation = {
         ...existingConversation,
@@ -265,6 +272,7 @@ export class ConversationService {
     }
 
     // Create new conversation
+    console.log(`🆕 Creating new conversation between users ${userId1} and ${userId2}`);
     return this.createConversation({
       type: 'DIRECT',
       projectId,
@@ -328,5 +336,61 @@ export class ConversationService {
         userId,
       },
     });
+  }
+
+  /**
+   * Create a group chat with all project members (Project owner only)
+   */
+  static async createProjectGroupChat(
+    projectId: number,
+    userId: number,
+    name: string
+  ): Promise<ConversationWithDetails> {
+    // Verify user is project owner
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    if (project.ownerId !== userId) {
+      throw new Error('Not authorized: Only project owner can create group chats');
+    }
+
+    // Get all project member IDs (including owner)
+    const allMemberIds = project.members.map((m) => m.userId);
+    
+    // Add owner if not already in members list
+    if (!allMemberIds.includes(project.ownerId)) {
+      allMemberIds.push(project.ownerId);
+    }
+
+    console.log(`👥 Creating group chat with ${allMemberIds.length} members for project ${projectId}`);
+
+    // Create group conversation with all project members
+    const conversation = await this.createConversation({
+      name,
+      type: 'GROUP',
+      projectId,
+      memberIds: allMemberIds,
+    });
+
+    return conversation;
   }
 }

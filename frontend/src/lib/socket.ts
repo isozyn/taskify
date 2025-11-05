@@ -11,6 +11,7 @@ interface SocketCallbacks {
   onMessageDeleted?: (data: { messageId: number }) => void;
   onUserTyping?: (data: { userId: number; conversationId: number }) => void;
   onUserStopped?: (data: { userId: number; conversationId: number }) => void;
+  onConversationCreated?: (data: { conversation: any; shouldJoin: boolean }) => void;
   onError?: (error: { message: string }) => void;
 }
 
@@ -131,6 +132,16 @@ class SocketService {
     this.socket.on('typing:user_stopped', (data: { userId: number; conversationId: number }) => {
       console.log('User stopped typing:', data);
       this.callbacks.onUserStopped?.(data);
+    });
+
+    this.socket.on('conversation:created', (data: { conversation: any; shouldJoin: boolean }) => {
+      console.log('New conversation created:', data);
+      this.callbacks.onConversationCreated?.(data);
+      
+      // Auto-join the conversation room if instructed
+      if (data.shouldJoin && data.conversation?.id) {
+        this.joinConversation(data.conversation.id);
+      }
     });
 
     this.socket.on('connect_error', (error) => {

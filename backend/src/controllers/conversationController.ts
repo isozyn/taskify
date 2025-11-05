@@ -70,6 +70,25 @@ export class ConversationController {
         memberIds,
       });
 
+      console.log(`🆕 Conversation ${conversation.id} created with members:`, memberIds);
+
+      // Notify all members via Socket.IO to join the new conversation room
+      try {
+        const { getIO } = require('../services/socketService');
+        const io = getIO();
+        
+        memberIds.forEach((memberId: number) => {
+          io.to(`user:${memberId}`).emit('conversation:created', {
+            conversation,
+            shouldJoin: true,
+          });
+          console.log(`📢 Notified user:${memberId} about new conversation ${conversation.id}`);
+        });
+      } catch (socketError) {
+        console.error('Failed to notify members via Socket.IO:', socketError);
+        // Don't fail the request if socket notification fails
+      }
+
       res.status(201).json(conversation);
     } catch (error: any) {
       console.error('Create conversation error:', error);
@@ -95,6 +114,25 @@ export class ConversationController {
         userId,
         otherUserId
       );
+
+      console.log(`💬 Direct conversation ${conversation.id} between users ${userId} and ${otherUserId}`);
+
+      // Notify both users to join the conversation room via Socket.IO
+      try {
+        const { getIO } = require('../services/socketService');
+        const io = getIO();
+        
+        // Notify both users
+        [userId, otherUserId].forEach((memberId) => {
+          io.to(`user:${memberId}`).emit('conversation:created', {
+            conversation,
+            shouldJoin: true,
+          });
+          console.log(`📢 Notified user:${memberId} about conversation ${conversation.id}`);
+        });
+      } catch (socketError) {
+        console.error('Failed to notify users via Socket.IO:', socketError);
+      }
 
       res.status(200).json(conversation);
     } catch (error: any) {
@@ -148,6 +186,53 @@ export class ConversationController {
       console.error('Remove member error:', error);
       res.status(error.message.includes('Not authorized') ? 403 : 500)
         .json({ message: error.message || 'Failed to remove member' });
+    }
+  }
+
+  /**
+   * Create a group chat with all project members (Project owner only)
+   */
+  static async createProjectGroupChat(req: Request, res: Response): Promise<void> {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const { name } = req.body;
+      const userId = req.user!.id;
+
+      if (!name || name.trim().length === 0) {
+        res.status(400).json({ message: 'Group name is required' });
+        return;
+      }
+
+      const conversation = await ConversationService.createProjectGroupChat(
+        projectId,
+        userId,
+        name
+      );
+
+      console.log(`🎉 Group chat "${name}" created for project ${projectId} by user ${userId}`);
+
+      // Notify all members via Socket.IO
+      try {
+        const { getIO } = require('../services/socketService');
+        const io = getIO();
+        
+        conversation.members.forEach((member: any) => {
+          io.to(`user:${member.id}`).emit('conversation:created', {
+            conversation,
+            shouldJoin: true,
+          });
+          console.log(`📢 Notified user:${member.id} about new group chat ${conversation.id}`);
+        });
+      } catch (socketError) {
+        console.error('Failed to notify members via Socket.IO:', socketError);
+      }
+
+      res.status(201).json(conversation);
+    } catch (error: any) {
+      console.error('Create project group chat error:', error);
+      const statusCode = error.message.includes('Not authorized') ? 403 : 
+                         error.message.includes('not found') ? 404 : 500;
+      res.status(statusCode).json({ message: error.message || 'Failed to create group chat' });
     }
   }
 }

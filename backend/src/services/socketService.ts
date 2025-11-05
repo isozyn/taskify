@@ -61,11 +61,31 @@ export const setupSocketIO = (httpServer: HTTPServer): SocketIOServer => {
   });
 
   // Connection handler
-  io.on('connection', (socket: AuthenticatedSocket) => {
-    console.log(`User connected: ${socket.user?.id} (${socket.user?.email})`);
+  io.on('connection', async (socket: AuthenticatedSocket) => {
+    console.log(`🔌 User connected: ${socket.user?.id} (${socket.user?.email})`);
 
-    // Join user's personal room
+    // Join user's personal room for direct notifications
     socket.join(`user:${socket.user?.id}`);
+    console.log(`✅ User ${socket.user?.id} joined personal room: user:${socket.user?.id}`);
+
+    // Automatically join all conversations the user is a member of
+    try {
+      const userConversations = await prisma.conversationMember.findMany({
+        where: {
+          userId: socket.user!.id,
+        },
+        select: {
+          conversationId: true,
+        },
+      });
+
+      for (const membership of userConversations) {
+        socket.join(`conversation:${membership.conversationId}`);
+        console.log(`✅ User ${socket.user?.id} auto-joined conversation:${membership.conversationId}`);
+      }
+    } catch (error) {
+      console.error('Failed to auto-join conversations:', error);
+    }
 
     // Join project room
     socket.on('project:join', async (projectId: number) => {
@@ -118,16 +138,24 @@ export const setupSocketIO = (httpServer: HTTPServer): SocketIOServer => {
         });
 
         if (!membership) {
+          console.log(`❌ User ${socket.user?.id} not authorized for conversation:${conversationId}`);
           socket.emit('error', { message: 'Not authorized to join this conversation' });
           return;
         }
 
         socket.join(`conversation:${conversationId}`);
-        console.log(`User ${socket.user?.id} joined conversation:${conversationId}`);
+        console.log(`✅ User ${socket.user?.id} joined conversation:${conversationId}`);
 
         // Mark conversation as read
         await MessageService.markConversationAsRead(conversationId, socket.user!.id);
+        
+        // Notify other members that this user is now active
+        socket.to(`conversation:${conversationId}`).emit('user:joined_conversation', {
+          userId: socket.user!.id,
+          conversationId,
+        });
       } catch (error) {
+        console.error('Failed to join conversation:', error);
         socket.emit('error', { message: 'Failed to join conversation' });
       }
     });
@@ -135,7 +163,13 @@ export const setupSocketIO = (httpServer: HTTPServer): SocketIOServer => {
     // Leave conversation room
     socket.on('conversation:leave', (conversationId: number) => {
       socket.leave(`conversation:${conversationId}`);
-      console.log(`User ${socket.user?.id} left conversation:${conversationId}`);
+      console.log(`🚪 User ${socket.user?.id} left conversation:${conversationId}`);
+      
+      // Notify other members that this user left
+      socket.to(`conversation:${conversationId}`).emit('user:left_conversation', {
+        userId: socket.user!.id,
+        conversationId,
+      });
     });
 
     // Send message
@@ -150,6 +184,7 @@ export const setupSocketIO = (httpServer: HTTPServer): SocketIOServer => {
         });
 
         if (!membership) {
+          console.log(`❌ User ${socket.user?.id} not authorized to send to conversation:${data.conversationId}`);
           socket.emit('error', { message: 'Not authorized to send message' });
           return;
         }
@@ -161,8 +196,30 @@ export const setupSocketIO = (httpServer: HTTPServer): SocketIOServer => {
           conversationId: data.conversationId,
         });
 
-        // Broadcast to conversation room
+        console.log(`📤 Message ${message.id} created by user ${socket.user?.id} in conversation ${data.conversationId}`);
+
+        // Get all conversation members
+        const allMembers = await prisma.conversationMember.findMany({
+          where: {
+            conversationId: data.conversationId,
+          },
+          select: {
+            userId: true,
+          },
+        });
+
+        // Broadcast to conversation room (for users actively viewing the conversation)
         io.to(`conversation:${data.conversationId}`).emit('message:new', message);
+        console.log(`📨 Broadcasted to conversation:${data.conversationId}`);
+
+        // Also broadcast to OTHER members' personal rooms (exclude sender to avoid duplicates)
+        allMembers.forEach((member) => {
+          // Skip sender - they already received it via conversation room
+          if (member.userId !== socket.user!.id) {
+            io.to(`user:${member.userId}`).emit('message:new', message);
+            console.log(`📨 Broadcasted to user:${member.userId}`);
+          }
+        });
 
         // Update conversation's updatedAt
         await prisma.conversation.update({
@@ -170,7 +227,7 @@ export const setupSocketIO = (httpServer: HTTPServer): SocketIOServer => {
           data: { updatedAt: new Date() },
         });
       } catch (error) {
-        console.error('Failed to send message:', error);
+        console.error('❌ Failed to send message:', error);
         socket.emit('error', { message: 'Failed to send message' });
       }
     });

@@ -21,6 +21,9 @@ router.post('/conversations', ConversationController.createConversation);
 // Get or create a direct conversation
 router.post('/conversations/direct', ConversationController.getOrCreateDirectConversation);
 
+// Create a group chat with all project members (Project owner only)
+router.post('/projects/:projectId/conversations/group', ConversationController.createProjectGroupChat);
+
 // Add member to conversation
 router.post('/conversations/:conversationId/members', ConversationController.addMember);
 

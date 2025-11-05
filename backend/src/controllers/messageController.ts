@@ -48,37 +48,44 @@ export class MessageController {
       try {
         const io = getIO();
         
+        console.log(`📤 REST API: Message ${message.id} created in conversation ${conversationId}`);
+        
         // Get all conversation members
         const conversation = await prisma.conversation.findUnique({
           where: { id: conversationId },
           include: {
             members: {
-              include: {
-                user: {
-                  select: { id: true }
-                }
+              select: {
+                userId: true,
               }
             }
           }
         });
 
-        // Broadcast to conversation room (for users currently viewing the chat)
-        io.to(`conversation:${conversationId}`).emit('message:new', message);
-        
-        // Also broadcast to all members' personal rooms (for real-time notifications even if not in conversation)
-        if (conversation?.members) {
+        if (!conversation) {
+          console.error('❌ Conversation not found for broadcasting');
+        } else {
+          // Broadcast to conversation room (for users currently viewing the chat)
+          io.to(`conversation:${conversationId}`).emit('message:new', message);
+          console.log(`📨 REST: Broadcasted to conversation:${conversationId}`);
+          
+          // Also broadcast to OTHER members' personal rooms (exclude sender to avoid duplicates)
           conversation.members.forEach((member: any) => {
-            io.to(`user:${member.user.id}`).emit('message:new', message);
+            // Skip sender - they already received it via conversation room
+            if (member.userId !== userId) {
+              io.to(`user:${member.userId}`).emit('message:new', message);
+              console.log(`📨 REST: Broadcasted to user:${member.userId}`);
+            }
+          });
+          
+          // Update conversation's updatedAt timestamp
+          await prisma.conversation.update({
+            where: { id: conversationId },
+            data: { updatedAt: new Date() },
           });
         }
-        
-        // Update conversation's updatedAt timestamp
-        await prisma.conversation.update({
-          where: { id: conversationId },
-          data: { updatedAt: new Date() },
-        });
       } catch (socketError) {
-        console.error('Socket.IO broadcast error:', socketError);
+        console.error('❌ Socket.IO broadcast error:', socketError);
         // Don't fail the request if socket broadcast fails
       }
 
