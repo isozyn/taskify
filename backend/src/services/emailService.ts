@@ -105,7 +105,7 @@ export const sendProjectInvitationEmail = async (
     }
 
     // Build invitation link
-    const invitationLink = `${process.env.FRONTEND_URL}/accept-invitation?email=${encodeURIComponent(email)}&project=${encodeURIComponent(projectName)}`;
+    const invitationLink = `${process.env.FRONTEND_URL}/accept-invitation?email=${encodeURIComponent(email)}&project=${encodeURIComponent(projectName)}&role=${encodeURIComponent(role)}`;
 
     // Email HTML content
     const htmlContent = `

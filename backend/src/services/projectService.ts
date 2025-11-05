@@ -257,4 +257,64 @@ export class ProjectService {
 
 		return members;
 	}
+
+	/**
+	 * Accept project invitation
+	 * Adds user to project if they're not already a member
+	 */
+	static async acceptInvitation(
+		userId: number,
+		projectName: string,
+		role: string
+	): Promise<{ success: boolean; message: string; projectId?: number }> {
+		try {
+			// Find project by name
+			const project = await prisma.project.findFirst({
+				where: { title: projectName }
+			});
+
+			if (!project) {
+				return { success: false, message: 'Project not found' };
+			}
+
+			// Check if user is already a member
+			const existingMember = await prisma.projectMember.findUnique({
+				where: {
+					userId_projectId: {
+						userId: userId,
+						projectId: project.id
+					}
+				}
+			});
+
+			if (existingMember) {
+				return { 
+					success: true, 
+					message: 'You are already a member of this project',
+					projectId: project.id
+				};
+			}
+
+			// Add user to project
+			await prisma.projectMember.create({
+				data: {
+					userId: userId,
+					projectId: project.id,
+					role: role as any
+				}
+			});
+
+			return { 
+				success: true, 
+				message: 'Successfully joined the project!',
+				projectId: project.id
+			};
+		} catch (error) {
+			console.error('Accept invitation error:', error);
+			return { 
+				success: false, 
+				message: 'Failed to accept invitation'
+			};
+		}
+	}
 }

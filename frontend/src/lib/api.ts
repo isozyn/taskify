@@ -179,6 +179,13 @@ class ApiClient {
 		});
 	}
 
+	async acceptProjectInvitation(projectName: string, role: string) {
+		return this.request(`/projects/accept-invitation`, {
+			method: "POST",
+			body: JSON.stringify({ projectName, role }),
+		});
+	}
+
 	// Task endpoints
 	async getTasksByProject(projectId: number) {
 		return this.request(`/projects/${projectId}/tasks`, {

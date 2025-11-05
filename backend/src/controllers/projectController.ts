@@ -178,4 +178,35 @@ export class ProjectController {
       res.status(500).json({ error: error.message || 'Failed to fetch project members' });
     }
   }
+
+  /**
+   * Accept project invitation
+   */
+  static async acceptInvitation(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { projectName, role } = req.body;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      if (!projectName || !role) {
+        res.status(400).json({ error: 'Project name and role are required' });
+        return;
+      }
+
+      const result = await ProjectService.acceptInvitation(userId, projectName, role);
+      
+      if (result.success) {
+        res.status(200).json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error: any) {
+      console.error('Accept invitation error:', error);
+      res.status(500).json({ error: error.message || 'Failed to accept invitation' });
+    }
+  }
 }
