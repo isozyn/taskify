@@ -3,6 +3,7 @@
 import prisma from '../config/db';
 import { TaskUpdateInput, TaskResponse, TaskStatus } from '../models';
 import { calculateAutomatedStatus } from '../utils/automatedWorkflow';
+import activityService from './activityService';
 
 export class TaskService {
   /**
@@ -87,6 +88,15 @@ export class TaskService {
     });
 
     console.log('Task created successfully in database:', task);
+    
+    // Log activity
+    await activityService.logTaskCreated(
+      data.projectId,
+      task.id,
+      task.title,
+      data.assigneeId
+    );
+    
     return task;
   }
 
@@ -125,6 +135,7 @@ export class TaskService {
           startDate: task.startDate,
           endDate: task.endDate,
           status: task.status as TaskStatus,
+          subtasks: task.subtasks,
         });
 
         // Check if task should move to backlog
@@ -193,6 +204,7 @@ export class TaskService {
           startDate: task.startDate,
           endDate: task.endDate,
           status: task.status as TaskStatus,
+          subtasks: task.subtasks,
         }),
       };
     }
@@ -243,6 +255,28 @@ export class TaskService {
       },
     });
 
+    // Log activity if status changed
+    if (data.status && task.status !== data.status) {
+      await activityService.logTaskStatusChange(
+        task.projectId,
+        taskId,
+        task.title,
+        task.status,
+        data.status,
+        _userId
+      );
+      
+      // Special case: log task completion
+      if (data.status === 'COMPLETED') {
+        await activityService.logTaskCompleted(
+          task.projectId,
+          taskId,
+          task.title,
+          _userId
+        );
+      }
+    }
+
     return updatedTask;
   }
 
@@ -251,9 +285,26 @@ export class TaskService {
    */
   static async deleteTask(taskId: number, _userId?: number): Promise<boolean> {
     try {
+      // Get task info before deleting for activity log
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+      });
+      
+      if (!task) {
+        return false;
+      }
+      
       await prisma.task.delete({
         where: { id: taskId },
       });
+      
+      // Log activity
+      await activityService.logTaskDeleted(
+        task.projectId,
+        task.title,
+        _userId
+      );
+      
       return true;
     } catch (error) {
       return false;

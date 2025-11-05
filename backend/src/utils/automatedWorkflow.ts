@@ -8,10 +8,11 @@ export interface TaskWithDates {
   startDate?: Date | null;
   endDate?: Date | null;
   status: TaskStatus;
+  subtasks?: Array<{ completed: boolean }>;
 }
 
 /**
- * Calculate the current status of a task based on its dates
+ * Calculate the current status of a task based on its dates and subtasks
  * Used for Automated Workflow projects
  */
 export function calculateAutomatedStatus(task: TaskWithDates): TaskStatus {
@@ -26,6 +27,14 @@ export function calculateAutomatedStatus(task: TaskWithDates): TaskStatus {
   // If manually marked as blocked, keep it blocked
   if (task.status === TaskStatus.BLOCKED) {
     return TaskStatus.BLOCKED;
+  }
+
+  // Check if all subtasks are completed - if so, move to review
+  if (task.subtasks && task.subtasks.length > 0) {
+    const allSubtasksCompleted = task.subtasks.every(st => st.completed);
+    if (allSubtasksCompleted) {
+      return TaskStatus.IN_REVIEW;
+    }
   }
 
   // If no dates set, put in TODO (shouldn't happen in automated workflow)

@@ -49,6 +49,7 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
 
   // Fetch tasks and custom columns when component mounts
   useEffect(() => {
@@ -71,6 +72,16 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
             console.error("Failed to fetch custom columns:", error);
             setCustomColumns([]);
           }
+        }
+        
+        // Fetch recent activities
+        try {
+          const activitiesResponse: any = await api.getProjectActivities(project.id, 10);
+          console.log("ProjectOverview - Fetched activities:", activitiesResponse);
+          setActivities(activitiesResponse?.activities || []);
+        } catch (error) {
+          console.error("Failed to fetch activities:", error);
+          setActivities([]);
         }
       } catch (error) {
         console.error("Failed to fetch tasks:", error);
@@ -408,10 +419,29 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="text-center py-12 text-slate-500">
-                <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No recent activity</p>
-              </div>
+              {activities.length === 0 ? (
+                <div className="text-center py-12 text-slate-500">
+                  <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No recent activity</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activities.map((activity) => (
+                    <div 
+                      key={activity.id} 
+                      className="flex items-start gap-3 pb-4 border-b border-slate-100 last:border-0 last:pb-0"
+                    >
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm text-slate-700">{activity.description}</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {new Date(activity.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

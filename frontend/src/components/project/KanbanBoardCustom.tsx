@@ -140,8 +140,8 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
       console.log("Created custom task:", newTask);
 
       // Create subtasks if any
-      if (taskData.subtasks && taskData.subtasks.length > 0 && newTask.task?.id) {
-        const taskId = newTask.task.id;
+      if (taskData.subtasks && taskData.subtasks.length > 0 && newTask.id) {
+        const taskId = newTask.id;
         for (let i = 0; i < taskData.subtasks.length; i++) {
           const subtask = taskData.subtasks[i];
           await api.createSubtask(taskId, {
@@ -680,6 +680,16 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
             setTasks(tasks.filter(t => t.id !== taskId));
             setSelectedTask(null);
             onTasksChange?.();
+          }}
+          onTaskUpdate={async () => {
+            try {
+              const response: any = await api.getTasksByProject(projectId);
+              console.log("KanbanBoardCustom - Refetched tasks after update:", response);
+              setTasks(Array.isArray(response) ? response : []);
+              onTasksChange?.();
+            } catch (error) {
+              console.error('Failed to refetch tasks:', error);
+            }
           }}
           projectMembers={projectMembers}
         />

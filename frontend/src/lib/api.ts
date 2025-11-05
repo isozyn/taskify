@@ -383,6 +383,14 @@ class ApiClient {
 			method: "DELETE",
 		});
 	}
+
+	// Activity methods
+	async getProjectActivities(projectId: number, limit?: number) {
+		const queryParams = limit ? `?limit=${limit}` : '';
+		return this.request(`/projects/${projectId}/activity${queryParams}`, {
+			method: "GET",
+		});
+	}
 }
 
 // Export a singleton instance

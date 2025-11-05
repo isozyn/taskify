@@ -46,6 +46,10 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
   const handleCreateTask = async (taskData: any) => {
     if (!projectId) return;
     
+    console.log('=== handleCreateTask DEBUG ===');
+    console.log('Task Data received:', taskData);
+    console.log('Subtasks in taskData:', taskData.subtasks);
+    
     try {
       // Find the first assigned member and get their ID
       let assigneeId = null;
@@ -66,18 +70,34 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
       });
       
       console.log("Task created successfully:", newTask);
+      console.log("Task ID:", newTask.id);
 
       // Create subtasks if any
-      if (taskData.subtasks && taskData.subtasks.length > 0 && newTask.task?.id) {
-        const taskId = newTask.task.id;
+      if (taskData.subtasks && taskData.subtasks.length > 0 && newTask.id) {
+        const taskId = newTask.id;
+        console.log(`Creating ${taskData.subtasks.length} subtasks for task ${taskId}`);
+        
         for (let i = 0; i < taskData.subtasks.length; i++) {
           const subtask = taskData.subtasks[i];
-          await api.createSubtask(taskId, {
-            title: subtask.title,
-            order: i,
-          });
+          console.log(`Creating subtask ${i + 1}:`, subtask);
+          
+          try {
+            const createdSubtask = await api.createSubtask(taskId, {
+              title: subtask.title,
+              order: i,
+            });
+            console.log(`Subtask ${i + 1} created:`, createdSubtask);
+          } catch (subtaskError) {
+            console.error(`Failed to create subtask ${i + 1}:`, subtaskError);
+          }
         }
-        console.log(`Created ${taskData.subtasks.length} subtasks`);
+        console.log(`Finished creating ${taskData.subtasks.length} subtasks`);
+      } else {
+        console.log('No subtasks to create. Checks:', {
+          hasSubtasks: !!taskData.subtasks,
+          subtasksLength: taskData.subtasks?.length,
+          hasTaskId: !!newTask.id
+        });
       }
       
       // Refresh tasks list
@@ -297,6 +317,16 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
           onDelete={(taskId) => {
             setTasks(tasks.filter(t => t.id !== taskId));
             setSelectedTask(null);
+          }}
+          onTaskUpdate={async () => {
+            try {
+              const response: any = await api.getTasksByProject(projectId);
+              console.log("KanbanBoard - Refetched tasks after update:", response);
+              setTasks(Array.isArray(response) ? response : []);
+              onTasksChange?.();
+            } catch (error) {
+              console.error('Failed to refetch tasks:', error);
+            }
           }}
           projectMembers={projectMembers}
         />

@@ -165,7 +165,7 @@ const TaskFormModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-180px)] px-1">
+  <div className="overflow-y-auto max-h-[calc(90vh-220px)] px-1 pb-24">
           <div className="space-y-5 py-6">
             {/* Task Title */}
             <div className="space-y-2">
@@ -378,8 +378,10 @@ const TaskFormModal = ({
           </div>
         </div>
 
-        <DialogFooter className="border-t border-slate-200 pt-4 mt-2">
+        <DialogFooter className="sticky bottom-0 z-20 bg-white border-t border-slate-200 p-4 flex justify-end gap-3">
+          <div className="flex-1" />
           <Button
+            type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             className="h-10 font-medium border-slate-300 hover:bg-slate-50 rounded-lg"
@@ -387,6 +389,7 @@ const TaskFormModal = ({
             Cancel
           </Button>
           <Button
+            type="button"
             onClick={handleSubmit}
             disabled={!isFormValid}
             className="h-10 font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"

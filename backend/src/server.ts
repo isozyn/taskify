@@ -20,6 +20,7 @@ import taskRoutes from "./routes/taskRoutes";
 import subtaskRoutes from "./routes/subtaskRoutes";
 import messageRoutes from "./routes/messageRoutes";
 import conversationRoutes from "./routes/conversationRoutes";
+import activityRoutes from "./routes/activityRoutes";
 
 // Import Socket.IO setup
 import { setupSocketIO } from "./services/socketService";
@@ -90,6 +91,9 @@ app.use("/api/v1", messageRoutes);
 
 // Conversation routes
 app.use("/api/v1", conversationRoutes);
+
+// Activity routes
+app.use("/api/v1", activityRoutes);
 
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Send, X } from "lucide-react";
+import { Plus, Trash2, Send, X, Check } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -65,6 +65,7 @@ interface TaskModalProps {
   open: boolean;
   onClose: () => void;
   onDelete?: (taskId: number) => void;
+  onTaskUpdate?: () => void;
   projectMembers: Array<{
     id: number;
     name: string;
@@ -73,7 +74,7 @@ interface TaskModalProps {
   }>;
 }
 
-const TaskModal = ({ task, open, onClose, onDelete, projectMembers }: TaskModalProps) => {
+const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers }: TaskModalProps) => {
   const { toast } = useToast();
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>(
     task.assignee ? [task.assignee.name] : []
@@ -188,11 +189,33 @@ const TaskModal = ({ task, open, onClose, onDelete, projectMembers }: TaskModalP
       await api.updateSubtask(id, {
         completed: !subtask.completed,
       });
-      setSubtasks(
-        subtasks.map((st) =>
-          st.id === id ? { ...st, completed: !st.completed } : st
-        )
+      
+      const updatedSubtasks = subtasks.map((st) =>
+        st.id === id ? { ...st, completed: !st.completed } : st
       );
+      
+      setSubtasks(updatedSubtasks);
+
+      // Check if all subtasks are now complete
+      const allComplete = updatedSubtasks.length > 0 && updatedSubtasks.every(st => st.completed);
+      
+      // If all subtasks are complete and this is an automated workflow, 
+      // the backend will move it to IN_REVIEW, so close modal and refresh
+      if (allComplete) {
+        toast({
+          title: "All subtasks completed!",
+          description: "The task status will be updated automatically.",
+        });
+        
+        // Close modal after a brief delay to show the toast
+        setTimeout(() => {
+          onTaskUpdate?.();
+          onClose();
+        }, 1500);
+      } else {
+        // For unchecking or checking individual subtasks, update task list without closing modal
+        onTaskUpdate?.();
+      }
     } catch (error) {
       console.error('Failed to update subtask:', error);
     }
@@ -249,6 +272,25 @@ const TaskModal = ({ task, open, onClose, onDelete, projectMembers }: TaskModalP
           variant: "destructive",
         });
       }
+    }
+  };
+
+  const handleMarkComplete = async () => {
+    try {
+      await api.updateTask(task.id, { status: 'COMPLETED' });
+      toast({
+        title: "Task completed",
+        description: "The task has been marked as complete.",
+      });
+      onTaskUpdate?.();
+      onClose();
+    } catch (error) {
+      console.error('Failed to mark task complete:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark task as complete. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -583,14 +625,26 @@ const TaskModal = ({ task, open, onClose, onDelete, projectMembers }: TaskModalP
               >
                 Delete Task
               </Button>
-              <Button 
-                type="button"
-                variant="outline" 
-                onClick={onClose} 
-                className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4"
-              >
-                Close
-              </Button>
+              <div className="flex gap-2">
+                {task.status === 'IN_REVIEW' && (
+                  <Button
+                    type="button"
+                    onClick={handleMarkComplete}
+                    className="text-xs font-semibold bg-green-600 hover:bg-green-700 text-white h-9 px-4"
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    Mark as Complete
+                  </Button>
+                )}
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  onClick={onClose} 
+                  className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>
