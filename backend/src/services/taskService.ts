@@ -138,6 +138,8 @@ export class TaskService {
           subtasks: task.subtasks,
         });
 
+        const oldStatus = task.status;
+
         // Check if task should move to backlog
         // If end date has passed and there are incomplete subtasks, move to BLOCKED
         if (task.endDate && new Date(task.endDate) < now) {
@@ -153,8 +155,32 @@ export class TaskService {
                 where: { id: task.id },
                 data: { status: 'BLOCKED' }
               });
+              
+              // Log activity for automatic move to backlog
+              await activityService.logTaskStatusChange(
+                projectId,
+                task.id,
+                task.title,
+                oldStatus,
+                'BLOCKED'
+              );
             }
           }
+        } else if (oldStatus !== finalStatus) {
+          // If status changed due to date-based automation, update DB and log activity
+          await prisma.task.update({
+            where: { id: task.id },
+            data: { status: finalStatus }
+          });
+          
+          // Log activity for automatic status change
+          await activityService.logTaskStatusChange(
+            projectId,
+            task.id,
+            task.title,
+            oldStatus,
+            finalStatus
+          );
         }
 
         return {

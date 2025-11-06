@@ -55,7 +55,6 @@ const ProjectSetup = () => {
   // New state for enhanced UX
   const [currentSection, setCurrentSection] = useState("project-details");
   const [showRolePermissionsModal, setShowRolePermissionsModal] = useState(false);
-  const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -200,86 +199,21 @@ const ProjectSetup = () => {
     }
   };
 
-  const handleContinue = async () => {
-    if (projectName.trim() && !isCreatingProject) {
-      setIsCreatingProject(true);
-      setError(null);
-      
-      try {
-        // Create the project
-        const projectResponse = await api.createProject({
-          title: projectName,
-          description: projectDescription,
-          workflowType: "CUSTOM",
-          startDate: projectStartDate || undefined,
-          endDate: projectEndDate || undefined,
-        });
-
-        console.log('Project creation response:', projectResponse);
-        console.log('Response type:', typeof projectResponse);
-        console.log('Response keys:', Object.keys(projectResponse || {}));
-        console.log('Response id:', projectResponse?.id);
-        
-        // Check if the response has the expected structure
-        if (!projectResponse || !projectResponse.id) {
-          console.error('Invalid project response structure:', projectResponse);
-          throw new Error('Invalid project response from server');
-        }
-
-        // If there are team members to invite (excluding current user)
-        const membersToInvite = teamMembers.filter(member => member.id !== "current-user");
-        
-        if (membersToInvite.length > 0) {
-          try {
-            await api.inviteProjectMembers(
-              projectResponse.id,
-              membersToInvite.map(member => ({
-                email: member.email,
-                role: member.role
-              }))
-            );
-          } catch (inviteError) {
-            console.error('Failed to send some invitations:', inviteError);
-            // Continue anyway, project was created successfully
+  const handleContinue = () => {
+    if (projectName.trim()) {
+      // Just collect the data and navigate to template selection
+      // Don't create the project yet - that happens after template selection
+      navigate("/template-selection", { 
+        state: { 
+          projectData: {
+            name: projectName,
+            description: projectDescription,
+            startDate: projectStartDate,
+            endDate: projectEndDate,
+            teamMembers: teamMembers
           }
-        }
-
-        // Navigate to template selection with project data
-        navigate("/template-selection", { 
-          state: { 
-            projectData: {
-              id: projectResponse.id,
-              name: projectName,
-              description: projectDescription,
-              startDate: projectStartDate,
-              endDate: projectEndDate,
-              teamMembers: teamMembers
-            }
-          } 
-        });
-      } catch (error: any) {
-        console.error('Project creation error:', error);
-        
-        // If it's an authentication error, redirect to login
-        if (error?.status === 401 || error?.message?.includes('Unauthorized') || error?.message?.includes('Not authenticated')) {
-          navigate('/login');
-          return;
-        }
-        
-        // More detailed error message
-        let errorMessage = 'Failed to create project. Please try again.';
-        if (error?.message) {
-          errorMessage = error.message;
-        } else if (error?.error) {
-          errorMessage = error.error;
-        } else if (typeof error === 'string') {
-          errorMessage = error;
-        }
-        
-        setError(errorMessage);
-      } finally {
-        setIsCreatingProject(false);
-      }
+        } 
+      });
     }
   };
 
@@ -757,21 +691,12 @@ const ProjectSetup = () => {
           </div>
           <Button
             size="lg"
-            disabled={!projectName.trim() || isCreatingProject || isLoadingUser}
+            disabled={!projectName.trim() || isLoadingUser}
             onClick={handleContinue}
             className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md"
           >
-{isCreatingProject ? (
-              <>
-                Creating Project...
-                <div className="w-4 h-4 ml-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              </>
-            ) : (
-              <>
-                Continue to Template Selection
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </>
-            )}
+            Continue to Template Selection
+            <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
         

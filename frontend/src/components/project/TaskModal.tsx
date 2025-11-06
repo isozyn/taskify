@@ -74,6 +74,20 @@ interface TaskModalProps {
   }>;
 }
 
+// Helper function to format date for input[type="date"]
+const formatDateForInput = (dateString: string | null | undefined): string => {
+  if (!dateString) return "";
+  try {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    return "";
+  }
+};
+
 const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers }: TaskModalProps) => {
   const { toast } = useToast();
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>(
@@ -81,6 +95,8 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
   );
   const [subtasks, setSubtasks] = useState(task.subtasks || []);
   const [isLoadingSubtasks, setIsLoadingSubtasks] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
 
   const [newSubtask, setNewSubtask] = useState("");
   const [comment, setComment] = useState("");
@@ -88,8 +104,8 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
   // Editable field states - always editable, no edit mode
   const [editableTitle, setEditableTitle] = useState(task.title || "");
   const [editableStatus, setEditableStatus] = useState(task.status || "TODO");
-  const [editableStartDate, setEditableStartDate] = useState(task.startDate || "");
-  const [editableEndDate, setEditableEndDate] = useState(task.endDate || "");
+  const [editableStartDate, setEditableStartDate] = useState(formatDateForInput(task.startDate));
+  const [editableEndDate, setEditableEndDate] = useState(formatDateForInput(task.endDate));
   const [editableDescription, setEditableDescription] = useState(task.description || "");
   const [editableTags, setEditableTags] = useState<string[]>(task.tags || []);
   const [newTag, setNewTag] = useState("");
@@ -113,6 +129,27 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
     };
 
     fetchSubtasks();
+  }, [task.id, open]);
+
+  // Fetch comments when task changes
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (task.id && open) {
+        try {
+          setIsLoadingComments(true);
+          const response: any = await api.getTaskComments(task.id);
+          if (response.comments) {
+            setComments(response.comments);
+          }
+        } catch (error) {
+          console.error('Failed to fetch comments:', error);
+        } finally {
+          setIsLoadingComments(false);
+        }
+      }
+    };
+
+    fetchComments();
   }, [task.id, open]);
 
   const completedSubtasks = subtasks.filter((st) => st.completed).length;
@@ -289,6 +326,29 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
       toast({
         title: "Error",
         description: "Failed to mark task as complete. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!comment.trim()) return;
+
+    try {
+      const response: any = await api.createComment(task.id, comment.trim());
+      if (response.comment) {
+        setComments([response.comment, ...comments]);
+        setComment("");
+        toast({
+          title: "Comment added",
+          description: "Your comment has been posted.",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add comment. Please try again.",
         variant: "destructive",
       });
     }
@@ -576,8 +636,12 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
             <div className="space-y-3">
               <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Comments</Label>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {task.comments && task.comments.length > 0 ? (
-                  task.comments.map((comment: any) => (
+                {isLoadingComments ? (
+                  <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50 text-center">
+                    <p className="text-xs text-slate-400">Loading comments...</p>
+                  </div>
+                ) : comments.length > 0 ? (
+                  comments.map((comment: any) => (
                     <div key={comment.id} className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -587,7 +651,7 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
                           <span className="font-semibold text-xs text-slate-700">{comment.author?.name || "Unknown"}</span>
                         </div>
                         <span className="text-[10px] text-slate-400 font-medium">
-                          {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : ""}
+                          {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ""}
                         </span>
                       </div>
                       <p className="text-xs text-slate-600 leading-relaxed">
@@ -607,9 +671,19 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
                   placeholder="Add a comment..."
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleAddComment();
+                    }
+                  }}
                   className="h-9 text-xs border-slate-200 focus:border-blue-500"
                 />
-                <Button className="bg-blue-500 hover:bg-blue-600 text-white h-9 px-3">
+                <Button 
+                  type="button"
+                  onClick={handleAddComment}
+                  className="bg-blue-500 hover:bg-blue-600 text-white h-9 px-3"
+                >
                   <Send className="w-3 h-3" />
                 </Button>
               </div>
