@@ -51,10 +51,28 @@ const AcceptInvitation = () => {
     checkUserAndInvitation();
   }, [email, projectName, navigate]);
 
-  const handleAcceptInvitation = () => {
+  const handleAcceptInvitation = async () => {
     if (currentUser && currentUser.email === email) {
-      // User is logged in with correct email, redirect to projects
-      navigate('/projects');
+      // User is logged in with correct email, accept invitation
+      try {
+        setIsLoading(true);
+        const role = searchParams.get('role') || 'MEMBER';
+        const result: any = await api.acceptProjectInvitation(projectName!, role);
+        
+        if (result.success && result.projectId) {
+          // Redirect to the project board
+          navigate(`/project/${result.projectId}`);
+        } else {
+          // Fallback to projects page
+          navigate('/projects');
+        }
+      } catch (error: any) {
+        console.error('Failed to accept invitation:', error);
+        // Still redirect to projects page on error
+        navigate('/projects');
+      } finally {
+        setIsLoading(false);
+      }
     } else if (currentUser) {
       // Different user logged in, logout first
       api.logout().then(() => {

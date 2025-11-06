@@ -23,6 +23,7 @@ import ProjectOverview from "@/components/project/ProjectOverview";
 import ProjectSettings from "@/components/project/ProjectSettings";
 import StickyNotes from "@/components/ui/StickyNotes";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
+import { InviteMembersDialog } from "@/components/project/InviteMembersDialog";
 import { useUser } from "@/contexts/UserContext";
 import { api, Project } from "@/lib/api";
 
@@ -33,6 +34,7 @@ const ProjectWorkspace = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [workflowType, setWorkflowType] = useState<"auto-sync" | "custom">("auto-sync");
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   // Fetch project data from database
   useEffect(() => {
@@ -241,7 +243,8 @@ const ProjectWorkspace = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`${themeColors.hover} ${themeColors.text} h-8 px-3`}
+                  onClick={() => setInviteDialogOpen(true)}
+                  className="text-slate-600 hover:text-black hover:bg-slate-100 h-8 px-3"
                 >
                   <Users className="w-4 h-4 mr-1" />
                   Invite
@@ -292,6 +295,16 @@ const ProjectWorkspace = () => {
 
       {/* Sticky Notes - Floating */}
       <StickyNotes projectId={id} workflowType={workflowType} />
+
+      {/* Invite Members Dialog */}
+      {project && (
+        <InviteMembersDialog
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+          projectId={project.id}
+          projectName={project.title}
+        />
+      )}
     </div>
   );
 };

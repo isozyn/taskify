@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { CheckSquare, ArrowLeft } from "lucide-react";
+import { CheckSquare, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, type AuthResponse } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +12,8 @@ import { useUser } from "@/contexts/UserContext";
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { setUser } = useUser();
@@ -95,6 +96,21 @@ const Auth = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      // Get Google OAuth URL from backend
+      const response: any = await api.googleAuth();
+      // Redirect to Google OAuth page
+      window.location.href = response.url;
+    } catch (error: any) {
+      toast({
+        title: "Google Sign In Failed",
+        description: error.message || "Failed to initiate Google sign in",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Back Button - Login Page (Blue) */}
@@ -154,14 +170,27 @@ const Auth = () => {
                         Forgot password?
                       </button>
                     </div>
-                    <Input 
-                      id="login-password" 
-                      type="password" 
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="h-8 text-sm border-border/60 focus-visible:ring-1 focus-visible:ring-[#0052CC] focus-visible:border-[#0052CC] rounded-md"
-                      required 
-                    />
+                    <div className="relative">
+                      <Input 
+                        id="login-password" 
+                        type={showLoginPassword ? "text" : "password"}
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        className="h-8 text-sm border-border/60 focus-visible:ring-1 focus-visible:ring-[#0052CC] focus-visible:border-[#0052CC] rounded-md pr-9"
+                        required 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showLoginPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   <Button 
@@ -189,6 +218,7 @@ const Auth = () => {
                 <Button
                   type="button"
                   variant="outline"
+                  onClick={handleGoogleLogin}
                   className="w-full h-8 text-sm text-center font-medium border-border/60 hover:bg-accent/50 rounded-md"
                 >
                   <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
@@ -283,6 +313,7 @@ const Auth = () => {
                   <Button
                     type="button"
                     variant="outline"
+                    onClick={handleGoogleLogin}
                     className="w-full h-10 text-sm font-medium border-border/60 hover:bg-accent/50 rounded-md justify-center px-4"
                   >
                     <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
@@ -358,15 +389,28 @@ const Auth = () => {
                     <Label htmlFor="signup-password" className="text-sm font-normal text-foreground">
                       Password<span className="text-red-500">*</span>
                     </Label>
-                    <Input 
-                      id="signup-password" 
-                      type="password"
-                      placeholder="Password"
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      className="h-9 text-sm border-border/60 focus-visible:ring-2 focus-visible:ring-[#0052CC]/20 focus-visible:border-[#0052CC] rounded-md"
-                      required 
-                    />
+                    <div className="relative">
+                      <Input 
+                        id="signup-password" 
+                        type={showSignupPassword ? "text" : "password"}
+                        placeholder="Password"
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        className="h-9 text-sm border-border/60 focus-visible:ring-2 focus-visible:ring-[#0052CC]/20 focus-visible:border-[#0052CC] rounded-md pr-10"
+                        required 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPassword(!showSignupPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showSignupPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       Password must be at least 8 characters with one uppercase, one lowercase, and one number.
                     </p>

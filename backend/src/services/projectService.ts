@@ -183,7 +183,7 @@ export class ProjectService {
 				});
 
 				if (user) {
-					// Check if already a member
+					// Check if already a member of THIS project
 					const existingMember = await prisma.projectMember.findUnique({
 						where: {
 							userId_projectId: {
@@ -198,21 +198,16 @@ export class ProjectService {
 						continue;
 					}
 
-					// Add existing user to project
-					await prisma.projectMember.create({
-						data: {
-							userId: user.id,
-							projectId: projectId,
-							role: member.role as any
-						}
-					});
+					// User exists but is not a member of this project
+					// Send invitation email - they will be added when they accept
+					console.log(`User ${member.email} exists, sending invitation to join this project`);
 				} else {
-					// For non-existing users, we'll still send invitation
+					// For non-existing users, send invitation
 					// They can create account when they accept invitation
 					console.log(`User ${member.email} doesn't exist yet, sending invitation anyway`);
 				}
 
-				// Send invitation email
+				// Send invitation email (for both existing and new users)
 				console.log(`Sending invitation email to: ${member.email}`);
 				console.log(`Project: ${project.title}`);
 				console.log(`Inviter: ${inviter.name}`);
@@ -222,7 +217,9 @@ export class ProjectService {
 					member.email,
 					project.title,
 					inviter.name,
-					member.role
+					member.role,
+					project.startDate,
+					project.endDate
 				);
 
 				success.push(`Invitation sent to ${member.email}`);

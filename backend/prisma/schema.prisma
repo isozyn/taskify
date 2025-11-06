@@ -7,39 +7,103 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id               Int             @id @default(autoincrement())
-  name             String
-  email            String          @unique
-  password         String
-  role             Role            @default(USER)
-  isEmailVerified  Boolean         @default(false)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  avatar           String?
-  resetToken       String?
-  resetTokenExpiry DateTime?
-  username         String          @unique
-  comments         Comment[]
-  ownedProjects    Project[]       @relation("ProjectOwner")
-  projectMembers   ProjectMember[]
-  refreshTokens    RefreshToken[]
-  tasks            Task[]
+model Activity {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  userId      Int?
+  action      String
+  targetType  String?
+  targetId    Int?
+  description String
+  createdAt   DateTime @default(now())
+  Project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([email])
-  @@index([username])
+  @@index([createdAt])
+  @@index([projectId])
 }
 
-model RefreshToken {
+model Comment {
   id        Int      @id @default(autoincrement())
-  token     String   @unique
-  userId    Int
-  expiresAt DateTime
+  content   String
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt DateTime
+  taskId    Int
+  authorId  Int
+  User      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  Task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
+  @@index([authorId])
+  @@index([taskId])
+}
+
+model Conversation {
+  id                 Int                  @id @default(autoincrement())
+  name               String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  projectId          Int?
+  type               ConversationType     @default(PROJECT)
+  Project            Project?             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ConversationMember ConversationMember[]
+  Message            Message[]
+
+  @@index([projectId])
+}
+
+model ConversationMember {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  conversationId Int
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime?
+  Conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  User           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId])
+  @@index([conversationId])
   @@index([userId])
-  @@index([token])
+}
+
+model CustomColumn {
+  id        Int      @id @default(autoincrement())
+  title     String
+  color     String   @default("slate")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  projectId Int
+  Project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  content        String
+  senderId       Int
+  conversationId Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime
+  isEdited       Boolean      @default(false)
+  Conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  User           User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+  @@index([senderId])
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  type      NotificationType
+  message   String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  userId    Int
+  User      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([read])
+  @@index([userId])
 }
 
 model Project {
@@ -49,15 +113,17 @@ model Project {
   startDate     DateTime?
   endDate       DateTime?
   createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  updatedAt     DateTime
   ownerId       Int
   color         String?
   title         String
   workflowType  WorkflowType    @default(CUSTOM)
-  customColumns CustomColumn[]
-  owner         User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members       ProjectMember[]
-  tasks         Task[]
+  Activity      Activity[]
+  Conversation  Conversation[]
+  CustomColumn  CustomColumn[]
+  User          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ProjectMember ProjectMember[]
+  Task          Task[]
 
   @@index([ownerId])
   @@index([status])
@@ -69,12 +135,37 @@ model ProjectMember {
   joinedAt  DateTime   @default(now())
   userId    Int
   projectId Int
-  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  User      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId])
-  @@index([userId])
   @@index([projectId])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Subtask {
+  id        Int      @id @default(autoincrement())
+  title     String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  taskId    Int
+  Task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
 }
 
 model Task {
@@ -84,7 +175,7 @@ model Task {
   status      TaskStatus @default(TODO)
   priority    Priority   @default(MEDIUM)
   createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  updatedAt   DateTime
   projectId   Int
   assigneeId  Int?
   order       Int        @default(0)
@@ -92,47 +183,73 @@ model Task {
   columnId    String?
   endDate     DateTime?
   startDate   DateTime?
-  comments    Comment[]
-  assignee    User?      @relation(fields: [assigneeId], references: [id])
-  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  Comment     Comment[]
+  Subtask     Subtask[]
+  User        User?      @relation(fields: [assigneeId], references: [id])
+  Project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([projectId])
   @@index([assigneeId])
-  @@index([status])
-  @@index([priority])
   @@index([columnId])
-}
-
-model Comment {
-  id        Int      @id @default(autoincrement())
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  taskId    Int
-  authorId  Int
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-  @@index([taskId])
-  @@index([authorId])
-}
-
-model CustomColumn {
-  id        Int      @id @default(autoincrement())
-  title     String
-  color     String   @default("slate")
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  projectId Int
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
+  @@index([priority])
   @@index([projectId])
+  @@index([status])
 }
 
-enum Role {
-  USER
-  ADMIN
+model User {
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  email              String               @unique
+  password           String?
+  role               Role                 @default(USER)
+  isEmailVerified    Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  avatar             String?
+  resetToken         String?
+  resetTokenExpiry   DateTime?
+  username           String               @unique
+  googleId           String?              @unique
+  authProvider       AuthProvider         @default(LOCAL)
+  Comment            Comment[]
+  ConversationMember ConversationMember[]
+  Message            Message[]
+  Notification       Notification[]
+  Project            Project[]
+  ProjectMember      ProjectMember[]
+  RefreshToken       RefreshToken[]
+  Task               Task[]
+
+  @@index([email])
+  @@index([username])
+  @@index([googleId])
+}
+
+enum ConversationType {
+  PROJECT
+  DIRECT
+  GROUP
+}
+
+enum MemberRole {
+  OWNER
+  PROJECT_MANAGER
+  MEMBER
+  VIEWER
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_COMPLETED
+  COMMENT_ADDED
+  PROJECT_INVITATION
+  DEADLINE_REMINDER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 enum ProjectStatus {
@@ -141,11 +258,9 @@ enum ProjectStatus {
   COMPLETED
 }
 
-enum MemberRole {
-  OWNER
-  PROJECT_MANAGER
-  MEMBER
-  VIEWER
+enum Role {
+  USER
+  ADMIN
 }
 
 enum TaskStatus {
@@ -156,14 +271,12 @@ enum TaskStatus {
   BLOCKED
 }
 
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
 enum WorkflowType {
   CUSTOM
   AUTOMATED
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
 }

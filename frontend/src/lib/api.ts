@@ -118,6 +118,12 @@ class ApiClient {
 		});
 	}
 
+	async googleAuth() {
+		return this.request("/auth/google", {
+			method: "GET",
+		});
+	}
+
 	// Project endpoints
 	async getProjects() {
 		return this.request("/projects", {
