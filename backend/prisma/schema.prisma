@@ -233,10 +233,10 @@ model Conversation {
   id          Int                   @id @default(autoincrement())
   name        String?
   type        ConversationType      @default(PROJECT)
-  projectId   Int
+  projectId   Int?
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
-  project     Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project?              @relation(fields: [projectId], references: [id], onDelete: Cascade)
   members     ConversationMember[]
   messages    Message[]
 
