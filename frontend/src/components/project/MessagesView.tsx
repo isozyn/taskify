@@ -85,7 +85,9 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		useState(false);
 	const [showGroupChatDialog, setShowGroupChatDialog] = useState(false);
 	const [groupChatName, setGroupChatName] = useState("");
-	const [groupChatStep, setGroupChatStep] = useState<'members' | 'name'>('members');
+	const [groupChatStep, setGroupChatStep] = useState<"members" | "name">(
+		"members"
+	);
 
 	// Cache for messages to improve switching performance
 	const messagesCache = useRef<Map<number, Message[]>>(new Map());
@@ -96,7 +98,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 	// Store selectedConversation and user in refs so callbacks always see the latest values
 	const selectedConversationRef = useRef(selectedConversation);
 	const userRef = useRef(user);
-	
+
 	useEffect(() => {
 		selectedConversationRef.current = selectedConversation;
 	}, [selectedConversation]);
@@ -140,49 +142,73 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		// Set up socket callbacks - using refs to always get latest values
 		socketService.setCallbacks({
 			onMessageNew: (message: Message) => {
-				console.log('📨 Message received via Socket.IO:', message);
-				console.log('Current conversation ID:', selectedConversationRef.current?.id);
-				console.log('Current user ID:', userRef.current?.id);
-				console.log('Message sender ID:', message.senderId);
-				
+				console.log("📨 Message received via Socket.IO:", message);
+				console.log(
+					"Current conversation ID:",
+					selectedConversationRef.current?.id
+				);
+				console.log("Current user ID:", userRef.current?.id);
+				console.log("Message sender ID:", message.senderId);
+
 				// Add message to UI if it's for the currently selected conversation
-				if (message.conversationId === selectedConversationRef.current?.id) {
+				if (
+					message.conversationId ===
+					selectedConversationRef.current?.id
+				) {
 					// Skip messages from ourselves - they're already added via REST API response
 					if (message.senderId === userRef.current?.id) {
-						console.log('⏭️ Skipping own message from Socket.IO (already handled by REST API)');
+						console.log(
+							"⏭️ Skipping own message from Socket.IO (already handled by REST API)"
+						);
 						return;
 					}
-					
-					console.log('✅ Adding message from other user to current conversation');
+
+					console.log(
+						"✅ Adding message from other user to current conversation"
+					);
 					setMessages((prev) => {
 						// Check if message already exists (by real ID)
-						const existingIndex = prev.findIndex((m) => m.id === message.id);
+						const existingIndex = prev.findIndex(
+							(m) => m.id === message.id
+						);
 						if (existingIndex !== -1) {
-							console.log('⚠️ Message already exists with real ID, skipping');
+							console.log(
+								"⚠️ Message already exists with real ID, skipping"
+							);
 							return prev;
 						}
-						
+
 						// Add the message
 						const updated = [...prev, message];
 						// Update cache
-						messagesCache.current.set(message.conversationId, updated);
+						messagesCache.current.set(
+							message.conversationId,
+							updated
+						);
 						return updated;
 					});
 					scrollToBottom();
 				} else {
-					console.log('⏭️ Message is for different conversation');
+					console.log("⏭️ Message is for different conversation");
 					// Still update cache for other conversations
-					const cached = messagesCache.current.get(message.conversationId) || [];
+					const cached =
+						messagesCache.current.get(message.conversationId) || [];
 					if (!cached.some((m) => m.id === message.id)) {
-						messagesCache.current.set(message.conversationId, [...cached, message]);
+						messagesCache.current.set(message.conversationId, [
+							...cached,
+							message,
+						]);
 					}
 				}
 
 				// ALWAYS update conversation list to refresh unread counts and last message
 				fetchConversationsInternal();
 			},
-			onConversationCreated: (data: { conversation: any; shouldJoin: boolean }) => {
-				console.log('🆕 New conversation created:', data.conversation);
+			onConversationCreated: (data: {
+				conversation: any;
+				shouldJoin: boolean;
+			}) => {
+				console.log("🆕 New conversation created:", data.conversation);
 				// Refresh conversation list to show new conversation
 				fetchConversationsInternal();
 				// Socket service will auto-join the room
@@ -202,19 +228,20 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 				conversationId: number;
 			}) => {
 				if (
-					data.conversationId === selectedConversationRef.current?.id &&
+					data.conversationId ===
+						selectedConversationRef.current?.id &&
 					data.userId !== userRef.current?.id
 				) {
-					setTypingUsers((prev) =>
-						new Set(prev).add(data.userId)
-					);
+					setTypingUsers((prev) => new Set(prev).add(data.userId));
 				}
 			},
 			onUserStopped: (data: {
 				userId: number;
 				conversationId: number;
 			}) => {
-				if (data.conversationId === selectedConversationRef.current?.id) {
+				if (
+					data.conversationId === selectedConversationRef.current?.id
+				) {
 					setTypingUsers((prev) => {
 						const newSet = new Set(prev);
 						newSet.delete(data.userId);
@@ -236,7 +263,9 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		}
 
 		return () => {
-			console.log('🧹 Cleaning up Socket.IO callbacks and leaving project');
+			console.log(
+				"🧹 Cleaning up Socket.IO callbacks and leaving project"
+			);
 			// Clear the callbacks to prevent duplicate listener registrations
 			socketService.setCallbacks({
 				onMessageNew: () => {},
@@ -247,7 +276,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 				onConversationCreated: () => {},
 				onError: () => {},
 			});
-			
+
 			if (projectId) {
 				socketService.leaveProject(parseInt(projectId));
 			}
@@ -263,7 +292,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			try {
 				// Skip fetching for draft conversations (negative IDs)
 				if (conversationId < 0) {
-					console.log('⏭️ Skipping fetch for draft conversation');
+					console.log("⏭️ Skipping fetch for draft conversation");
 					setMessages([]);
 					setIsLoadingMessages(false);
 					return;
@@ -272,15 +301,31 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 				setIsLoadingMessages(true);
 
 				// Leave previous conversation room if exists
-				if (currentConversationRoomRef.current && currentConversationRoomRef.current !== conversationId) {
-					socketService.leaveConversation(currentConversationRoomRef.current);
-					console.log('🚪 Left previous conversation room:', currentConversationRoomRef.current);
+				if (
+					currentConversationRoomRef.current &&
+					currentConversationRoomRef.current !== conversationId
+				) {
+					socketService.leaveConversation(
+						currentConversationRoomRef.current
+					);
+					console.log(
+						"🚪 Left previous conversation room:",
+						currentConversationRoomRef.current
+					);
 				}
 
 				// Check cache first for instant display
-				if (!forceRefresh && messagesCache.current.has(conversationId)) {
-					console.log('📦 Loading messages from cache for conversation:', conversationId);
-					setMessages(messagesCache.current.get(conversationId) || []);
+				if (
+					!forceRefresh &&
+					messagesCache.current.has(conversationId)
+				) {
+					console.log(
+						"📦 Loading messages from cache for conversation:",
+						conversationId
+					);
+					setMessages(
+						messagesCache.current.get(conversationId) || []
+					);
 					scrollToBottom();
 				} else {
 					// Show loading state for new conversations
@@ -290,7 +335,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 				// Join new conversation room
 				socketService.joinConversation(conversationId);
 				currentConversationRoomRef.current = conversationId;
-				console.log('🚪 Joined conversation room:', conversationId);
+				console.log("🚪 Joined conversation room:", conversationId);
 
 				// Fetch messages in parallel with marking as read
 				const [response] = await Promise.all([
@@ -298,16 +343,42 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 					socketService.markConversationAsRead(conversationId),
 				]);
 
+				console.log(
+					"📥 API Response for conversation",
+					conversationId,
+					":",
+					response
+				);
+				console.log(
+					"📥 Response type:",
+					typeof response,
+					"Is array:",
+					Array.isArray(response)
+				);
+
 				const fetchedMessages = (response as Message[]) || [];
-				
+				console.log(
+					"📦 Fetched messages count:",
+					fetchedMessages.length
+				);
+
 				// Update cache
 				messagesCache.current.set(conversationId, fetchedMessages);
-				
+				console.log(
+					"💾 Cached messages for conversation:",
+					conversationId
+				);
+
 				// Update UI
 				setMessages(fetchedMessages);
+				console.log(
+					"✅ Updated messages state with",
+					fetchedMessages.length,
+					"messages"
+				);
 				scrollToBottom();
 			} catch (error: any) {
-				console.error('Failed to fetch messages:', error);
+				console.error("Failed to fetch messages:", error);
 				toast({
 					title: "Error",
 					description: error.message || "Failed to load messages",
@@ -327,14 +398,30 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 
 	// Load messages when conversation is selected
 	useEffect(() => {
+		console.log(
+			"🔄 useEffect triggered, selectedConversation:",
+			selectedConversation
+		);
 		if (selectedConversation) {
+			console.log(
+				"✅ Calling fetchMessages for conversation ID:",
+				selectedConversation.id
+			);
 			fetchMessages(selectedConversation.id);
+		} else {
+			console.log("⚠️ No conversation selected");
 		}
 
 		// Cleanup: leave room when component unmounts or conversation changes
 		return () => {
 			if (currentConversationRoomRef.current) {
-				socketService.leaveConversation(currentConversationRoomRef.current);
+				console.log(
+					"🧹 Cleanup: leaving conversation room:",
+					currentConversationRoomRef.current
+				);
+				socketService.leaveConversation(
+					currentConversationRoomRef.current
+				);
 				currentConversationRoomRef.current = null;
 			}
 		};
@@ -353,7 +440,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 
 		// Check if this is a draft conversation (not yet persisted)
 		const isDraft = selectedConversation.id < 0;
-		
+
 		// Stop typing indicator only if not draft
 		if (!isDraft) {
 			socketService.stopTyping(selectedConversation.id);
@@ -361,37 +448,48 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 
 		try {
 			let actualConversation = selectedConversation;
-			
+
 			// If this is a draft conversation, create the real conversation first
 			if (isDraft) {
 				console.log("Creating real conversation from draft...");
-				
+
 				// Find the other member (not current user)
-				const otherMember = selectedConversation.members.find(m => m.id !== user!.id);
+				const otherMember = selectedConversation.members.find(
+					(m) => m.id !== user!.id
+				);
 				if (!otherMember) {
 					throw new Error("Cannot find other member");
 				}
-				
+
 				// Create or get existing conversation
-				const realConversation = await api.getOrCreateDirectConversation(parseInt(projectId), otherMember.id) as Conversation;
-				console.log("Real conversation created/retrieved:", realConversation);
-				
+				const realConversation =
+					(await api.getOrCreateDirectConversation(
+						parseInt(projectId),
+						otherMember.id
+					)) as Conversation;
+				console.log(
+					"Real conversation created/retrieved:",
+					realConversation
+				);
+
 				// Update state with real conversation
 				actualConversation = realConversation;
 				setSelectedConversation(realConversation);
 				selectedConversationRef.current = realConversation;
-				
+
 				// Add to conversations list if not already there
-				setConversations(prev => {
-					const exists = prev.some(c => c.id === realConversation.id);
+				setConversations((prev) => {
+					const exists = prev.some(
+						(c) => c.id === realConversation.id
+					);
 					if (exists) return prev;
 					return [realConversation, ...prev];
 				});
-				
+
 				// Join socket room for new conversation
 				socketService.joinConversation(realConversation.id);
 				currentConversationRoomRef.current = realConversation.id;
-				
+
 				// Initialize cache for new conversation
 				messagesCache.current.set(realConversation.id, []);
 			}
@@ -420,18 +518,24 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			const response: any = await api.sendMessage({
 				conversationId: actualConversation.id,
 				content,
-		});
+			});
 
-		// Replace optimistic message with real one from server
-		setMessages((prev) => {
-			const updatedMessages = prev.map((m) => (m.id === tempId ? response : m));
-			// Update cache with the final message list
-			messagesCache.current.set(actualConversation.id, updatedMessages);
-			return updatedMessages;
-		});
-	} catch (error: any) {
-		// Remove optimistic message on error
-		setMessages((prev) => prev.filter((m) => m.id !== tempId));			toast({
+			// Replace optimistic message with real one from server
+			setMessages((prev) => {
+				const updatedMessages = prev.map((m) =>
+					m.id === tempId ? response : m
+				);
+				// Update cache with the final message list
+				messagesCache.current.set(
+					actualConversation.id,
+					updatedMessages
+				);
+				return updatedMessages;
+			});
+		} catch (error: any) {
+			// Remove optimistic message on error
+			setMessages((prev) => prev.filter((m) => m.id !== tempId));
+			toast({
 				title: "Error",
 				description: error.message || "Failed to send message",
 				variant: "destructive",
@@ -451,7 +555,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 	// Handle typing indicator (debounced)
 	const handleTyping = useCallback(() => {
 		if (!selectedConversation) return;
-		
+
 		// Skip typing indicators for draft conversations
 		if (selectedConversation.id < 0) return;
 
@@ -489,12 +593,12 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			});
 			return;
 		}
-		setGroupChatStep('name');
+		setGroupChatStep("name");
 	};
 
 	// Go back to members step
 	const handleBackToMembers = () => {
-		setGroupChatStep('members');
+		setGroupChatStep("members");
 	};
 
 	// Create group chat with selected members
@@ -519,15 +623,17 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 
 		try {
 			const groupName = groupChatName.trim();
-			
+
 			// Add current user to members if not already included
 			const memberIds = [...selectedMembers];
 			if (!memberIds.includes(user!.id)) {
 				memberIds.push(user!.id);
 			}
-			
-			console.log(`🎉 Creating group chat: "${groupName}" with ${memberIds.length} members`);
-			
+
+			console.log(
+				`🎉 Creating group chat: "${groupName}" with ${memberIds.length} members`
+			);
+
 			const response: any = await api.createConversation({
 				name: groupName,
 				type: "GROUP",
@@ -544,12 +650,12 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			setShowGroupChatDialog(false);
 			setGroupChatName("");
 			setSelectedMembers([]);
-			setGroupChatStep('members');
-			
+			setGroupChatStep("members");
+
 			fetchConversations();
 			setSelectedConversation(response);
 		} catch (error: any) {
-			console.error('Failed to create group chat:', error);
+			console.error("Failed to create group chat:", error);
 			toast({
 				title: "Error",
 				description: error.message || "Failed to create group chat",
@@ -563,7 +669,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		setShowGroupChatDialog(false);
 		setGroupChatName("");
 		setSelectedMembers([]);
-		setGroupChatStep('members');
+		setGroupChatStep("members");
 	};
 
 	// Create new conversation (Direct message only)
@@ -654,12 +760,18 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			// Search functionality
 			if (searchQuery) {
 				if (conv.type === "DIRECT") {
-					const otherMember = conv.members.find((m) => m.id !== user?.id);
+					const otherMember = conv.members.find(
+						(m) => m.id !== user?.id
+					);
 					const memberName = otherMember?.name || "";
-					return memberName.toLowerCase().includes(searchQuery.toLowerCase());
+					return memberName
+						.toLowerCase()
+						.includes(searchQuery.toLowerCase());
 				} else if (conv.type === "GROUP") {
 					const groupName = conv.name || "";
-					return groupName.toLowerCase().includes(searchQuery.toLowerCase());
+					return groupName
+						.toLowerCase()
+						.includes(searchQuery.toLowerCase());
 				}
 			}
 
@@ -668,13 +780,13 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 	}, [conversations, searchQuery, user?.id]);
 
 	// Separate conversations by type
-	const directConversations = useMemo(() => 
-		filteredConversations.filter(conv => conv.type === "DIRECT"),
+	const directConversations = useMemo(
+		() => filteredConversations.filter((conv) => conv.type === "DIRECT"),
 		[filteredConversations]
 	);
 
-	const groupConversations = useMemo(() => 
-		filteredConversations.filter(conv => conv.type === "GROUP"),
+	const groupConversations = useMemo(
+		() => filteredConversations.filter((conv) => conv.type === "GROUP"),
 		[filteredConversations]
 	);
 
@@ -707,7 +819,10 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 						Chats
 					</h2>
 					{/* Create Group Chat Button */}
-					<Dialog open={showGroupChatDialog} onOpenChange={setShowGroupChatDialog}>
+					<Dialog
+						open={showGroupChatDialog}
+						onOpenChange={setShowGroupChatDialog}
+					>
 						<DialogTrigger asChild>
 							<Button
 								variant="ghost"
@@ -719,47 +834,72 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 							</Button>
 						</DialogTrigger>
 						<DialogContent className="max-w-md max-h-[80vh] flex flex-col">
-							{groupChatStep === 'members' ? (
+							{groupChatStep === "members" ? (
 								<>
 									<DialogHeader>
-										<DialogTitle>Add Group Members</DialogTitle>
+										<DialogTitle>
+											Add Group Members
+										</DialogTitle>
 										<DialogDescription>
-											Select members to add to the group chat
+											Select members to add to the group
+											chat
 										</DialogDescription>
 									</DialogHeader>
 									<div className="flex-1 overflow-hidden flex flex-col">
 										<div className="mb-3">
 											<div className="text-sm font-medium text-slate-700">
-												{selectedMembers.length} of {projectMembers.filter(m => m.id !== user?.id).length} members selected
+												{selectedMembers.length} of{" "}
+												{
+													projectMembers.filter(
+														(m) => m.id !== user?.id
+													).length
+												}{" "}
+												members selected
 											</div>
 										</div>
 										<ScrollArea className="flex-1 pr-4">
 											<div className="space-y-1">
 												{projectMembers
-													.filter((m) => m.id !== user?.id)
+													.filter(
+														(m) => m.id !== user?.id
+													)
 													.map((member) => {
-														const isSelected = selectedMembers.includes(member.id);
+														const isSelected =
+															selectedMembers.includes(
+																member.id
+															);
 														return (
 															<button
 																key={member.id}
-																onClick={() => toggleMemberSelection(member.id)}
+																onClick={() =>
+																	toggleMemberSelection(
+																		member.id
+																	)
+																}
 																className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
 																	isSelected
-																		? 'bg-blue-50 border-2 border-blue-500'
-																		: 'hover:bg-slate-50 border-2 border-transparent'
+																		? "bg-blue-50 border-2 border-blue-500"
+																		: "hover:bg-slate-50 border-2 border-transparent"
 																}`}
 															>
 																<Avatar className="w-10 h-10">
 																	<AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white font-medium">
-																		{getInitials(member.name)}
+																		{getInitials(
+																			member.name
+																		)}
 																	</AvatarFallback>
 																</Avatar>
 																<div className="flex-1 text-left">
 																	<div className="font-medium text-sm text-slate-900">
-																		{member.name}
+																		{
+																			member.name
+																		}
 																	</div>
 																	<div className="text-xs text-slate-500">
-																		@{member.username}
+																		@
+																		{
+																			member.username
+																		}
 																	</div>
 																</div>
 																{isSelected && (
@@ -780,9 +920,11 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 										>
 											Cancel
 										</Button>
-										<Button 
+										<Button
 											onClick={handleProceedToName}
-											disabled={selectedMembers.length === 0}
+											disabled={
+												selectedMembers.length === 0
+											}
 										>
 											Next
 										</Button>
@@ -791,38 +933,58 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 							) : (
 								<>
 									<DialogHeader>
-										<DialogTitle>Name Your Group</DialogTitle>
+										<DialogTitle>
+											Name Your Group
+										</DialogTitle>
 										<DialogDescription>
-											Provide a group name for {selectedMembers.length + 1} members
+											Provide a group name for{" "}
+											{selectedMembers.length + 1} members
 										</DialogDescription>
 									</DialogHeader>
 									<div className="space-y-4 py-4">
 										<div className="space-y-2">
-											<Label htmlFor="groupName">Group Name</Label>
+											<Label htmlFor="groupName">
+												Group Name
+											</Label>
 											<Input
 												id="groupName"
 												placeholder="e.g., Team Chat, General Discussion"
 												value={groupChatName}
-												onChange={(e) => setGroupChatName(e.target.value)}
+												onChange={(e) =>
+													setGroupChatName(
+														e.target.value
+													)
+												}
 												autoFocus
 											/>
 										</div>
 										<div className="space-y-2">
-											<Label>Selected Members ({selectedMembers.length})</Label>
+											<Label>
+												Selected Members (
+												{selectedMembers.length})
+											</Label>
 											<div className="flex flex-wrap gap-2">
-												{selectedMembers.map((memberId) => {
-													const member = projectMembers.find((m) => m.id === memberId);
-													if (!member) return null;
-													return (
-														<Badge
-															key={memberId}
-															variant="secondary"
-															className="px-2 py-1"
-														>
-															{member.name}
-														</Badge>
-													);
-												})}
+												{selectedMembers.map(
+													(memberId) => {
+														const member =
+															projectMembers.find(
+																(m) =>
+																	m.id ===
+																	memberId
+															);
+														if (!member)
+															return null;
+														return (
+															<Badge
+																key={memberId}
+																variant="secondary"
+																className="px-2 py-1"
+															>
+																{member.name}
+															</Badge>
+														);
+													}
+												)}
 											</div>
 										</div>
 									</div>
@@ -833,7 +995,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 										>
 											Back
 										</Button>
-										<Button 
+										<Button
 											onClick={handleCreateGroupChat}
 											disabled={!groupChatName.trim()}
 										>
@@ -889,44 +1051,85 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 												);
 
 											// Get unread count for this member's conversation
-											const unreadCount = existingConversation?.unreadCount || 0;
+											const unreadCount =
+												existingConversation?.unreadCount ||
+												0;
 
 											return (
 												<button
 													key={member.id}
 													onClick={() => {
-														if (existingConversation) {
+														console.log(
+															"👆 Clicked on member:",
+															member.name,
+															"Member ID:",
+															member.id
+														);
+														console.log(
+															"🔍 Existing conversation:",
+															existingConversation
+														);
+														if (
+															existingConversation
+														) {
 															// Switch to existing conversation instantly
-															console.log('📱 Switching to existing conversation:', existingConversation.id);
-															setSelectedConversation(existingConversation);
+															console.log(
+																"📱 Switching to existing conversation:",
+																existingConversation.id,
+																existingConversation
+															);
+															setSelectedConversation(
+																existingConversation
+															);
 														} else {
 															// Create a draft conversation (not persisted yet)
-															console.log('✨ Creating draft conversation with:', member.name);
-															const draftConversation: Conversation = {
-																id: -1, // Negative ID indicates draft/not persisted
-																name: null,
-																type: "DIRECT",
-																projectId: parseInt(projectId!),
-																members: [
-																	{
-																		id: member.id,
-																		name: member.name,
-																		username: member.username,
-																		email: member.email,
-																		avatar: member.avatar,
-																	},
-																	{
-																		id: user!.id,
-																		name: user!.name || "",
-																		username: user!.username || "",
-																		email: user!.email,
-																		avatar: user!.avatar,
-																	}
-																],
-																createdAt: new Date().toISOString(),
-																updatedAt: new Date().toISOString(),
-															};
-															setSelectedConversation(draftConversation);
+															console.log(
+																"✨ Creating draft conversation with:",
+																member.name
+															);
+															const draftConversation: Conversation =
+																{
+																	id: -1, // Negative ID indicates draft/not persisted
+																	name: null,
+																	type: "DIRECT",
+																	projectId:
+																		parseInt(
+																			projectId!
+																		),
+																	members: [
+																		{
+																			id: member.id,
+																			name: member.name,
+																			username:
+																				member.username,
+																			email: member.email,
+																			avatar: member.avatar,
+																		},
+																		{
+																			id: user!
+																				.id,
+																			name:
+																				user!
+																					.name ||
+																				"",
+																			username:
+																				user!
+																					.username ||
+																				"",
+																			email: user!
+																				.email,
+																			avatar: user!
+																				.avatar,
+																		},
+																	],
+																	createdAt:
+																		new Date().toISOString(),
+																	updatedAt:
+																		new Date().toISOString(),
+																};
+															setSelectedConversation(
+																draftConversation
+															);
 															setMessages([]); // Clear messages for draft
 														}
 													}}
@@ -942,9 +1145,13 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 																</AvatarFallback>
 															</Avatar>
 															{/* Unread badge - WhatsApp style */}
-															{unreadCount > 0 && (
+															{unreadCount >
+																0 && (
 																<div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 shadow-lg">
-																	{unreadCount > 99 ? '99+' : unreadCount}
+																	{unreadCount >
+																	99
+																		? "99+"
+																		: unreadCount}
 																</div>
 															)}
 														</div>
@@ -953,7 +1160,10 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 																{member.name}
 															</h3>
 															<p className="text-xs text-slate-500 truncate">
-																{existingConversation?.lastMessage?.content || 'Click to message'}
+																{existingConversation
+																	?.lastMessage
+																	?.content ||
+																	"Click to message"}
 															</p>
 														</div>
 													</div>
@@ -975,13 +1185,19 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 									<button
 										key={conversation.id}
 										onClick={() => {
-											console.log('📱 Switching to group conversation:', conversation.id);
-											setSelectedConversation(conversation);
+											console.log(
+												"📱 Switching to group conversation:",
+												conversation.id
+											);
+											setSelectedConversation(
+												conversation
+											);
 										}}
 										className={`w-full px-4 py-3 text-left transition-colors hover:bg-slate-50 relative ${
-											selectedConversation?.id === conversation.id
-												? 'bg-blue-50 border-l-4 border-blue-500'
-												: ''
+											selectedConversation?.id ===
+											conversation.id
+												? "bg-blue-50 border-l-4 border-blue-500"
+												: ""
 										}`}
 									>
 										<div className="flex items-center gap-3">
@@ -990,18 +1206,28 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 													<Hash className="w-6 h-6 text-white" />
 												</div>
 												{/* Unread badge */}
-												{conversation.unreadCount && conversation.unreadCount > 0 && (
-													<div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 shadow-lg">
-														{conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
-													</div>
-												)}
+												{conversation.unreadCount &&
+													conversation.unreadCount >
+														0 && (
+														<div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 shadow-lg">
+															{conversation.unreadCount >
+															99
+																? "99+"
+																: conversation.unreadCount}
+														</div>
+													)}
 											</div>
 											<div className="flex-1 min-w-0">
 												<h3 className="font-medium text-sm text-slate-900 truncate">
-													{conversation.name || "Group Chat"}
+													{conversation.name ||
+														"Group Chat"}
 												</h3>
 												<p className="text-xs text-slate-500 truncate">
-													{conversation.members.length} members
+													{
+														conversation.members
+															.length
+													}{" "}
+													members
 												</p>
 											</div>
 										</div>
@@ -1028,8 +1254,8 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 				</ScrollArea>
 			</div>
 
-		{/* Main Chat Area */}
-		{selectedConversation ? (
+			{/* Main Chat Area */}
+			{selectedConversation ? (
 				<div className="flex-1 flex flex-col bg-slate-50">
 					{/* Chat Header */}
 					<div className="px-6 py-4 bg-white border-b border-slate-200 flex items-center justify-between">
