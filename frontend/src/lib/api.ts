@@ -29,7 +29,7 @@ class ApiClient {
 				"Content-Type": "application/json",
 				...options.headers,
 			},
-			credentials: "include", // Include cookies for refresh tokens
+			credentials: "include", // Include cookies for authentication
 		};
 
 		try {
@@ -37,6 +37,26 @@ class ApiClient {
 			const data = await response.json();
 
 			if (!response.ok) {
+				// Handle 401 Unauthorized - token expired or invalid
+				if (response.status === 401) {
+					// Only redirect to auth if not already on auth pages
+					const currentPath = window.location.pathname;
+					const authPaths = [
+						"/auth",
+						"/login",
+						"/register",
+						"/forgot-password",
+						"/reset-password",
+					];
+
+					if (!authPaths.includes(currentPath)) {
+						console.log(
+							"[API] 401 Unauthorized - redirecting to login"
+						);
+						window.location.href = "/auth";
+					}
+				}
+
 				throw {
 					message: data.message || "An error occurred",
 					errors: data.errors || [],
@@ -167,7 +187,10 @@ class ApiClient {
 		});
 	}
 
-	async inviteProjectMembers(projectId: number, members: Array<{ email: string; role: string }>) {
+	async inviteProjectMembers(
+		projectId: number,
+		members: Array<{ email: string; role: string }>
+	) {
 		return this.request(`/projects/${projectId}/invite`, {
 			method: "POST",
 			body: JSON.stringify({ members }),
@@ -193,36 +216,42 @@ class ApiClient {
 		});
 	}
 
-	async createTask(projectId: number, data: {
-		title: string;
-		description?: string;
-		status?: string;
-		priority?: string;
-		startDate?: string;
-		endDate?: string;
-		assigneeId?: number;
-		tags?: string[];
-		columnId?: string;
-	}) {
-		console.log('Creating task with data:', data);
-		console.log('Project ID:', projectId);
+	async createTask(
+		projectId: number,
+		data: {
+			title: string;
+			description?: string;
+			status?: string;
+			priority?: string;
+			startDate?: string;
+			endDate?: string;
+			assigneeId?: number;
+			tags?: string[];
+			columnId?: string;
+		}
+	) {
+		console.log("Creating task with data:", data);
+		console.log("Project ID:", projectId);
 		return this.request(`/projects/${projectId}/tasks`, {
 			method: "POST",
 			body: JSON.stringify(data),
 		});
 	}
 
-	async updateTask(taskId: number, data: {
-		title?: string;
-		description?: string;
-		status?: string;
-		priority?: string;
-		startDate?: string;
-		endDate?: string;
-		assigneeId?: number;
-		tags?: string[];
-		columnId?: string;
-	}) {
+	async updateTask(
+		taskId: number,
+		data: {
+			title?: string;
+			description?: string;
+			status?: string;
+			priority?: string;
+			startDate?: string;
+			endDate?: string;
+			assigneeId?: number;
+			tags?: string[];
+			columnId?: string;
+		}
+	) {
 		return this.request(`/tasks/${taskId}`, {
 			method: "PUT",
 			body: JSON.stringify(data),
@@ -242,21 +271,27 @@ class ApiClient {
 		});
 	}
 
-	async createSubtask(taskId: number, data: {
-		title: string;
-		order?: number;
-	}) {
+	async createSubtask(
+		taskId: number,
+		data: {
+			title: string;
+			order?: number;
+		}
+	) {
 		return this.request(`/tasks/${taskId}/subtasks`, {
 			method: "POST",
 			body: JSON.stringify(data),
 		});
 	}
 
-	async updateSubtask(subtaskId: number, data: {
-		title?: string;
-		completed?: boolean;
-		order?: number;
-	}) {
+	async updateSubtask(
+		subtaskId: number,
+		data: {
+			title?: string;
+			completed?: boolean;
+			order?: number;
+		}
+	) {
 		return this.request(`/subtasks/${subtaskId}`, {
 			method: "PUT",
 			body: JSON.stringify(data),
@@ -276,22 +311,28 @@ class ApiClient {
 		});
 	}
 
-	async createCustomColumn(projectId: number, data: {
-		title: string;
-		color?: string;
-		order?: number;
-	}) {
+	async createCustomColumn(
+		projectId: number,
+		data: {
+			title: string;
+			color?: string;
+			order?: number;
+		}
+	) {
 		return this.request(`/projects/${projectId}/columns`, {
 			method: "POST",
 			body: JSON.stringify(data),
 		});
 	}
 
-	async updateCustomColumn(columnId: number, data: {
-		title?: string;
-		color?: string;
-		order?: number;
-	}) {
+	async updateCustomColumn(
+		columnId: number,
+		data: {
+			title?: string;
+			color?: string;
+			order?: number;
+		}
+	) {
 		return this.request(`/columns/${columnId}`, {
 			method: "PUT",
 			body: JSON.stringify(data),
@@ -358,20 +399,24 @@ class ApiClient {
 	}
 
 	// Message endpoints
-	async getConversationMessages(conversationId: number, limit?: number, before?: Date) {
+	async getConversationMessages(
+		conversationId: number,
+		limit?: number,
+		before?: Date
+	) {
 		const params = new URLSearchParams();
-		if (limit) params.append('limit', limit.toString());
-		if (before) params.append('before', before.toISOString());
-		
-		return this.request(`/conversations/${conversationId}/messages?${params.toString()}`, {
-			method: "GET",
-		});
+		if (limit) params.append("limit", limit.toString());
+		if (before) params.append("before", before.toISOString());
+
+		return this.request(
+			`/conversations/${conversationId}/messages?${params.toString()}`,
+			{
+				method: "GET",
+			}
+		);
 	}
 
-	async sendMessage(data: {
-		conversationId: number;
-		content: string;
-	}) {
+	async sendMessage(data: { conversationId: number; content: string }) {
 		return this.request(`/messages`, {
 			method: "POST",
 			body: JSON.stringify(data),
@@ -393,7 +438,7 @@ class ApiClient {
 
 	// Activity methods
 	async getProjectActivities(projectId: number, limit?: number) {
-		const queryParams = limit ? `?limit=${limit}` : '';
+		const queryParams = limit ? `?limit=${limit}` : "";
 		return this.request(`/projects/${projectId}/activity${queryParams}`, {
 			method: "GET",
 		});

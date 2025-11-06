@@ -34,7 +34,7 @@ export class ProjectService {
 			try {
 				await CustomColumnService.createDefaultColumns(project.id);
 			} catch (error) {
-				console.error('Failed to create default columns:', error);
+				console.error("Failed to create default columns:", error);
 				// Don't fail the entire project creation if columns fail
 				// Columns can be created later by the user
 			}
@@ -159,47 +159,50 @@ export class ProjectService {
 			where: { id: projectId },
 			include: {
 				owner: {
-					select: { name: true, email: true }
-				}
-			}
+					select: { name: true, email: true },
+				},
+			},
 		});
 
 		if (!project) {
-			throw new Error('Project not found');
+			throw new Error("Project not found");
 		}
 
 		const inviter = await prisma.user.findUnique({
 			where: { id: inviterId },
-			select: { name: true, email: true }
+			select: { name: true, email: true },
 		});
 
 		if (!inviter) {
-			throw new Error('Inviter not found');
+			throw new Error("Inviter not found");
 		}
 
 		// Import email service
-		const { sendProjectInvitationEmail } = await import('./emailService');
+		const { sendProjectInvitationEmail } = await import("./emailService");
 
 		for (const member of members) {
 			try {
 				// Check if user already exists
 				let user = await prisma.user.findUnique({
-					where: { email: member.email }
+					where: { email: member.email },
 				});
 
 				if (user) {
 					// Check if already a member
-					const existingMember = await prisma.projectMember.findUnique({
-						where: {
-							userId_projectId: {
-								userId: user.id,
-								projectId: projectId
-							}
-						}
-					});
+					const existingMember =
+						await prisma.projectMember.findUnique({
+							where: {
+								userId_projectId: {
+									userId: user.id,
+									projectId: projectId,
+								},
+							},
+						});
 
 					if (existingMember) {
-						errors.push(`${member.email} is already a member of this project`);
+						errors.push(
+							`${member.email} is already a member of this project`
+						);
 						continue;
 					}
 
@@ -208,13 +211,15 @@ export class ProjectService {
 						data: {
 							userId: user.id,
 							projectId: projectId,
-							role: member.role as any
-						}
+							role: member.role as any,
+						},
 					});
 				} else {
 					// For non-existing users, we'll still send invitation
 					// They can create account when they accept invitation
-					console.log(`User ${member.email} doesn't exist yet, sending invitation anyway`);
+					console.log(
+						`User ${member.email} doesn't exist yet, sending invitation anyway`
+					);
 				}
 
 				// Send invitation email
@@ -222,7 +227,7 @@ export class ProjectService {
 				console.log(`Project: ${project.title}`);
 				console.log(`Inviter: ${inviter.name}`);
 				console.log(`Role: ${member.role}`);
-				
+
 				await sendProjectInvitationEmail(
 					member.email,
 					project.title,
@@ -233,7 +238,11 @@ export class ProjectService {
 				success.push(`Invitation sent to ${member.email}`);
 			} catch (error) {
 				console.error(`Failed to invite ${member.email}:`, error);
-				errors.push(`Failed to invite ${member.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				errors.push(
+					`Failed to invite ${member.email}: ${
+						error instanceof Error ? error.message : "Unknown error"
+					}`
+				);
 			}
 		}
 
@@ -253,11 +262,11 @@ export class ProjectService {
 						name: true,
 						email: true,
 						avatar: true,
-						username: true
-					}
-				}
+						username: true,
+					},
+				},
 			},
-			orderBy: { joinedAt: 'asc' }
+			orderBy: { joinedAt: "asc" },
 		});
 
 		return members;

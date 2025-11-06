@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider } from "@/contexts/UserContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PublicRoute } from "@/components/PublicRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -21,34 +23,118 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <UserProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/login" element={<Auth />} />
-            <Route path="/register" element={<Auth />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/check-email" element={<CheckEmail />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/project-setup" element={<ProjectSetup />} />
-            <Route path="/template-selection" element={<TemplateSelection />} />
-            <Route path="/accept-invitation" element={<AcceptInvitation />} />
-            <Route path="/project/:id" element={<ProjectWorkspace />} />
-            <Route path="/profile" element={<Profile />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </UserProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+	<QueryClientProvider client={queryClient}>
+		<TooltipProvider>
+			<UserProvider>
+				<Toaster />
+				<Sonner />
+				<BrowserRouter>
+					<Routes>
+						{/* Public Routes - Redirect to dashboard if already authenticated */}
+						<Route
+							path="/"
+							element={
+								<PublicRoute>
+									<Index />
+								</PublicRoute>
+							}
+						/>
+						<Route
+							path="/auth"
+							element={
+								<PublicRoute>
+									<Auth />
+								</PublicRoute>
+							}
+						/>
+						<Route
+							path="/login"
+							element={
+								<PublicRoute>
+									<Auth />
+								</PublicRoute>
+							}
+						/>
+						<Route
+							path="/register"
+							element={
+								<PublicRoute>
+									<Auth />
+								</PublicRoute>
+							}
+						/>
+						<Route
+							path="/forgot-password"
+							element={
+								<PublicRoute>
+									<ForgotPassword />
+								</PublicRoute>
+							}
+						/>
+						<Route
+							path="/reset-password"
+							element={
+								<PublicRoute>
+									<ResetPassword />
+								</PublicRoute>
+							}
+						/>
+						<Route path="/verify-email" element={<VerifyEmail />} />
+						<Route path="/check-email" element={<CheckEmail />} />
+						<Route
+							path="/accept-invitation"
+							element={<AcceptInvitation />}
+						/>
+
+						{/* Protected Routes - Require authentication */}
+						<Route
+							path="/dashboard"
+							element={
+								<ProtectedRoute>
+									<Dashboard />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/project-setup"
+							element={
+								<ProtectedRoute>
+									<ProjectSetup />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/template-selection"
+							element={
+								<ProtectedRoute>
+									<TemplateSelection />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/project/:id"
+							element={
+								<ProtectedRoute>
+									<ProjectWorkspace />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/profile"
+							element={
+								<ProtectedRoute>
+									<Profile />
+								</ProtectedRoute>
+							}
+						/>
+
+						{/* 404 Page */}
+						<Route path="*" element={<NotFound />} />
+					</Routes>
+				</BrowserRouter>
+			</UserProvider>
+		</TooltipProvider>
+	</QueryClientProvider>
 );
 
 export default App;
