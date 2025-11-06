@@ -12,6 +12,7 @@ export class ProjectService {
 	/**
 	 * Create a new project
 	 * Automatically creates default columns if workflow type is CUSTOM
+	 * Automatically adds the creator as an OWNER member
 	 */
 	static async createProject(
 		data: ProjectCreateInput
@@ -28,6 +29,20 @@ export class ProjectService {
 				ownerId: data.ownerId,
 			},
 		});
+
+		// Automatically add the creator as an OWNER member
+		// This ensures they have full access to project resources (conversations, tasks, etc.)
+		await prisma.projectMember.create({
+			data: {
+				userId: data.ownerId,
+				projectId: project.id,
+				role: "OWNER", // Creator gets OWNER role for full permissions
+			},
+		});
+
+		console.log(
+			`[Project] Creator (userId: ${data.ownerId}) added as OWNER to project ${project.id}`
+		);
 
 		// If CUSTOM workflow, create default columns
 		if (project.workflowType === "CUSTOM") {
