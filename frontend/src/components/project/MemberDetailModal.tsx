@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -26,9 +27,12 @@ interface MemberDetailModalProps {
   member: TeamMember | null;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onNavigateToTask?: (taskId: number) => void;
 }
 
-const MemberDetailModal = ({ member, isOpen, onOpenChange }: MemberDetailModalProps) => {
+const MemberDetailModal = ({ member, isOpen, onOpenChange, onNavigateToTask }: MemberDetailModalProps) => {
+  const [taskFilter, setTaskFilter] = useState<"all" | "completed" | "active">("all");
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "complete":
@@ -63,6 +67,19 @@ const MemberDetailModal = ({ member, isOpen, onOpenChange }: MemberDetailModalPr
   const activeTasks = member.assignedTasks.filter(t => t.status === 'in-progress').length;
   const totalTasks = member.assignedTasks.length;
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+  // Get filtered tasks based on selected filter
+  const getFilteredTasks = () => {
+    if (taskFilter === "completed") {
+      return member.assignedTasks.filter(t => t.status === 'complete');
+    }
+    if (taskFilter === "active") {
+      return member.assignedTasks.filter(t => t.status === 'in-progress');
+    }
+    return member.assignedTasks;
+  };
+
+  const displayedTasks = getFilteredTasks();
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -121,21 +138,42 @@ const MemberDetailModal = ({ member, isOpen, onOpenChange }: MemberDetailModalPr
 
             {/* Task Statistics */}
             <div className="grid grid-cols-3 gap-3">
-              <Card className="border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-white shadow-md">
+              <Card 
+                className={`border-2 cursor-pointer transition-all hover:shadow-lg ${
+                  taskFilter === "all" 
+                    ? "border-blue-400 bg-gradient-to-br from-blue-100 to-blue-50 shadow-md ring-2 ring-blue-200" 
+                    : "border-blue-100 bg-gradient-to-br from-blue-50 to-white hover:border-blue-300"
+                }`}
+                onClick={() => setTaskFilter("all")}
+              >
                 <CardContent className="pt-6 text-center">
                   <Target className="w-6 h-6 text-blue-600 mx-auto mb-2" />
                   <div className="text-2xl font-bold text-blue-900">{totalTasks}</div>
                   <p className="text-xs text-gray-600 font-medium">Total Tasks</p>
                 </CardContent>
               </Card>
-              <Card className="border-2 border-green-100 bg-gradient-to-br from-green-50 to-white shadow-md">
+              <Card 
+                className={`border-2 cursor-pointer transition-all hover:shadow-lg ${
+                  taskFilter === "completed" 
+                    ? "border-green-400 bg-gradient-to-br from-green-100 to-green-50 shadow-md ring-2 ring-green-200" 
+                    : "border-green-100 bg-gradient-to-br from-green-50 to-white hover:border-green-300"
+                }`}
+                onClick={() => setTaskFilter("completed")}
+              >
                 <CardContent className="pt-6 text-center">
                   <CheckCircle2 className="w-6 h-6 text-green-600 mx-auto mb-2" />
                   <div className="text-2xl font-bold text-green-900">{completedTasks}</div>
                   <p className="text-xs text-gray-600 font-medium">Completed</p>
                 </CardContent>
               </Card>
-              <Card className="border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-white shadow-md">
+              <Card 
+                className={`border-2 cursor-pointer transition-all hover:shadow-lg ${
+                  taskFilter === "active" 
+                    ? "border-blue-400 bg-gradient-to-br from-blue-100 to-blue-50 shadow-md ring-2 ring-blue-200" 
+                    : "border-blue-100 bg-gradient-to-br from-blue-50 to-white hover:border-blue-300"
+                }`}
+                onClick={() => setTaskFilter("active")}
+              >
                 <CardContent className="pt-6 text-center">
                   <Clock className="w-6 h-6 text-blue-600 mx-auto mb-2" />
                   <div className="text-2xl font-bold text-blue-900">{activeTasks}</div>
@@ -156,22 +194,30 @@ const MemberDetailModal = ({ member, isOpen, onOpenChange }: MemberDetailModalPr
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {member.assignedTasks.length === 0 ? (
+                  {displayedTasks.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm font-medium">No tasks assigned</p>
+                      <p className="text-sm font-medium">
+                        {taskFilter === "all" ? "No tasks assigned" : `No ${taskFilter} tasks`}
+                      </p>
                     </div>
                   ) : (
-                    member.assignedTasks.map((task) => (
+                    displayedTasks.map((task) => (
                       <Card
                         key={task.id}
-                        className="border-2 border-blue-100 bg-white hover:shadow-lg hover:border-blue-300 transition-all duration-300"
+                        className="border-2 border-blue-100 bg-white hover:shadow-lg hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-300 cursor-pointer"
+                        onClick={() => {
+                          if (onNavigateToTask) {
+                            onNavigateToTask(task.id);
+                            onOpenChange(false); // Close the modal
+                          }
+                        }}
                       >
                         <CardContent className="p-4">
                           <div className="space-y-3">
                             {/* Task Title and Priority */}
                             <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-bold text-sm text-gray-900 flex-1 line-clamp-2">
+                              <h4 className="font-bold text-sm text-gray-900 flex-1 line-clamp-2 group-hover:text-blue-700">
                                 {task.title}
                               </h4>
                               <Badge className={`text-xs px-2 py-1 ${getPriorityColor(task.priority)}`}>

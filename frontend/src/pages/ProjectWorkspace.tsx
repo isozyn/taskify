@@ -158,7 +158,7 @@ const ProjectWorkspace = () => {
       case "messages":
         return <MessagesView projectMembers={projectMembers} project={project ? { id: project.id, title: project.title, description: project.description } : undefined} />;
       case "settings":
-        return <ProjectSettings project={project} />;
+        return <ProjectSettings project={project} onNavigateToBoard={() => setActiveView("kanban")} />;
       default:
         return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={project.id} onTasksChange={refreshProject} onColumnsChange={refreshProject} />;
     }
