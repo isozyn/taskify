@@ -256,32 +256,46 @@ const ProjectSettings = ({ project, onNavigateToBoard }: ProjectSettingsProps) =
         </Card>
       </TabsContent>
 
-      <TabsContent value="team" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
+      <TabsContent value="team" className="space-y-6">
+        <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
+          <div className="h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500"></div>
+          <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-purple-50/30">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>Manage who has access to this project</CardDescription>
+                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  Team Members
+                </CardTitle>
+                <CardDescription className="text-slate-600 mt-2">
+                  Manage who has access to this project
+                </CardDescription>
               </div>
               <Dialog open={isAddMemberDialogOpen} onOpenChange={setIsAddMemberDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="gap-2">
+                  <Button className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300">
                     <UserPlus className="w-4 h-4" />
                     Add Member
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[500px] border-0 shadow-2xl">
+                  <div className="h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 -mt-6 -mx-6 mb-4"></div>
                   <DialogHeader>
-                    <DialogTitle>Add Team Member</DialogTitle>
-                    <DialogDescription>
-                      Invite a new member to join this project.
+                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                      Add Team Member
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-600">
+                      Invite a new member to join this project
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="memberEmail" className="text-right">
-                        Email
+                  <div className="space-y-6 py-4">
+                    <div className="space-y-3">
+                      <Label htmlFor="memberEmail" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                          <Mail className="w-4 h-4 text-purple-600" />
+                        </div>
+                        Email Address
                       </Label>
                       <Input
                         id="memberEmail"
@@ -289,15 +303,18 @@ const ProjectSettings = ({ project, onNavigateToBoard }: ProjectSettingsProps) =
                         value={newMemberEmail}
                         onChange={(e) => setNewMemberEmail(e.target.value)}
                         placeholder="member@example.com"
-                        className="col-span-3"
+                        className="h-12 text-base border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300"
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="memberRole" className="text-right">
+                    <div className="space-y-3">
+                      <Label htmlFor="memberRole" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center">
+                          <Crown className="w-4 h-4 text-pink-600" />
+                        </div>
                         Role
                       </Label>
                       <Select value={newMemberRole} onValueChange={setNewMemberRole}>
-                        <SelectTrigger className="col-span-3">
+                        <SelectTrigger className="h-12 text-base border-2 border-slate-200 rounded-xl focus:border-pink-500 focus:ring-4 focus:ring-pink-100">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -311,7 +328,9 @@ const ProjectSettings = ({ project, onNavigateToBoard }: ProjectSettingsProps) =
                     <Button 
                       onClick={handleAddMember}
                       disabled={!newMemberEmail.trim()}
+                      className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                     >
+                      <UserPlus className="w-4 h-4 mr-2" />
                       Add Member
                     </Button>
                   </DialogFooter>
@@ -319,48 +338,66 @@ const ProjectSettings = ({ project, onNavigateToBoard }: ProjectSettingsProps) =
               </Dialog>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {projectData.members.map((member, index) => (
-                <div key={member.id}>
+          <CardContent className="pt-6">
+            {projectData.members.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mx-auto mb-4">
+                  <User className="w-8 h-8 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">No team members yet</h3>
+                <p className="text-sm text-slate-500 mb-4">
+                  Start building your team by adding members
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {projectData.members.map((member) => (
                   <div 
-                    className="flex items-center justify-between py-3 cursor-pointer hover:bg-accent/5 rounded-lg px-2 -mx-2 transition-all group"
+                    key={member.id}
+                    className="group p-4 rounded-xl bg-gradient-to-r from-slate-50 to-purple-50/30 hover:from-slate-100 hover:to-purple-100/40 border-2 border-slate-200 hover:border-purple-300 cursor-pointer transition-all duration-300 hover:shadow-lg"
                     onClick={() => handleMemberClick(member.id)}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold group-hover:ring-2 group-hover:ring-primary/30 transition-all">
-                        {member.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium group-hover:text-primary transition-colors">{member.name}</p>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
-                            {member.role}
-                          </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-300"></div>
+                          <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                            {member.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-slate-900 group-hover:text-purple-700 transition-colors">
+                              {member.name}
+                            </p>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(member.role)}`}>
+                              {member.role}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-600">{member.email}</p>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getRoleIcon(member.role)}
-                      {member.role !== "owner" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveMember(member.id);
-                          }}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {getRoleIcon(member.role)}
+                        {member.role !== "owner" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveMember(member.id);
+                            }}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-100 transition-all duration-300"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  {index < projectData.members.length - 1 && <Separator />}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
