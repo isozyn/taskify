@@ -117,6 +117,17 @@ const CheckEmail = () => {
               Sign in
             </button>
           </p>
+
+          {/* Use Different Account */}
+          <p className="text-sm text-muted-foreground mt-3">
+            Want to use a different account?{" "}
+            <button
+              onClick={() => navigate("/auth", { state: { mode: "register" } })}
+              className="text-[#0052CC] hover:underline font-medium"
+            >
+              Register here
+            </button>
+          </p>
         </div>
       </div>
     </div>

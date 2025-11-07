@@ -138,6 +138,12 @@ class ApiClient {
 		});
 	}
 
+	async googleAuth() {
+		return this.request("/auth/google", {
+			method: "GET",
+		});
+	}
+
 	// Project endpoints
 	async getProjects() {
 		return this.request("/projects", {
@@ -200,6 +206,13 @@ class ApiClient {
 	async getProjectMembers(projectId: number) {
 		return this.request(`/projects/${projectId}/members`, {
 			method: "GET",
+		});
+	}
+
+	async acceptProjectInvitation(projectName: string, role: string) {
+		return this.request(`/projects/accept-invitation`, {
+			method: "POST",
+			body: JSON.stringify({ projectName, role }),
 		});
 	}
 

@@ -38,3 +38,7 @@ prisma/migrations/*_migration.sql.backup
 # Temporary files
 *.tmp
 *.temp
+
+# Database backups (keep local only)
+backups/
+*.sql

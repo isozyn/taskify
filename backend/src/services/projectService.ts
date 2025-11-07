@@ -197,47 +197,44 @@ export class ProjectService {
 
 		for (const member of members) {
 			try {
-				// Check if user already exists
-				let user = await prisma.user.findUnique({
-					where: { email: member.email },
+			// Check if user already exists
+			let user = await prisma.user.findUnique({
+				where: { email: member.email },
+			});
+
+			if (user) {
+				// Check if already a member of THIS project
+				const existingMember = await prisma.projectMember.findUnique({
+					where: {
+						userId_projectId: {
+							userId: user.id,
+							projectId: projectId
+						}
+					}
 				});
 
-				if (user) {
-					// Check if already a member
-					const existingMember =
-						await prisma.projectMember.findUnique({
-							where: {
-								userId_projectId: {
-									userId: user.id,
-									projectId: projectId,
-								},
-							},
-						});
-
-					if (existingMember) {
-						errors.push(
-							`${member.email} is already a member of this project`
-						);
-						continue;
-					}
-
-					// Add existing user to project
-					await prisma.projectMember.create({
-						data: {
-							userId: user.id,
-							projectId: projectId,
-							role: member.role as any,
-						},
-					});
-				} else {
-					// For non-existing users, we'll still send invitation
-					// They can create account when they accept invitation
-					console.log(
-						`User ${member.email} doesn't exist yet, sending invitation anyway`
+				if (existingMember) {
+					errors.push(
+						`${member.email} is already a member of this project`
 					);
+					continue;
 				}
 
-				// Send invitation email
+				// Add existing user to project
+				await prisma.projectMember.create({
+					data: {
+						userId: user.id,
+						projectId: projectId,
+						role: member.role as any,
+					},
+				});
+			} else {
+				// For non-existing users, send invitation
+				// They can create account when they accept invitation
+				console.log(
+					`User ${member.email} doesn't exist yet, sending invitation anyway`
+				);
+			}				// Send invitation email (for both existing and new users)
 				console.log(`Sending invitation email to: ${member.email}`);
 				console.log(`Project: ${project.title}`);
 				console.log(`Inviter: ${inviter.name}`);
@@ -247,7 +244,9 @@ export class ProjectService {
 					member.email,
 					project.title,
 					inviter.name,
-					member.role
+					member.role,
+					project.startDate,
+					project.endDate
 				);
 
 				success.push(`Invitation sent to ${member.email}`);
@@ -285,5 +284,65 @@ export class ProjectService {
 		});
 
 		return members;
+	}
+
+	/**
+	 * Accept project invitation
+	 * Adds user to project if they're not already a member
+	 */
+	static async acceptInvitation(
+		userId: number,
+		projectName: string,
+		role: string
+	): Promise<{ success: boolean; message: string; projectId?: number }> {
+		try {
+			// Find project by name
+			const project = await prisma.project.findFirst({
+				where: { title: projectName }
+			});
+
+			if (!project) {
+				return { success: false, message: 'Project not found' };
+			}
+
+			// Check if user is already a member
+			const existingMember = await prisma.projectMember.findUnique({
+				where: {
+					userId_projectId: {
+						userId: userId,
+						projectId: project.id
+					}
+				}
+			});
+
+			if (existingMember) {
+				return { 
+					success: true, 
+					message: 'You are already a member of this project',
+					projectId: project.id
+				};
+			}
+
+			// Add user to project
+			await prisma.projectMember.create({
+				data: {
+					userId: userId,
+					projectId: project.id,
+					role: role as any
+				}
+			});
+
+			return { 
+				success: true, 
+				message: 'Successfully joined the project!',
+				projectId: project.id
+			};
+		} catch (error) {
+			console.error('Accept invitation error:', error);
+			return { 
+				success: false, 
+				message: 'Failed to accept invitation'
+			};
+		}
 	}
 }

@@ -5,6 +5,7 @@ import crypto from "crypto";
 import * as userService from "../services/userService";
 import * as authService from "../services/authService";
 import * as emailService from "../services/emailService";
+import * as googleAuthService from "../services/googleAuthService";
 
 /**
  * Register new user
@@ -94,7 +95,7 @@ export const login = async (
 		// Compare passwords
 		const isPasswordValid = await authService.comparePassword(
 			password,
-			user.password
+			user.password || ''
 		);
 		if (!isPasswordValid) {
 			res.status(401).json({
@@ -556,17 +557,134 @@ export const resetPassword = async (
 			password: hashedPassword,
 		});
 
-		// Clear reset token
-		await userService.clearResetToken(user.id);
+	// Clear reset token
+	await userService.clearResetToken(user.id);
 
-		// Optionally: Revoke all refresh tokens to force re-login on all devices
-		await userService.revokeAllRefreshTokens(user.id);
+	// Optionally: Revoke all refresh tokens to force re-login on all devices
+	await userService.revokeAllRefreshTokens(user.id);
 
-		res.status(200).json({
-			message:
-				"Password reset successful. You can now log in with your new password.",
-		});
-	} catch (error) {
-		next(error);
+	res.status(200).json({
+		message:
+			"Password reset successful. You can now log in with your new password.",
+	});
+} catch (error) {
+	next(error);
+}
+};
+
+/**
+ * Google OAuth - Get auth URL
+ * GET /api/v1/auth/google
+ */
+export const googleAuth = async (
+_req: Request,
+res: Response,
+next: NextFunction
+): Promise<void> => {
+try {
+	const authUrl = googleAuthService.getGoogleAuthUrl();
+	res.status(200).json({ url: authUrl });
+} catch (error) {
+	next(error);
+}
+};
+
+/**
+ * Google OAuth - Callback handler
+ * GET /api/v1/auth/google/callback
+ */
+export const googleCallback = async (
+req: Request,
+res: Response,
+_next: NextFunction
+): Promise<void> => {
+try {
+	const { code } = req.query;
+
+	if (!code || typeof code !== 'string') {
+		res.redirect(`${process.env.FRONTEND_URL}/auth?error=no_code`);
+		return;
 	}
+
+	// Verify Google token and get user info
+	const googleUser = await googleAuthService.verifyGoogleToken(code);
+
+	// Check if user exists by Google ID
+	let user = await userService.findUserByGoogleId(googleUser.googleId);
+
+	if (!user) {
+		// Check if user exists by email
+		user = await userService.findUserByEmail(googleUser.email);
+
+		if (user) {
+			// Link Google account to existing user
+			user = await userService.updateUser(user.id, {
+				googleId: googleUser.googleId,
+				authProvider: 'GOOGLE',
+				avatar: googleUser.picture || user.avatar,
+				isEmailVerified: true, // Google emails are verified
+			} as any);
+		} else {
+			// Create new user with Google account
+			// Generate username from email
+			const baseUsername = googleUser.email.split('@')[0];
+			let username = baseUsername;
+			let counter = 1;
+
+			// Ensure username is unique
+			while (await userService.findUserByUsername(username)) {
+				username = `${baseUsername}${counter}`;
+				counter++;
+			}
+
+			user = await userService.createUser({
+				name: googleUser.name,
+				email: googleUser.email,
+				username,
+				password: null, // No password for Google users
+				googleId: googleUser.googleId,
+				authProvider: 'GOOGLE',
+				avatar: googleUser.picture,
+				isEmailVerified: true, // Google emails are verified
+			});
+		}
+	}
+
+	// Generate tokens
+	const tokenPayload = {
+		id: user.id,
+		email: user.email,
+		role: user.role,
+	};
+
+	const accessToken = authService.generateAccessToken(tokenPayload);
+	const refreshToken = authService.generateRefreshToken(tokenPayload);
+
+	// Store refresh token in database
+	const refreshTokenExpiry = authService.getTokenExpiryDate(
+		process.env.JWT_REFRESH_EXPIRES_IN || '30d'
+	);
+	await userService.addRefreshToken(user.id, refreshToken, refreshTokenExpiry);
+
+	// Set tokens as httpOnly cookies
+	res.cookie('refreshToken', refreshToken, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		sameSite: 'strict',
+		maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+	});
+
+	res.cookie('accessToken', accessToken, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		sameSite: 'strict',
+		maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+	});
+
+	// Redirect to frontend dashboard
+	res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+} catch (error) {
+	console.error('Google OAuth callback error:', error);
+	res.redirect(`${process.env.FRONTEND_URL}/auth?error=google_auth_failed`);
+}
 };
