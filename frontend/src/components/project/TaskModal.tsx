@@ -331,6 +331,32 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
     }
   };
 
+  const handleMarkIncomplete = async () => {
+    try {
+      const response: any = await api.markTaskIncomplete(task.id);
+      const statusLabels: Record<string, string> = {
+        'TODO': 'To Do',
+        'IN_PROGRESS': 'In Progress',
+        'IN_REVIEW': 'In Review',
+      };
+      const newStatusLabel = statusLabels[response.status] || response.status;
+      
+      toast({
+        title: "Task marked as incomplete",
+        description: `Task has been moved to ${newStatusLabel} based on subtask completion.`,
+      });
+      onTaskUpdate?.();
+      onClose();
+    } catch (error: any) {
+      console.error('Failed to mark task incomplete:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark task as incomplete. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAddComment = async () => {
     if (!comment.trim()) return;
 
@@ -569,26 +595,6 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
               </Select>
             </div>
 
-            {/* Status */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Status</Label>
-              <Select 
-                value={editableStatus} 
-                onValueChange={(value) => handleSaveStatus(value)}
-              >
-                <SelectTrigger className="h-9 text-xs border-slate-200 focus:border-blue-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="TODO">To Do</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="IN_REVIEW">In Review</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="BLOCKED">Blocked</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -708,6 +714,16 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
                   >
                     <Check className="w-3 h-3 mr-1" />
                     Mark as Complete
+                  </Button>
+                )}
+                {task.status === 'COMPLETED' && (
+                  <Button
+                    type="button"
+                    onClick={handleMarkIncomplete}
+                    className="text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white h-9 px-4"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Mark as Incomplete
                   </Button>
                 )}
                 <Button 

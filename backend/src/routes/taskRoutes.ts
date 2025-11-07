@@ -21,6 +21,9 @@ router.get('/tasks/:taskId', TaskController.getTaskById);
 // Update a task
 router.put('/tasks/:taskId', TaskController.updateTask);
 
+// Mark a completed task as incomplete
+router.post('/tasks/:taskId/mark-incomplete', TaskController.markTaskIncomplete);
+
 // Delete a task
 router.delete('/tasks/:taskId', TaskController.deleteTask);
 

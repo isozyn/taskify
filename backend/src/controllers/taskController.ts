@@ -169,4 +169,30 @@ export class TaskController {
       res.status(500).json({ error: error.message || 'Failed to delete task' });
     }
   }
+
+  /**
+   * Mark a completed task as incomplete
+   */
+  static async markTaskIncomplete(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const taskId = parseInt(req.params.taskId);
+      
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      if (!taskId || isNaN(taskId)) {
+        res.status(400).json({ error: 'Invalid task ID' });
+        return;
+      }
+
+      const task = await TaskService.markTaskIncomplete(taskId, userId);
+      res.status(200).json(task);
+    } catch (error: any) {
+      console.error('Mark task incomplete error:', error);
+      res.status(400).json({ error: error.message || 'Failed to mark task as incomplete' });
+    }
+  }
 }

@@ -242,10 +242,13 @@ export class TaskService {
    * Update a task
    */
   static async updateTask(taskId: number, data: TaskUpdateInput, _userId?: number): Promise<TaskResponse> {
-    // Get task and project to check workflow type
+    // Get task and project to check workflow type, and include subtasks
     const task = await prisma.task.findUnique({
       where: { id: taskId },
-      include: { project: true },
+      include: { 
+        project: true,
+        subtasks: true,
+      },
     });
 
     if (!task) {
@@ -263,6 +266,12 @@ export class TaskService {
           throw new Error('Both start date and end date are required for automated workflow projects');
         }
       }
+    }
+
+    // Prevent changing status directly from COMPLETED
+    // Must use "Mark as Incomplete" button instead
+    if (task.status === 'COMPLETED' && data.status && data.status !== 'COMPLETED') {
+      throw new Error('Cannot change status of completed task directly. Use "Mark as Incomplete" button instead.');
     }
 
     const updatedTask = await prisma.task.update({
@@ -302,6 +311,69 @@ export class TaskService {
         );
       }
     }
+
+    return updatedTask;
+  }
+
+  /**
+   * Mark a completed task as incomplete
+   * Determines new status based on subtask completion
+   */
+  static async markTaskIncomplete(taskId: number, _userId?: number): Promise<TaskResponse> {
+    // Get task with subtasks
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: { 
+        subtasks: true,
+        project: true,
+      },
+    });
+
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    if (task.status !== 'COMPLETED') {
+      throw new Error('Task is not completed');
+    }
+
+    // Determine new status based on subtasks
+    let newStatus: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' = 'TODO'; // Default
+    const totalSubtasks = task.subtasks.length;
+    
+    if (totalSubtasks > 0) {
+      const completedSubtasks = task.subtasks.filter((st: any) => st.completed).length;
+      
+      // If all subtasks are complete, move to IN_REVIEW
+      if (completedSubtasks === totalSubtasks) {
+        newStatus = 'IN_REVIEW';
+      }
+      // If some subtasks are incomplete, move to IN_PROGRESS
+      else if (completedSubtasks > 0) {
+        newStatus = 'IN_PROGRESS';
+      }
+      // If no subtasks are complete, move to TODO
+      else {
+        newStatus = 'TODO';
+      }
+    }
+
+    const updatedTask = await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        status: newStatus,
+      },
+    });
+
+    // Log activity
+    await activityService.logTaskStatusChange(
+      task.projectId,
+      taskId,
+      task.title,
+      'COMPLETED',
+      newStatus,
+      _userId
+    );
 
     return updatedTask;
   }

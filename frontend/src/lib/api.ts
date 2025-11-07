@@ -264,6 +264,12 @@ class ApiClient {
 		});
 	}
 
+	async markTaskIncomplete(taskId: number) {
+		return this.request(`/tasks/${taskId}/mark-incomplete`, {
+			method: "POST",
+		});
+	}
+
 	// Subtask API
 	async getSubtasks(taskId: number) {
 		return this.request(`/tasks/${taskId}/subtasks`, {
