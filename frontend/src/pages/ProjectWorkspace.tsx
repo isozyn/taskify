@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -27,52 +27,44 @@ import StickyNotes from "@/components/ui/StickyNotes";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { InviteMembersDialog } from "@/components/project/InviteMembersDialog";
 import { useUser } from "@/contexts/UserContext";
-import { api, Project } from "@/lib/api";
+import { Project } from "@/lib/api";
+import { useProject, useRefreshProject } from "@/hooks/useProjectData";
 
 const ProjectWorkspace = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeView, setActiveView] = useState("kanban");
-  const [project, setProject] = useState<Project | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [workflowType, setWorkflowType] = useState<"auto-sync" | "custom">("auto-sync");
-  const [refreshKey, setRefreshKey] = useState(0);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
-  // Function to trigger refresh
-  const refreshProject = () => {
-    setRefreshKey(prev => prev + 1);
-  };
+  const projectId = id ? parseInt(id) : undefined;
+  
+  // Use cached project data
+  const { data: project, isLoading } = useProject(projectId);
+  const refreshProject = useRefreshProject(projectId);
 
-  // Fetch project data from database
+  // Set workflow type when project loads
   useEffect(() => {
-    const fetchProject = async () => {
-      if (!id) return;
-      
-      try {
-        setIsLoading(true);
-        console.log('Fetching project with ID:', id);
-        const response: any = await api.getProjectById(parseInt(id));
-        console.log('Project data received:', response);
-        console.log('Project members:', response.members);
-        console.log('Project owner:', response.owner);
-        setProject(response);
-        
-        // Set workflow type based on project data
-        if (response.workflowType === 'AUTOMATED') {
-          setWorkflowType('auto-sync');
-        } else if (response.workflowType === 'CUSTOM') {
-          setWorkflowType('custom');
-        }
-      } catch (error) {
-        console.error('Failed to fetch project:', error);
-      } finally {
-        setIsLoading(false);
+    if (project) {
+      const proj = project as any;
+      if (proj.workflowType === 'AUTOMATED') {
+        setWorkflowType('auto-sync');
+      } else if (proj.workflowType === 'CUSTOM') {
+        setWorkflowType('custom');
       }
-    };
+    }
+  }, [project]);
 
-    fetchProject();
-  }, [id]);
+  // Handle pre-loaded data from navigation
+  useEffect(() => {
+    const { projectData, skipLoading } = (location.state as any) || {};
+    
+    if (skipLoading && projectData && project) {
+      // Clear the state to prevent issues with back navigation
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, project]);
 
   // Determine theme colors based on workflow type
   const themeColors = {
@@ -86,9 +78,10 @@ const ProjectWorkspace = () => {
 
   // Get real project members from the project data - OPTIMIZED with useMemo
   const projectMembers = useMemo(() => {
-    if (!project?.members) return [];
+    const proj = project as any;
+    if (!proj?.members) return [];
     
-    return project.members.map((member: any) => ({
+    return proj.members.map((member: any) => ({
       id: member.user.id,
       name: member.user.name,
       email: member.user.email,
@@ -96,7 +89,7 @@ const ProjectWorkspace = () => {
       username: member.user.username,
       role: member.role
     }));
-  }, [project?.members]);
+  }, [project]);
 
   const navItems = [
     {
@@ -148,21 +141,23 @@ const ProjectWorkspace = () => {
       );
     }
 
+    const proj = project as any;
+    
     switch (activeView) {
       case "overview":
-        return <ProjectOverview key={refreshKey} project={project} workflowType={workflowType} onNavigateToBoard={() => setActiveView("kanban")} />;
+        return <ProjectOverview project={project} workflowType={workflowType} onNavigateToBoard={() => setActiveView("kanban")} />;
       case "kanban":
-        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={project.id} onTasksChange={refreshProject} onColumnsChange={refreshProject} />;
+        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={proj.id} onTasksChange={refreshProject} onColumnsChange={refreshProject} />;
       case "timeline":
         return <TimelineView projectMembers={projectMembers} />;
       case "calendar":
         return <CalendarView projectMembers={projectMembers} />;
       case "messages":
-        return <MessagesView projectMembers={projectMembers} project={project ? { id: project.id, title: project.title, description: project.description } : undefined} />;
+        return <MessagesView projectMembers={projectMembers} project={proj ? { id: proj.id, title: proj.title, description: proj.description } : undefined} />;
       case "settings":
         return <ProjectSettings project={project} />;
       default:
-        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={project.id} onTasksChange={refreshProject} onColumnsChange={refreshProject} />;
+        return <KanbanBoard projectMembers={projectMembers} onWorkflowChange={setWorkflowType} workflowType={workflowType} projectId={proj.id} onTasksChange={refreshProject} onColumnsChange={refreshProject} />;
     }
   };
 
@@ -192,8 +187,8 @@ const ProjectWorkspace = () => {
                   <Layers className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-base font-semibold text-slate-900">{project?.title || 'Loading...'}</h1>
-                  <p className="text-xs text-slate-500">{project?.description || ''}</p>
+                  <h1 className="text-base font-semibold text-slate-900">{(project as any)?.title || 'Loading...'}</h1>
+                  <p className="text-xs text-slate-500">{(project as any)?.description || ''}</p>
                 </div>
               </div>
             </div>
@@ -308,8 +303,8 @@ const ProjectWorkspace = () => {
         <InviteMembersDialog
           open={inviteDialogOpen}
           onOpenChange={setInviteDialogOpen}
-          projectId={project.id}
-          projectName={project.title}
+          projectId={(project as any).id}
+          projectName={(project as any).title}
         />
       )}
     </div>

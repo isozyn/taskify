@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,9 @@ import {
 import TaskModal from "./TaskModal";
 import TaskFormModal from "./TaskFormModal";
 import { api, Task as ApiTask, CustomColumn } from "@/lib/api";
+import { useProjectTasks, useCustomColumns, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useProjectData";
+import { useQueryClient } from "@tanstack/react-query";
+import { projectKeys } from "@/hooks/useProjectData";
 
 interface KanbanBoardCustomProps {
   projectMembers: any[];
@@ -34,11 +37,16 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [editingColumnId, setEditingColumnId] = useState<number | string | null>(null);
   const [editingColumnTitle, setEditingColumnTitle] = useState("");
-  const [tasks, setTasks] = useState<ApiTask[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Custom columns - user can create/edit/delete these
-  const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
+  // Use cached data
+  const { data: tasks = [], isLoading: isLoadingTasks } = useProjectTasks(projectId);
+  const { data: customColumns = [], isLoading: isLoadingColumns } = useCustomColumns(projectId, true);
+  const createTaskMutation = useCreateTask(projectId);
+  const updateTaskMutation = useUpdateTask(projectId);
+  const deleteTaskMutation = useDeleteTask(projectId);
+  const queryClient = useQueryClient();
+
+  const isLoading = isLoadingTasks || isLoadingColumns;
 
   // Helper function to map column title to valid TaskStatus enum
   const mapColumnTitleToStatus = (columnTitle: string): string => {
@@ -65,79 +73,11 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
     return 'TODO';
   };
 
-  // Fetch tasks from API
-  useEffect(() => {
-    const fetchTasks = async () => {
-      if (!projectId) return;
-      
-      try {
-        setIsLoading(true);
-        const response: any = await api.getTasksByProject(projectId);
-        console.log("KanbanBoardCustom - Fetched tasks:", response);
-        
-        const tasksArray = Array.isArray(response) ? response : [];
-        setTasks(tasksArray);
-      } catch (error) {
-        console.error('Failed to fetch tasks:', error);
-        setTasks([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTasks();
-  }, [projectId]);
-
-  // Fetch custom columns from API
-  useEffect(() => {
-    const fetchColumns = async () => {
-      if (!projectId) return;
-      
-      try {
-        const response: any = await api.getCustomColumns(projectId);
-        console.log("KanbanBoardCustom - Fetched columns:", response);
-        
-        const columnsArray = Array.isArray(response) ? response : response?.columns || [];
-        
-        // If no columns exist, create default ones
-        if (columnsArray.length === 0) {
-          console.log("No columns found, creating defaults...");
-          const defaultColumns = [
-            { title: "To Do", color: "slate", order: 0 },
-            { title: "In Progress", color: "blue", order: 1 },
-            { title: "Done", color: "green", order: 2 },
-          ];
-          
-          for (const col of defaultColumns) {
-            try {
-              await api.createCustomColumn(projectId, col);
-            } catch (error) {
-              console.error('Failed to create default column:', error);
-            }
-          }
-          
-          // Fetch again after creating defaults
-          const newResponse: any = await api.getCustomColumns(projectId);
-          const newColumnsArray = Array.isArray(newResponse) ? newResponse : newResponse?.columns || [];
-          setCustomColumns(newColumnsArray);
-        } else {
-          setCustomColumns(columnsArray);
-        }
-      } catch (error) {
-        console.error('Failed to fetch columns:', error);
-        setCustomColumns([]);
-      }
-    };
-
-    fetchColumns();
-  }, [projectId]);
-
   const handleCreateTask = async (taskData: any) => {
     if (!projectId) return;
     
     try {
       const newTask: any = await api.createTask(projectId, taskData);
-      console.log("Created custom task:", newTask);
 
       // Create subtasks if any
       if (taskData.subtasks && taskData.subtasks.length > 0 && newTask.id) {
@@ -149,13 +89,10 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
             order: i,
           });
         }
-        console.log(`Created ${taskData.subtasks.length} subtasks`);
       }
       
-      // Refresh tasks list
-      const response: any = await api.getTasksByProject(projectId);
-      const tasksArray = Array.isArray(response) ? response : [];
-      setTasks(tasksArray);
+      // Invalidate cache to refresh
+      queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
       
       // Notify parent to refresh
       onTasksChange?.();
@@ -180,10 +117,8 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
           endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         });
         
-        // Refresh tasks list
-        const response: any = await api.getTasksByProject(projectId);
-        const tasksArray = Array.isArray(response) ? response : [];
-        setTasks(tasksArray);
+        // Invalidate cache to refresh
+        queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
         
         // Notify parent to refresh
         onTasksChange?.();
@@ -212,12 +147,9 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         };
         
         const newColumn = await api.createCustomColumn(projectId, newColumnData);
-        console.log("Column created:", newColumn);
         
-        // Refresh columns list
-        const response: any = await api.getCustomColumns(projectId);
-        const columnsArray = Array.isArray(response) ? response : response?.columns || [];
-        setCustomColumns(columnsArray);
+        // Invalidate cache to refresh
+        queryClient.invalidateQueries({ queryKey: projectKeys.columns(projectId) });
         
         setNewColumnTitle("");
         setIsAddingColumn(false);
@@ -241,12 +173,9 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         await api.updateCustomColumn(typeof columnId === 'number' ? columnId : parseInt(columnId), {
           title: editingColumnTitle,
         });
-        console.log("Column updated:", columnId);
         
-        // Refresh columns list
-        const response: any = await api.getCustomColumns(projectId);
-        const columnsArray = Array.isArray(response) ? response : response?.columns || [];
-        setCustomColumns(columnsArray);
+        // Invalidate cache to refresh
+        queryClient.invalidateQueries({ queryKey: projectKeys.columns(projectId) });
         
         setEditingColumnId(null);
         setEditingColumnTitle("");
@@ -281,20 +210,15 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
           }
         }
         
-        // Refresh tasks
-        const tasksResponse: any = await api.getTasksByProject(projectId);
-        const tasksArray = Array.isArray(tasksResponse) ? tasksResponse : [];
-        setTasks(tasksArray);
+        // Invalidate tasks cache
+        queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
       }
       
       // Delete the column from backend
       await api.deleteCustomColumn(typeof columnId === 'number' ? columnId : parseInt(columnId));
-      console.log("Column deleted:", columnId);
       
-      // Refresh columns list
-      const columnsResponse: any = await api.getCustomColumns(projectId);
-      const columnsArray = Array.isArray(columnsResponse) ? columnsResponse : columnsResponse?.columns || [];
-      setCustomColumns(columnsArray);
+      // Invalidate columns cache
+      queryClient.invalidateQueries({ queryKey: projectKeys.columns(projectId) });
       
       // Notify parent that columns have changed
       onColumnsChange?.();
@@ -329,15 +253,11 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
       // Update task status via API
       await api.updateTask(taskId, { status: statusValue });
       
-      // Refresh tasks
-      const response: any = await api.getTasksByProject(projectId);
-      const tasksArray = Array.isArray(response) ? response : [];
-      setTasks(tasksArray);
+      // Invalidate cache to refresh
+      queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
       
       // Notify parent to refresh
       onTasksChange?.();
-      
-      console.log(`Moved task ${taskId} to column ${columnId}`);
     } catch (error) {
       console.error('Failed to move task:', error);
     }
@@ -367,9 +287,7 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
     if (!projectId) return;
     
     try {
-      const response: any = await api.getTasksByProject(projectId);
-      const tasksArray = Array.isArray(response) ? response : [];
-      setTasks(tasksArray);
+      queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
       onTasksChange?.();
       setSelectedTask(null);
     } catch (error) {
@@ -381,9 +299,7 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
     if (!projectId) return;
     
     try {
-      const response: any = await api.getTasksByProject(projectId);
-      const tasksArray = Array.isArray(response) ? response : [];
-      setTasks(tasksArray);
+      queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
       onTasksChange?.();
       setSelectedTask(null);
     } catch (error) {
@@ -669,27 +585,18 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
             setSelectedTask(null);
             // Refresh tasks when modal closes
             if (projectId) {
-              api.getTasksByProject(projectId).then((response: any) => {
-                const tasksArray = Array.isArray(response) ? response : [];
-                setTasks(tasksArray);
-                onTasksChange?.();
-              });
+              queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+              onTasksChange?.();
             }
           }}
-          onDelete={(taskId) => {
-            setTasks(tasks.filter(t => t.id !== taskId));
+          onDelete={async (taskId) => {
+            await deleteTaskMutation.mutateAsync(taskId);
             setSelectedTask(null);
             onTasksChange?.();
           }}
           onTaskUpdate={async () => {
-            try {
-              const response: any = await api.getTasksByProject(projectId);
-              console.log("KanbanBoardCustom - Refetched tasks after update:", response);
-              setTasks(Array.isArray(response) ? response : []);
-              onTasksChange?.();
-            } catch (error) {
-              console.error('Failed to refetch tasks:', error);
-            }
+            queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+            onTasksChange?.();
           }}
           projectMembers={projectMembers}
         />

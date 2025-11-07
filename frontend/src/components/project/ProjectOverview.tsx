@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -18,7 +18,8 @@ import {
   Layers
 } from "lucide-react";
 import MemberDetailModal from "./MemberDetailModal";
-import { api, Task, CustomColumn } from "@/lib/api";
+import { Task, CustomColumn } from "@/lib/api";
+import { useProjectTasks, useCustomColumns, useProjectActivities } from "@/hooks/useProjectData";
 
 interface ProjectOverviewProps {
   project: any;
@@ -46,52 +47,16 @@ interface TeamMember {
 const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoard }: ProjectOverviewProps) => {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
-  const [activities, setActivities] = useState<any[]>([]);
 
-  // Fetch tasks and custom columns when component mounts
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch tasks
-        const tasksResponse: any = await api.getTasksByProject(project.id);
-        console.log("ProjectOverview - Fetched tasks:", tasksResponse);
-        setTasks(Array.isArray(tasksResponse) ? tasksResponse : []);
-        
-        // Fetch custom columns if it's a custom workflow
-        if (workflowType === "custom") {
-          try {
-            const columnsResponse: any = await api.getCustomColumns(project.id);
-            console.log("ProjectOverview - Fetched columns:", columnsResponse);
-            setCustomColumns(Array.isArray(columnsResponse) ? columnsResponse : columnsResponse?.columns || []);
-          } catch (error) {
-            console.error("Failed to fetch custom columns:", error);
-            setCustomColumns([]);
-          }
-        }
-        
-        // Fetch recent activities
-        try {
-          const activitiesResponse: any = await api.getProjectActivities(project.id, 10);
-          console.log("ProjectOverview - Fetched activities:", activitiesResponse);
-          setActivities(activitiesResponse?.activities || []);
-        } catch (error) {
-          console.error("Failed to fetch activities:", error);
-          setActivities([]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch tasks:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Use cached data
+  const { data: tasks = [], isLoading: isLoadingTasks } = useProjectTasks(project?.id);
+  const { data: customColumns = [], isLoading: isLoadingColumns } = useCustomColumns(
+    project?.id, 
+    workflowType === "custom"
+  );
+  const { data: activities = [], isLoading: isLoadingActivities } = useProjectActivities(project?.id, 10);
 
-    fetchData();
-  }, [project.id, workflowType]);
+  const loading = isLoadingTasks || (workflowType === "custom" && isLoadingColumns) || isLoadingActivities;
 
   // Calculate stats from real task data
   const stats = {
@@ -457,35 +422,42 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="space-y-3">
-                {project.members.map((member: any) => {
-                  const memberName = member.user?.name || member.name || 'Unknown';
-                  const memberId = member.user?.id || member.id;
-                  
-                  return (
-                    <div
-                      key={memberId}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-all cursor-pointer group border border-transparent hover:border-slate-200"
-                      onClick={() => handleMemberClick(memberId)}
-                    >
-                      <Avatar className="w-10 h-10 group-hover:ring-2 group-hover:ring-blue-500/20 transition-all">
-                        <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-semibold">
-                          {memberName
-                            .split(" ")
-                            .map((n: string) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
-                          {memberName}
-                        </p>
-                        <p className="text-xs text-slate-500">{member.role || 'Member'}</p>
+              {!project.members || project.members.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                  <p className="text-sm">No team members yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {project.members.map((member: any) => {
+                    const memberName = member.user?.name || member.name || 'Unknown';
+                    const memberId = member.user?.id || member.id;
+                    
+                    return (
+                      <div
+                        key={memberId}
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-all cursor-pointer group border border-transparent hover:border-slate-200"
+                        onClick={() => handleMemberClick(memberId)}
+                      >
+                        <Avatar className="w-10 h-10 group-hover:ring-2 group-hover:ring-blue-500/20 transition-all">
+                          <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-semibold">
+                            {memberName
+                              .split(" ")
+                              .map((n: string) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
+                            {memberName}
+                          </p>
+                          <p className="text-xs text-slate-500">{member.role || 'Member'}</p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
 
