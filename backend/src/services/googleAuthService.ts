@@ -80,11 +80,11 @@ export const getUserInfoFromToken = async (accessToken: string) => {
     const data = await response.json();
 
     return {
-      email: data.email,
-      name: data.name,
-      picture: data.picture,
-      emailVerified: data.email_verified,
-      googleId: data.sub,
+      email: (data as any).email,
+      name: (data as any).name,
+      picture: (data as any).picture,
+      emailVerified: (data as any).email_verified,
+      googleId: (data as any).sub,
     };
   } catch (error) {
     console.error('Error getting user info from Google:', error);

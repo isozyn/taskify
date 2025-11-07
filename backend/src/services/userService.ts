@@ -13,11 +13,11 @@ export const createUser = async (data: UserCreateInput): Promise<User> => {
       name: data.name,
       username: data.username,
       email: data.email,
-      password: data.password || null,
+      password: (data.password ?? null) as any,
       avatar: data.avatar,
       role: data.role || 'USER',
-      googleId: data.googleId,
-      authProvider: data.authProvider || 'LOCAL',
+      googleId: data.googleId as any,
+      authProvider: (data.authProvider || 'LOCAL') as any,
       isEmailVerified: data.isEmailVerified || false,
     },
   });
@@ -185,7 +185,7 @@ export const clearResetToken = async (userId: number): Promise<User> => {
  */
 export const findUserByGoogleId = async (googleId: string): Promise<User | null> => {
   const user = await prisma.user.findUnique({
-    where: { googleId },
+    where: { googleId } as any,
   });
   return user;
 };
