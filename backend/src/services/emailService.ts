@@ -66,7 +66,7 @@ export const sendVerificationEmail = async (
               <p>If you didn't create this account, you can safely ignore this email.</p>
             </div>
             <div class="footer">
-              <p>&copy; 2024 Taskify. All rights reserved.</p>
+              <p>&copy; 2025 Taskify. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -96,7 +96,9 @@ export const sendProjectInvitationEmail = async (
   email: string,
   projectName: string,
   inviterName: string,
-  role: string
+  role: string,
+  startDate?: Date | null,
+  endDate?: Date | null
 ): Promise<void> => {
   try {
     // Validate email parameter
@@ -105,7 +107,32 @@ export const sendProjectInvitationEmail = async (
     }
 
     // Build invitation link
-    const invitationLink = `${process.env.FRONTEND_URL}/accept-invitation?email=${encodeURIComponent(email)}&project=${encodeURIComponent(projectName)}`;
+    const invitationLink = `${process.env.FRONTEND_URL}/accept-invitation?email=${encodeURIComponent(email)}&project=${encodeURIComponent(projectName)}&role=${encodeURIComponent(role)}`;
+
+    // Format dates
+    const formatDate = (date: Date | null | undefined) => {
+      if (!date) return null;
+      return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    };
+
+    const formattedStartDate = formatDate(startDate);
+    const formattedEndDate = formatDate(endDate);
+
+    // Build project timeline section
+    const timelineSection =
+      formattedStartDate || formattedEndDate
+        ? `
+              <div style="background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin: 15px 0;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #333;">Project Timeline</h3>
+                ${formattedStartDate ? `<p style="margin: 5px 0;"><strong>Start Date:</strong> ${formattedStartDate}</p>` : ''}
+                ${formattedEndDate ? `<p style="margin: 5px 0;"><strong>Deadline:</strong> ${formattedEndDate}</p>` : ''}
+              </div>
+            `
+        : '';
 
     // Email HTML content
     const htmlContent = `
@@ -132,6 +159,7 @@ export const sendProjectInvitationEmail = async (
               <p>Hi there,</p>
               <p><strong>${inviterName}</strong> has invited you to join the project <strong>"${projectName}"</strong> on Taskify.</p>
               <p>You've been assigned the role: <span class="role-badge">${role}</span></p>
+              ${timelineSection}
               <p>Click the button below to accept the invitation and get started:</p>
               <a href="${invitationLink}" class="button">Accept Invitation</a>
               <p>Or copy and paste this link in your browser:</p>
@@ -142,7 +170,7 @@ export const sendProjectInvitationEmail = async (
               <p>Looking forward to collaborating with you!</p>
             </div>
             <div class="footer">
-              <p>&copy; 2024 Taskify. All rights reserved.</p>
+              <p>&copy; 2025 Taskify. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -161,12 +189,18 @@ export const sendProjectInvitationEmail = async (
       console.warn(`⚠️  WARNING: Invitation email address (${email}) is the same as SMTP_USER. This might be incorrect.`);
     }
 
+    // Build plain text timeline
+    const textTimeline =
+      formattedStartDate || formattedEndDate
+        ? `\n\nProject Timeline:\n${formattedStartDate ? `Start Date: ${formattedStartDate}\n` : ''}${formattedEndDate ? `Deadline: ${formattedEndDate}\n` : ''}`
+        : '';
+
     const mailOptions = {
       from: `Taskify <${process.env.SMTP_USER}>`,
       to: email, // This should be the invited person's email
       subject: `You're invited to join "${projectName}" on Taskify`,
       html: htmlContent,
-      text: `Hi there,\n\n${inviterName} has invited you to join the project "${projectName}" on Taskify.\n\nYou've been assigned the role: ${role}\n\nClick this link to accept the invitation:\n${invitationLink}\n\nIf you don't have a Taskify account yet, you'll be able to create one during the invitation process.`,
+      text: `Hi there,\n\n${inviterName} has invited you to join the project "${projectName}" on Taskify.\n\nYou've been assigned the role: ${role}${textTimeline}\n\nClick this link to accept the invitation:\n${invitationLink}\n\nIf you don't have a Taskify account yet, you'll be able to create one during the invitation process.`,
     };
 
     console.log(`📧 Final mail options:`, JSON.stringify(mailOptions, null, 2));
@@ -225,7 +259,7 @@ export const sendPasswordResetEmail = async (
               <p>If you didn't request this, you can safely ignore this email.</p>
             </div>
             <div class="footer">
-              <p>&copy; 2024 Taskify. All rights reserved.</p>
+              <p>&copy; 2025 Taskify. All rights reserved.</p>
             </div>
           </div>
         </body>

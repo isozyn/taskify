@@ -62,4 +62,7 @@ export interface TaskResponse {
   order: number;
   createdAt: Date;
   updatedAt: Date;
+  subtasks?: any[]; // Optional subtasks array
+  project?: any; // Optional project relation
+  assignee?: any; // Optional assignee relation
 }

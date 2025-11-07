@@ -24,9 +24,12 @@ export interface UserCreateInput {
   name: string;
   username: string;
   email: string;
-  password: string;
+  password: string | null;
   avatar?: string;
   role?: Role;
+  googleId?: string;
+  authProvider?: 'LOCAL' | 'GOOGLE';
+  isEmailVerified?: boolean;
 }
 
 export interface UserUpdateInput {

@@ -117,25 +117,38 @@ export class TaskService {
 
     const tasks = await prisma.task.findMany({
       where: { projectId },
-      include: {
-        subtasks: {
-          orderBy: { order: 'asc' },
-        },
-      },
       orderBy: { order: 'asc' },
     });
+
+    // Fetch subtasks separately for all tasks
+    const taskIds = tasks.map(t => t.id);
+    const allSubtasks = await (prisma as any).subtask.findMany({
+      where: { taskId: { in: taskIds } },
+      orderBy: { order: 'asc' },
+    });
+
+    // Group subtasks by taskId
+    const subtasksByTaskId = allSubtasks.reduce((acc: Record<number, any[]>, subtask: any) => {
+      if (!acc[subtask.taskId]) {
+        acc[subtask.taskId] = [];
+      }
+      acc[subtask.taskId].push(subtask);
+      return acc;
+    }, {} as Record<number, any[]>);
 
     const now = new Date();
 
     // If AUTOMATED workflow, calculate real-time status based on dates
     if (project.workflowType === 'AUTOMATED') {
       const processedTasks = await Promise.all(tasks.map(async (task: any) => {
+        const taskSubtasks = subtasksByTaskId[task.id] || [];
+        
         let finalStatus = calculateAutomatedStatus({
           id: task.id,
           startDate: task.startDate,
           endDate: task.endDate,
           status: task.status as TaskStatus,
-          subtasks: task.subtasks,
+          subtasks: taskSubtasks,
         });
 
         const oldStatus = task.status;
@@ -143,8 +156,8 @@ export class TaskService {
         // Check if task should move to backlog
         // If end date has passed and there are incomplete subtasks, move to BLOCKED
         if (task.endDate && new Date(task.endDate) < now) {
-          const totalSubtasks = task.subtasks.length;
-          const completedSubtasks = task.subtasks.filter((st: any) => st.completed).length;
+          const totalSubtasks = taskSubtasks.length;
+          const completedSubtasks = taskSubtasks.filter((st: any) => st.completed).length;
           
           if (totalSubtasks > 0 && completedSubtasks < totalSubtasks) {
             finalStatus = 'BLOCKED'; // Backlog
@@ -186,13 +199,18 @@ export class TaskService {
         return {
           ...task,
           status: finalStatus,
+          subtasks: taskSubtasks,
         };
       }));
 
       return processedTasks;
     }
 
-    return tasks;
+    // For non-automated workflows, still attach subtasks
+    return tasks.map(task => ({
+      ...task,
+      subtasks: subtasksByTaskId[task.id] || [],
+    }));
   }
 
   /**
@@ -211,15 +229,18 @@ export class TaskService {
             avatar: true,
           },
         },
-        subtasks: {
-          orderBy: { order: 'asc' },
-        },
       },
     });
 
     if (!task) {
       return null;
     }
+
+    // Fetch subtasks separately
+    const subtasks = await (prisma as any).subtask.findMany({
+      where: { taskId: taskId },
+      orderBy: { order: 'asc' },
+    });
 
     // If AUTOMATED workflow, calculate real-time status
     if (task.project.workflowType === 'AUTOMATED') {
@@ -230,12 +251,16 @@ export class TaskService {
           startDate: task.startDate,
           endDate: task.endDate,
           status: task.status as TaskStatus,
-          subtasks: task.subtasks,
+          subtasks: subtasks,
         }),
+        subtasks: subtasks,
       };
     }
 
-    return task;
+    return {
+      ...task,
+      subtasks: subtasks,
+    };
   }
 
   /**

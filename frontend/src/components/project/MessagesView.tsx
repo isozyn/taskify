@@ -290,14 +290,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 	const fetchMessages = useCallback(
 		async (conversationId: number, forceRefresh: boolean = false) => {
 			try {
-				// Skip fetching for draft conversations (negative IDs)
-				if (conversationId < 0) {
-					console.log("⏭️ Skipping fetch for draft conversation");
-					setMessages([]);
-					setIsLoadingMessages(false);
-					return;
-				}
-
 				setIsLoadingMessages(true);
 
 				// Leave previous conversation room if exists
@@ -438,67 +430,15 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		// Clear input immediately for instant feedback
 		setMessageInput("");
 
-		// Check if this is a draft conversation (not yet persisted)
-		const isDraft = selectedConversation.id < 0;
-
-		// Stop typing indicator only if not draft
-		if (!isDraft) {
-			socketService.stopTyping(selectedConversation.id);
-		}
+		// Stop typing indicator
+		socketService.stopTyping(selectedConversation.id);
 
 		try {
-			let actualConversation = selectedConversation;
-
-			// If this is a draft conversation, create the real conversation first
-			if (isDraft) {
-				console.log("Creating real conversation from draft...");
-
-				// Find the other member (not current user)
-				const otherMember = selectedConversation.members.find(
-					(m) => m.id !== user!.id
-				);
-				if (!otherMember) {
-					throw new Error("Cannot find other member");
-				}
-
-				// Create or get existing conversation
-				const realConversation =
-					(await api.getOrCreateDirectConversation(
-						parseInt(projectId),
-						otherMember.id
-					)) as Conversation;
-				console.log(
-					"Real conversation created/retrieved:",
-					realConversation
-				);
-
-				// Update state with real conversation
-				actualConversation = realConversation;
-				setSelectedConversation(realConversation);
-				selectedConversationRef.current = realConversation;
-
-				// Add to conversations list if not already there
-				setConversations((prev) => {
-					const exists = prev.some(
-						(c) => c.id === realConversation.id
-					);
-					if (exists) return prev;
-					return [realConversation, ...prev];
-				});
-
-				// Join socket room for new conversation
-				socketService.joinConversation(realConversation.id);
-				currentConversationRoomRef.current = realConversation.id;
-
-				// Initialize cache for new conversation
-				messagesCache.current.set(realConversation.id, []);
-			}
-
 			// Optimistic update - add message immediately to UI
 			const optimisticMessage: Message = {
 				id: tempId,
 				content,
-				conversationId: actualConversation.id,
+				conversationId: selectedConversation.id,
 				senderId: user!.id,
 				sender: {
 					id: user!.id,
@@ -516,7 +456,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 
 			// Send ONLY via REST API - backend will handle Socket.IO broadcast
 			const response: any = await api.sendMessage({
-				conversationId: actualConversation.id,
+				conversationId: selectedConversation.id,
 				content,
 			});
 
@@ -527,7 +467,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 				);
 				// Update cache with the final message list
 				messagesCache.current.set(
-					actualConversation.id,
+					selectedConversation.id,
 					updatedMessages
 				);
 				return updatedMessages;
@@ -556,9 +496,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 	const handleTyping = useCallback(() => {
 		if (!selectedConversation) return;
 
-		// Skip typing indicators for draft conversations
-		if (selectedConversation.id < 0) return;
-
 		socketService.startTyping(selectedConversation.id);
 
 		// Clear existing timeout
@@ -566,7 +503,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			clearTimeout(typingTimeoutRef.current);
 		}
 
-		// Stop typing after 1 second of no input (reduced from 2 seconds)
+		// Stop typing after 1 second of no input
 		typingTimeoutRef.current = setTimeout(() => {
 			socketService.stopTyping(selectedConversation.id);
 		}, 1000);
@@ -731,6 +668,53 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			.join("")
 			.toUpperCase()
 			.slice(0, 2);
+	};
+
+
+	// Handle clicking on a team member - OPTIMIZED approach
+	// Uses backend API to get or create conversation atomically
+	const handleMemberClick = async (member: Member) => {
+		console.log("👆 Clicked on member:", member.name, "Member ID:", member.id);
+
+		// Check cache first for instant feedback (optimistic)
+		const cachedConversation = conversations.find(
+			(conv) => conv.type === "DIRECT" && conv.members.some((m) => m.id === member.id)
+		);
+
+		if (cachedConversation) {
+			console.log("⚡ Found conversation in cache:", cachedConversation.id);
+			setSelectedConversation(cachedConversation);
+			return;
+		}
+
+		// Not in cache - call backend API to get or create conversation
+		// This is a single optimized call that handles both cases atomically
+		try {
+			console.log("🔄 Fetching/creating conversation with backend API...");
+			const conversation = await api.getOrCreateDirectConversation(
+				parseInt(projectId!),
+				member.id
+			) as Conversation;
+
+			console.log("✅ Got conversation from API:", conversation.id);
+
+			// Add to conversations list if not already there
+			setConversations((prev) => {
+				const exists = prev.some((c) => c.id === conversation.id);
+				if (exists) return prev;
+				return [conversation, ...prev];
+			});
+
+			// Select the conversation (this will trigger fetchMessages via useEffect)
+			setSelectedConversation(conversation);
+		} catch (error: any) {
+			console.error("❌ Failed to get/create conversation:", error);
+			toast({
+				title: "Error",
+				description: error.message || "Failed to open conversation",
+				variant: "destructive",
+			});
+		}
 	};
 
 	// Format time
@@ -1058,81 +1042,7 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 											return (
 												<button
 													key={member.id}
-													onClick={() => {
-														console.log(
-															"👆 Clicked on member:",
-															member.name,
-															"Member ID:",
-															member.id
-														);
-														console.log(
-															"🔍 Existing conversation:",
-															existingConversation
-														);
-														if (
-															existingConversation
-														) {
-															// Switch to existing conversation instantly
-															console.log(
-																"📱 Switching to existing conversation:",
-																existingConversation.id,
-																existingConversation
-															);
-															setSelectedConversation(
-																existingConversation
-															);
-														} else {
-															// Create a draft conversation (not persisted yet)
-															console.log(
-																"✨ Creating draft conversation with:",
-																member.name
-															);
-															const draftConversation: Conversation =
-																{
-																	id: -1, // Negative ID indicates draft/not persisted
-																	name: null,
-																	type: "DIRECT",
-																	projectId:
-																		parseInt(
-																			projectId!
-																		),
-																	members: [
-																		{
-																			id: member.id,
-																			name: member.name,
-																			username:
-																				member.username,
-																			email: member.email,
-																			avatar: member.avatar,
-																		},
-																		{
-																			id: user!
-																				.id,
-																			name:
-																				user!
-																					.name ||
-																				"",
-																			username:
-																				user!
-																					.username ||
-																				"",
-																			email: user!
-																				.email,
-																			avatar: user!
-																				.avatar,
-																		},
-																	],
-																	createdAt:
-																		new Date().toISOString(),
-																	updatedAt:
-																		new Date().toISOString(),
-																};
-															setSelectedConversation(
-																draftConversation
-															);
-															setMessages([]); // Clear messages for draft
-														}
-													}}
+													onClick={() => handleMemberClick(member)}
 													className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50 relative"
 												>
 													<div className="flex items-center gap-3">

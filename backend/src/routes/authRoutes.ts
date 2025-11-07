@@ -68,4 +68,18 @@ router.post('/forgot-password', validateForgotPassword, authController.forgotPas
  */
 router.post('/reset-password', validateResetPassword, authController.resetPassword);
 
+/**
+ * @route   GET /api/v1/auth/google
+ * @desc    Get Google OAuth URL
+ * @access  Public
+ */
+router.get('/google', authController.googleAuth);
+
+/**
+ * @route   GET /api/v1/auth/google/callback
+ * @desc    Google OAuth callback handler
+ * @access  Public
+ */
+router.get('/google/callback', authController.googleCallback);
+
 export default router;

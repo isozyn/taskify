@@ -11,7 +11,7 @@ model User {
   id                   Int                   @id @default(autoincrement())
   name                 String
   email                String                @unique
-  password             String
+  password             String?
   role                 Role                  @default(USER)
   isEmailVerified      Boolean               @default(false)
   createdAt            DateTime              @default(now())
@@ -20,6 +20,8 @@ model User {
   resetToken           String?
   resetTokenExpiry     DateTime?
   username             String                @unique
+  googleId             String?               @unique
+  authProvider         AuthProvider          @default(LOCAL)
   comments             Comment[]
   notifications        Notification[]
   ownedProjects        Project[]             @relation("ProjectOwner")
@@ -167,6 +169,11 @@ model Activity {
 enum Role {
   USER
   ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
 }
 
 enum ProjectStatus {

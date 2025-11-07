@@ -30,4 +30,7 @@ router.post('/projects/:projectId/invite', ProjectController.inviteMembers);
 // Get project members
 router.get('/projects/:projectId/members', ProjectController.getProjectMembers);
 
+// Accept project invitation
+router.post('/projects/accept-invitation', ProjectController.acceptInvitation);
+
 export default router;
