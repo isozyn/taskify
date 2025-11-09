@@ -19,28 +19,30 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 	// Check if user is authenticated on mount by calling /me endpoint
 	useEffect(() => {
 		const checkAuth = async () => {
+			console.log("[UserContext] Checking authentication...");
 			try {
 				const response = (await api.getCurrentUser()) as { user: User };
 				if (response.user) {
 					setUser(response.user);
 					console.log(
-						"[Auth] User authenticated:",
+						"[UserContext] ✅ User authenticated:",
 						response.user.email
 					);
 				} else {
 					// No user data returned
 					setUser(null);
-					console.log("[Auth] No user data returned");
+					console.log("[UserContext] ❌ No user data returned");
 				}
 			} catch (error: any) {
 				// User is not authenticated or token expired
 				setUser(null);
 				console.log(
-					"[Auth] Authentication failed:",
+					"[UserContext] ❌ Authentication failed:",
 					error.message || "Not authenticated"
 				);
 			} finally {
 				setLoading(false);
+				console.log("[UserContext] Authentication check complete");
 			}
 		};
 
@@ -65,7 +67,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 		<UserContext.Provider
 			value={{ user, setUser, isAuthenticated, loading, logout }}
 		>
-			{!loading && children}
+			{children}
 		</UserContext.Provider>
 	);
 };

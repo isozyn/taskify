@@ -39,14 +39,18 @@ class ApiClient {
 			if (!response.ok) {
 				// Handle 401 Unauthorized - token expired or invalid
 				if (response.status === 401) {
-					// Only redirect to auth if not already on auth pages
+					// Only redirect to auth if not already on auth/public pages
 					const currentPath = window.location.pathname;
 					const authPaths = [
+						"/",
 						"/auth",
 						"/login",
 						"/register",
 						"/forgot-password",
 						"/reset-password",
+						"/verify-email",
+						"/check-email",
+						"/accept-invitation",
 					];
 
 					if (!authPaths.includes(currentPath)) {
