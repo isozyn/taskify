@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, UserPlus, Activity, Crown, User, Mail, Copy } from "lucide-react";
+import { Trash2, UserPlus, Activity, Crown, User, Mail, Copy, Download, ChevronDown } from "lucide-react";
 import MemberDetailModal from "./MemberDetailModal";
 
 interface ProjectSettingsProps {
   project: any;
+  onNavigateToBoard?: () => void;
 }
 
 interface TeamMember {
@@ -34,92 +35,78 @@ interface TeamMember {
   }>;
 }
 
-const ProjectSettings = ({ project }: ProjectSettingsProps) => {
+const ProjectSettings = ({ project, onNavigateToBoard }: ProjectSettingsProps) => {
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("member");
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [inviteCode, setInviteCode] = useState("WR2024-ABC123");
+  const [isDangerZoneOpen, setIsDangerZoneOpen] = useState(false);
+  const [visibility, setVisibility] = useState("private");
+  const [isVisibilityOpen, setIsVisibilityOpen] = useState(false);
+  const [members, setMembers] = useState([]);
 
-  // Mock detailed member data - will be replaced with real data from backend
-  const detailedMembers: TeamMember[] = [
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john@example.com",
-      role: "owner",
-      joinDate: "2024-01-05",
-      description: "Senior developer with expertise in React and Node.js. Passionate about creating scalable applications and mentoring junior developers.",
-      assignedTasks: [
-        { id: 1, title: "Design landing page mockup", status: "complete", priority: "high", dueDate: "2024-01-20" },
-        { id: 4, title: "Database optimization", status: "in-progress", priority: "medium", dueDate: "2024-01-25" },
-        { id: 7, title: "API documentation update", status: "upcoming", priority: "low", dueDate: "2024-01-30" },
-      ]
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane@example.com",
-      role: "admin",
-      joinDate: "2023-12-10",
-      description: "Creative designer focused on user-centered design and accessibility. Specializes in creating intuitive and beautiful interfaces.",
-      assignedTasks: [
-        { id: 1, title: "Design landing page mockup", status: "complete", priority: "high", dueDate: "2024-01-20" },
-        { id: 2, title: "Implement authentication", status: "in-progress", priority: "high", dueDate: "2024-01-18" },
-        { id: 5, title: "User testing preparation", status: "review", priority: "low", dueDate: "2024-01-28" },
-      ]
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      email: "mike@example.com",
-      role: "member",
-      joinDate: "2024-01-15",
-      description: "Backend specialist with strong database and API design skills. Experienced in microservices architecture and cloud infrastructure.",
-      assignedTasks: [
-        { id: 2, title: "Implement authentication", status: "in-progress", priority: "high", dueDate: "2024-01-18" },
-        { id: 3, title: "Write API documentation", status: "upcoming", priority: "medium", dueDate: "2024-01-25" },
-        { id: 8, title: "Performance testing", status: "review", priority: "medium", dueDate: "2024-01-24" },
-      ]
-    },
-    {
-      id: 4,
-      name: "Sarah Wilson",
-      email: "sarah@example.com",
-      role: "member",
-      joinDate: "2023-11-20",
-      description: "Experienced project manager ensuring smooth delivery and team collaboration. Skilled in agile methodologies and stakeholder management.",
-      assignedTasks: [
-        { id: 4, title: "Database migration", status: "review", priority: "high", dueDate: "2024-01-17" },
-        { id: 6, title: "Campaign analytics setup", status: "in-progress", priority: "high", dueDate: "2024-01-19" },
-      ]
-    }
-  ];
+  // Convert members to detailed format for the modal
+  const detailedMembers: TeamMember[] = members.map((member: any) => ({
+    id: member.id,
+    name: member.name,
+    email: member.email,
+    role: member.role,
+    joinDate: new Date().toISOString(),
+    description: "Team member",
+    assignedTasks: []
+  }));
 
-  // Mock data - will be replaced with real data from backend
+  // Use members state
   const projectData = {
     ...project,
-    inviteCode: "WR2024-ABC123",
-    members: [
-      { id: 1, name: "John Doe", email: "john@example.com", role: "owner" },
-      { id: 2, name: "Jane Smith", email: "jane@example.com", role: "admin" },
-      { id: 3, name: "Mike Johnson", email: "mike@example.com", role: "member" },
-      { id: 4, name: "Sarah Wilson", email: "sarah@example.com", role: "member" },
-    ]
+    members: members
+  };
+
+  const generateInviteCode = () => {
+    // Generate a new random invite code
+    const prefix = "WR2024";
+    const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const newCode = `${prefix}-${randomPart}`;
+    setInviteCode(newCode);
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(newCode);
+    
+    // TODO: Send new invite code to backend
+    console.log("Generated new invite code:", newCode);
   };
 
   const handleAddMember = () => {
-    // TODO: Implement add member logic with backend
-    console.log("Adding member:", { email: newMemberEmail, role: newMemberRole });
+    if (!newMemberEmail.trim()) return;
+    
+    // Create new member
+    const newMember = {
+      id: members.length + 1,
+      name: newMemberEmail.split('@')[0], // Use email username as name
+      email: newMemberEmail,
+      role: newMemberRole
+    };
+    
+    // Add to members list
+    setMembers([...members, newMember]);
+    
+    // Close dialog and reset form
     setIsAddMemberDialogOpen(false);
     setNewMemberEmail("");
     setNewMemberRole("member");
-    // For now, just show a success message
+    
+    // TODO: Send to backend
+    console.log("Added member:", newMember);
   };
 
   const handleRemoveMember = (memberId: number) => {
-    // TODO: Implement remove member logic with backend
-    console.log("Removing member:", memberId);
+    // Remove member from list
+    setMembers(members.filter(m => m.id !== memberId));
+    
+    // TODO: Send to backend
+    console.log("Removed member:", memberId);
   };
 
   const handleMemberClick = (memberId: number) => {
@@ -128,6 +115,11 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
       setSelectedMember(member);
       setIsMemberModalOpen(true);
     }
+  };
+
+  const handleDownloadPDF = () => {
+    // TODO: Implement PDF download logic with backend
+    console.log("Downloading project as PDF");
   };
 
   const getRoleIcon = (role: string) => {
@@ -157,100 +149,153 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
       <TabsList>
         <TabsTrigger value="general">General</TabsTrigger>
         <TabsTrigger value="team">Team</TabsTrigger>
-        <TabsTrigger value="activity">Activity Log</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="general" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Information</CardTitle>
-            <CardDescription>Basic information about your project</CardDescription>
+      <TabsContent value="general" className="space-y-6">
+        {/* Project Information Card */}
+        <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
+          <div className="h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+          <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-blue-50/30 pb-6">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+              Project Information
+            </CardTitle>
+            <CardDescription className="text-slate-600">
+              Manage your project details and settings
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="project-name">Project Name</Label>
-                <Input id="project-name" defaultValue={project.name} />
-              </div>
-              <div className="space-y-2">
-                <Label>Invitation Code</Label>
-                <div className="flex gap-2">
-                  <Input value={projectData.inviteCode} readOnly />
-                  <Button variant="outline" size="sm">
-                    <Copy className="w-4 h-4" />
-                  </Button>
+          <CardContent className="space-y-8 pt-8">
+            {/* Project Name */}
+            <div className="space-y-3">
+              <Label htmlFor="project-name" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-blue-600" />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Share this code with team members to invite them to the project
-                </p>
-              </div>
+                Project Name
+              </Label>
+              <Input 
+                id="project-name" 
+                defaultValue={project.name}
+                className="h-14 text-base border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300"
+                placeholder="Enter project name"
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="project-description">Description</Label>
+
+            {/* Description */}
+            <div className="space-y-3">
+              <Label htmlFor="project-description" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <Mail className="w-4 h-4 text-indigo-600" />
+                </div>
+                Description
+              </Label>
               <Textarea
                 id="project-description"
                 defaultValue={project.description}
-                rows={4}
+                rows={5}
+                className="text-base border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 resize-none"
+                placeholder="Describe your project..."
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="project-visibility">Visibility</Label>
-              <select
-                id="project-visibility"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t-2 border-slate-100">
+              <Button 
+                variant="outline"
+                className="h-12 px-6 border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 font-semibold"
               >
-                <option value="private">Private</option>
-                <option value="team">Team Only</option>
-                <option value="public">Public</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline">Cancel</Button>
-              <Button>Save Changes</Button>
+                Cancel
+              </Button>
+              <Button className="h-12 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-semibold">
+                Save Changes
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Danger Zone</CardTitle>
-            <CardDescription>Irreversible actions for this project</CardDescription>
+        {/* Danger Zone Card */}
+        <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+          <CardHeader 
+            className="cursor-pointer bg-gradient-to-r from-red-50 to-rose-50 hover:from-red-100 hover:to-rose-100 transition-all duration-300 group border-b-2 border-red-200"
+            onClick={() => setIsDangerZoneOpen(!isDangerZoneOpen)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-bold text-red-700 group-hover:text-red-800 transition-colors">
+                    Danger Zone
+                  </CardTitle>
+                </div>
+              </div>
+              <ChevronDown 
+                className={`w-6 h-6 text-red-600 transition-transform duration-300 ${isDangerZoneOpen ? 'rotate-180' : ''}`}
+              />
+            </div>
           </CardHeader>
-          <CardContent>
-            <Button variant="destructive">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Project
-            </Button>
-          </CardContent>
+          {isDangerZoneOpen && (
+            <CardContent className="pt-6 pb-6 bg-gradient-to-br from-red-50/50 to-rose-50/50">
+              <div className="space-y-4">
+                <div className="p-4 bg-white rounded-xl border-2 border-red-200">
+                  <h4 className="font-semibold text-slate-900 mb-2">Delete this project</h4>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Once you delete a project, there is no going back. Please be certain.
+                  </p>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full sm:w-auto h-12 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Project
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          )}
         </Card>
       </TabsContent>
 
-      <TabsContent value="team" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
+      <TabsContent value="team" className="space-y-6">
+        <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
+          <div className="h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500"></div>
+          <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-purple-50/30">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>Manage who has access to this project</CardDescription>
+                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  Team Members
+                </CardTitle>
+                <CardDescription className="text-slate-600 mt-2">
+                  Manage who has access to this project
+                </CardDescription>
               </div>
               <Dialog open={isAddMemberDialogOpen} onOpenChange={setIsAddMemberDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="gap-2">
+                  <Button className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300">
                     <UserPlus className="w-4 h-4" />
                     Add Member
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[500px] border-0 shadow-2xl">
+                  <div className="h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 -mt-6 -mx-6 mb-4"></div>
                   <DialogHeader>
-                    <DialogTitle>Add Team Member</DialogTitle>
-                    <DialogDescription>
-                      Invite a new member to join this project.
+                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                      Add Team Member
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-600">
+                      Invite a new member to join this project
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="memberEmail" className="text-right">
-                        Email
+                  <div className="space-y-6 py-4">
+                    <div className="space-y-3">
+                      <Label htmlFor="memberEmail" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                          <Mail className="w-4 h-4 text-purple-600" />
+                        </div>
+                        Email Address
                       </Label>
                       <Input
                         id="memberEmail"
@@ -258,15 +303,18 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
                         value={newMemberEmail}
                         onChange={(e) => setNewMemberEmail(e.target.value)}
                         placeholder="member@example.com"
-                        className="col-span-3"
+                        className="h-12 text-base border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300"
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="memberRole" className="text-right">
+                    <div className="space-y-3">
+                      <Label htmlFor="memberRole" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center">
+                          <Crown className="w-4 h-4 text-pink-600" />
+                        </div>
                         Role
                       </Label>
                       <Select value={newMemberRole} onValueChange={setNewMemberRole}>
-                        <SelectTrigger className="col-span-3">
+                        <SelectTrigger className="h-12 text-base border-2 border-slate-200 rounded-xl focus:border-pink-500 focus:ring-4 focus:ring-pink-100">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -280,7 +328,9 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
                     <Button 
                       onClick={handleAddMember}
                       disabled={!newMemberEmail.trim()}
+                      className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                     >
+                      <UserPlus className="w-4 h-4 mr-2" />
                       Add Member
                     </Button>
                   </DialogFooter>
@@ -288,52 +338,66 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
               </Dialog>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {projectData.members.map((member, index) => (
-                <div key={member.id}>
+          <CardContent className="pt-6">
+            {projectData.members.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mx-auto mb-4">
+                  <User className="w-8 h-8 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">No team members yet</h3>
+                <p className="text-sm text-slate-500 mb-4">
+                  Start building your team by adding members
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {projectData.members.map((member) => (
                   <div 
-                    className="flex items-center justify-between py-3 cursor-pointer hover:bg-accent/5 rounded-lg px-2 -mx-2 transition-all group"
+                    key={member.id}
+                    className="group p-4 rounded-xl bg-gradient-to-r from-slate-50 to-purple-50/30 hover:from-slate-100 hover:to-purple-100/40 border-2 border-slate-200 hover:border-purple-300 cursor-pointer transition-all duration-300 hover:shadow-lg"
                     onClick={() => handleMemberClick(member.id)}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold group-hover:ring-2 group-hover:ring-primary/30 transition-all">
-                        {member.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium group-hover:text-primary transition-colors">{member.name}</p>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
-                            {member.role}
-                          </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-300"></div>
+                          <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                            {member.name.split(' ').map(n => n[0]).join('')}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Mail className="w-3 h-3" />
-                          {member.email}
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-slate-900 group-hover:text-purple-700 transition-colors">
+                              {member.name}
+                            </p>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(member.role)}`}>
+                              {member.role}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-600">{member.email}</p>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getRoleIcon(member.role)}
-                      {member.role !== "owner" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveMember(member.id);
-                          }}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {getRoleIcon(member.role)}
+                        {member.role !== "owner" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveMember(member.id);
+                            }}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-100 transition-all duration-300"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  {index < projectData.members.length - 1 && <Separator />}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -342,65 +406,15 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
           member={selectedMember}
           isOpen={isMemberModalOpen}
           onOpenChange={setIsMemberModalOpen}
+          onNavigateToTask={(taskId) => {
+            console.log("Navigating to task:", taskId);
+            if (onNavigateToBoard) {
+              onNavigateToBoard();
+            }
+          }}
         />
       </TabsContent>
 
-      <TabsContent value="activity" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Activity Log</CardTitle>
-            <CardDescription>Recent project activity and changes</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                {
-                  user: "John Doe",
-                  action: "completed task",
-                  target: "Design landing page mockup",
-                  time: "2 hours ago",
-                  type: "success",
-                },
-                {
-                  user: "Jane Smith",
-                  action: "updated task",
-                  target: "Implement authentication",
-                  time: "5 hours ago",
-                  type: "primary",
-                },
-                {
-                  user: "Mike Johnson",
-                  action: "added comment on",
-                  target: "Write API documentation",
-                  time: "1 day ago",
-                  type: "accent",
-                },
-                {
-                  user: "Sarah Wilson",
-                  action: "created task",
-                  target: "Database migration",
-                  time: "2 days ago",
-                  type: "primary",
-                },
-              ].map((activity, index) => (
-                <div key={index} className="flex items-start gap-3 pb-4 border-b border-border/50 last:border-0">
-                  <Activity className="w-4 h-4 mt-1 text-muted-foreground" />
-                  <div className="flex-1">
-                    <p className="text-sm">
-                      <span className="font-medium">{activity.user}</span>{" "}
-                      {activity.action}{" "}
-                      <span className="font-medium">"{activity.target}"</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {activity.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
     </Tabs>
   );
 };
