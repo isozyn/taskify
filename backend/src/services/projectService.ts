@@ -6,17 +6,17 @@ import {
 	ProjectUpdateInput,
 	ProjectResponse,
 } from "../models";
-import { CustomColumnService } from "./customColumnService";
 
 export class ProjectService {
 	/**
 	 * Create a new project
-	 * Automatically creates default columns if workflow type is CUSTOM
 	 * Automatically adds the creator as an OWNER member
 	 */
 	static async createProject(
 		data: ProjectCreateInput
 	): Promise<ProjectResponse> {
+
+		
 		const project = await prisma.project.create({
 			data: {
 				title: data.title,
@@ -44,16 +44,7 @@ export class ProjectService {
 			`[Project] Creator (userId: ${data.ownerId}) added as OWNER to project ${project.id}`
 		);
 
-		// If CUSTOM workflow, create default columns
-		if (project.workflowType === "CUSTOM") {
-			try {
-				await CustomColumnService.createDefaultColumns(project.id);
-			} catch (error) {
-				console.error("Failed to create default columns:", error);
-				// Don't fail the entire project creation if columns fail
-				// Columns can be created later by the user
-			}
-		}
+		// Custom workflow starts empty - users add columns as needed
 
 		// Fetch and return the complete project with members and owner
 		const completeProject = await prisma.project.findUnique({
@@ -128,6 +119,8 @@ export class ProjectService {
 				},
 			},
 		});
+
+
 
 		return project;
 	}

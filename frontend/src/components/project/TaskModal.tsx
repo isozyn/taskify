@@ -36,6 +36,8 @@ interface TaskModalProps {
     assigneeId?: number | null;
     tags: string[];
     columnId?: string | null;
+    labelText?: string | null;
+    labelColor?: string | null;
     order: number;
     createdAt: string;
     updatedAt: string;
@@ -45,6 +47,12 @@ interface TaskModalProps {
       email: string;
       avatar?: string | null;
     } | null;
+    assignees?: Array<{
+      id: number;
+      name: string;
+      email: string;
+      avatar?: string | null;
+    }>;
     subtasks?: Array<{
       id: number;
       title: string;
@@ -91,6 +99,7 @@ const formatDateForInput = (dateString: string | null | undefined): string => {
 const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers }: TaskModalProps) => {
   const { toast } = useToast();
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>(
+    task.assignees ? task.assignees.map(a => a.name) : 
     task.assignee ? [task.assignee.name] : []
   );
   const [subtasks, setSubtasks] = useState(task.subtasks || []);
@@ -109,6 +118,24 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
   const [editableDescription, setEditableDescription] = useState(task.description || "");
   const [editableTags, setEditableTags] = useState<string[]>(task.tags || []);
   const [newTag, setNewTag] = useState("");
+  const [editableLabelText, setEditableLabelText] = useState(task.labelText || "");
+  const [editableLabelColor, setEditableLabelColor] = useState(task.labelColor || "#64748b");
+
+  // Update local state when task prop changes
+  useEffect(() => {
+    setSelectedAssignees(
+      task.assignees ? task.assignees.map(a => a.name) : 
+      task.assignee ? [task.assignee.name] : []
+    );
+    setEditableTitle(task.title || "");
+    setEditableStatus(task.status || "TODO");
+    setEditableStartDate(formatDateForInput(task.startDate));
+    setEditableEndDate(formatDateForInput(task.endDate));
+    setEditableDescription(task.description || "");
+    setEditableTags(task.tags || []);
+    setEditableLabelText(task.labelText || "");
+    setEditableLabelColor(task.labelColor || "#64748b");
+  }, [task]);
 
   // Fetch subtasks when task changes
   useEffect(() => {
@@ -201,6 +228,32 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
     }
   };
 
+  const handleSaveLabel = async () => {
+    try {
+      await api.updateTask(task.id, { 
+        labelText: editableLabelText || null,
+        labelColor: editableLabelColor || null
+      });
+      onTaskUpdate?.();
+    } catch (error) {
+      console.error('Failed to update label:', error);
+    }
+  };
+
+  const handleRemoveLabel = async () => {
+    try {
+      await api.updateTask(task.id, { 
+        labelText: null,
+        labelColor: null
+      });
+      setEditableLabelText("");
+      setEditableLabelColor("#64748b");
+      onTaskUpdate?.();
+    } catch (error) {
+      console.error('Failed to remove label:', error);
+    }
+  };
+
   const addSubtask = async () => {
     if (newSubtask.trim()) {
       try {
@@ -279,14 +332,51 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
     }
   };
 
+  const handleSaveAssignees = async (assigneeIds: number[]) => {
+    try {
+      await api.updateTask(task.id, { assigneeIds });
+      if (onTaskUpdate) {
+        onTaskUpdate();
+      }
+      toast({
+        title: "Success",
+        description: "Assignees updated successfully.",
+      });
+    } catch (error) {
+      console.error('Failed to update assignees:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update assignees. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const addAssignee = (memberName: string) => {
-    if (!selectedAssignees.includes(memberName)) {
-      setSelectedAssignees([...selectedAssignees, memberName]);
+    const member = projectMembers.find(m => m.name === memberName);
+    if (member && !selectedAssignees.includes(memberName)) {
+      const newAssignees = [...selectedAssignees, memberName];
+      setSelectedAssignees(newAssignees);
+      
+      const assigneeIds = newAssignees.map(name => {
+        const m = projectMembers.find(p => p.name === name);
+        return m?.id;
+      }).filter(Boolean) as number[];
+      
+      handleSaveAssignees(assigneeIds);
     }
   };
 
   const removeAssignee = (memberName: string) => {
-    setSelectedAssignees(selectedAssignees.filter((name) => name !== memberName));
+    const newAssignees = selectedAssignees.filter(name => name !== memberName);
+    setSelectedAssignees(newAssignees);
+    
+    const assigneeIds = newAssignees.map(name => {
+      const m = projectMembers.find(p => p.name === name);
+      return m?.id;
+    }).filter(Boolean) as number[];
+    
+    handleSaveAssignees(assigneeIds);
   };
 
   const handleDeleteTask = async () => {
@@ -326,6 +416,32 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
       toast({
         title: "Error",
         description: "Failed to mark task as complete. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkIncomplete = async () => {
+    try {
+      const response: any = await api.markTaskIncomplete(task.id);
+      const statusLabels: Record<string, string> = {
+        'TODO': 'To Do',
+        'IN_PROGRESS': 'In Progress',
+        'IN_REVIEW': 'In Review',
+      };
+      const newStatusLabel = statusLabels[response.status] || response.status;
+      
+      toast({
+        title: "Task marked as incomplete",
+        description: `Task has been moved to ${newStatusLabel} based on subtask completion.`,
+      });
+      onTaskUpdate?.();
+      onClose();
+    } catch (error: any) {
+      console.error('Failed to mark task incomplete:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark task as incomplete. Please try again.",
         variant: "destructive",
       });
     }
@@ -448,6 +564,55 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
                     <Plus className="w-3 h-3" />
                   </Button>
                 </div>
+
+                {/* Custom Label Section */}
+                <div className="mt-4 space-y-2">
+                  <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Label</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      placeholder="Label text..."
+                      value={editableLabelText}
+                      onChange={(e) => setEditableLabelText(e.target.value)}
+                      className="h-8 text-xs border-slate-200 focus:border-blue-500 flex-1"
+                    />
+                    <input
+                      type="color"
+                      value={editableLabelColor}
+                      onChange={(e) => setEditableLabelColor(e.target.value)}
+                      className="w-8 h-8 rounded border border-slate-200 cursor-pointer"
+                      title="Choose label color"
+                    />
+                    <Button 
+                      onClick={handleSaveLabel}
+                      className="bg-blue-500 hover:bg-blue-600 text-white h-8 px-3"
+                      size="sm"
+                    >
+                      Save
+                    </Button>
+                    {(task.labelText || editableLabelText) && (
+                      <Button 
+                        onClick={handleRemoveLabel}
+                        variant="outline"
+                        className="h-8 px-3"
+                        size="sm"
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  {/* Preview of current label */}
+                  {editableLabelText && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500">Preview:</span>
+                      <Badge
+                        className="text-xs px-2 py-1 rounded-full text-white"
+                        style={{ backgroundColor: editableLabelColor }}
+                      >
+                        {editableLabelText}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="text-right flex-shrink-0">
                 <div className="text-base font-semibold text-blue-600">{Math.round(task.progress || progress)}%</div>
@@ -456,7 +621,7 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
             </div>
           </DialogHeader>
 
-          <div className="space-y-5">
+          <div className="space-y-5">{/* Subtasks */}
             {/* Subtasks */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -532,59 +697,41 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
             {/* Assignees */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Assigned To</Label>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {selectedAssignees.map((assignee) => (
-                  <Badge key={assignee} variant="secondary" className="gap-1.5 px-2 py-1 bg-slate-100 text-slate-700 border border-slate-200 text-xs">
-                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
-                      {assignee.split(" ").map((n: string) => n[0]).join("")}
-                    </div>
-                    {assignee}
-                    <button
-                      onClick={() => removeAssignee(assignee)}
-                      className="ml-1 hover:text-red-500 transition-colors"
-                    >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <Select onValueChange={addAssignee}>
+              {selectedAssignees.length > 0 ? (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {selectedAssignees.map((assigneeName) => (
+                    <Badge key={assigneeName} variant="secondary" className="gap-1.5 px-2 py-1 bg-slate-100 text-slate-700 border border-slate-200 text-xs">
+                      <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
+                        {assigneeName.split(" ").map((n: string) => n[0]).join("")}
+                      </div>
+                      {assigneeName}
+                      <button
+                        onClick={() => removeAssignee(assigneeName)}
+                        className="ml-1 hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="mb-2 text-xs text-slate-500">No assignees selected</div>
+              )}
+              <Select onValueChange={addAssignee} value="">
                 <SelectTrigger className="h-9 text-xs border-slate-200 focus:border-blue-500">
                   <SelectValue placeholder="Add team member..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {projectMembers
-                    .filter((member) => !selectedAssignees.includes(member.name))
-                    .map((member) => (
-                      <SelectItem key={member.id} value={member.name}>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
-                            {member.name.split(" ").map((n: string) => n[0]).join("")}
-                          </div>
-                          <span className="text-xs">{member.name}</span>
+                  {projectMembers.filter(member => !selectedAssignees.includes(member.name)).map((member) => (
+                    <SelectItem key={member.id} value={member.name}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
+                          {member.name.split(" ").map((n: string) => n[0]).join("")}
                         </div>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Status */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Status</Label>
-              <Select 
-                value={editableStatus} 
-                onValueChange={(value) => handleSaveStatus(value)}
-              >
-                <SelectTrigger className="h-9 text-xs border-slate-200 focus:border-blue-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="TODO">To Do</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="IN_REVIEW">In Review</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="BLOCKED">Blocked</SelectItem>
+                        <span className="text-xs">{member.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -708,6 +855,16 @@ const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers
                   >
                     <Check className="w-3 h-3 mr-1" />
                     Mark as Complete
+                  </Button>
+                )}
+                {task.status === 'COMPLETED' && (
+                  <Button
+                    type="button"
+                    onClick={handleMarkIncomplete}
+                    className="text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white h-9 px-4"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Mark as Incomplete
                   </Button>
                 )}
                 <Button 

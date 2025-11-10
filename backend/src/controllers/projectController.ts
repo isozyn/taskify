@@ -22,6 +22,7 @@ export class ProjectController {
       }
 
       console.log('Creating project with userId:', userId);
+
       const project = await ProjectService.createProject({
         ...req.body,
         ownerId: userId,

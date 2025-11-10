@@ -21,6 +21,12 @@ router.get('/tasks/:taskId', TaskController.getTaskById);
 // Update a task
 router.put('/tasks/:taskId', TaskController.updateTask);
 
+// Fast column move endpoint for drag and drop
+router.patch('/tasks/:taskId/move', TaskController.moveTaskToColumn);
+
+// Mark a completed task as incomplete
+router.post('/tasks/:taskId/mark-incomplete', TaskController.markTaskIncomplete);
+
 // Delete a task
 router.delete('/tasks/:taskId', TaskController.deleteTask);
 

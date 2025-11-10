@@ -48,9 +48,14 @@ const ProjectWorkspace = () => {
   useEffect(() => {
     if (project) {
       const proj = project as any;
+      
+      // Set workflow type based on actual database value
       if (proj.workflowType === 'AUTOMATED') {
         setWorkflowType('auto-sync');
       } else if (proj.workflowType === 'CUSTOM') {
+        setWorkflowType('custom');
+      } else {
+        // Handle case where workflowType might be null/undefined
         setWorkflowType('custom');
       }
     }

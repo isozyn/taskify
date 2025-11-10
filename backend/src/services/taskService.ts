@@ -5,6 +5,39 @@ import { TaskUpdateInput, TaskResponse, TaskStatus } from '../models';
 import { calculateAutomatedStatus } from '../utils/automatedWorkflow';
 import activityService from './activityService';
 
+// Helper function to get column name by ID (with caching for performance)
+const columnNameCache = new Map<string, { title: string; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getColumnName(projectId: number, columnId: string): Promise<string> {
+  const cacheKey = `${projectId}-${columnId}`;
+  const cached = columnNameCache.get(cacheKey);
+  
+  // Return cached result if valid
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+    return cached.title;
+  }
+  
+  try {
+    const column = await prisma.customColumn.findFirst({
+      where: {
+        projectId: projectId,
+        id: parseInt(columnId)
+      },
+      select: { title: true } // Only select what we need
+    });
+    
+    const title = column?.title || 'Unknown Column';
+    
+    // Cache the result
+    columnNameCache.set(cacheKey, { title, timestamp: Date.now() });
+    
+    return title;
+  } catch (error) {
+    return 'Unknown Column';
+  }
+}
+
 export class TaskService {
   /**
    * Create a new task
@@ -83,6 +116,8 @@ export class TaskService {
         assigneeId: data.assigneeId || null,
         tags: data.tags || [],
         columnId: data.columnId || null,
+        labelText: data.labelText || null,
+        labelColor: data.labelColor || null,
         order: data.order || 0,
       },
     });
@@ -117,6 +152,32 @@ export class TaskService {
 
     const tasks = await prisma.task.findMany({
       where: { projectId },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        priority: true,
+        createdAt: true,
+        updatedAt: true,
+        projectId: true,
+        assigneeId: true,
+        order: true,
+        tags: true,
+        columnId: true,
+        endDate: true,
+        startDate: true,
+        labelText: true,
+        labelColor: true,
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
       orderBy: { order: 'asc' },
     });
 
@@ -200,16 +261,18 @@ export class TaskService {
           ...task,
           status: finalStatus,
           subtasks: taskSubtasks,
+          assignees: task.assignee ? [task.assignee] : [],
         };
       }));
 
       return processedTasks;
     }
 
-    // For non-automated workflows, still attach subtasks
+    // For non-automated workflows, still attach subtasks and assignees
     return tasks.map(task => ({
       ...task,
       subtasks: subtasksByTaskId[task.id] || [],
+      assignees: task.assignee ? [task.assignee] : [],
     }));
   }
 
@@ -267,18 +330,24 @@ export class TaskService {
    * Update a task
    */
   static async updateTask(taskId: number, data: TaskUpdateInput, _userId?: number): Promise<TaskResponse> {
-    // Get task and project to check workflow type
+    // For simple column moves, use lightweight query
+    const isSimpleColumnMove = data.columnId !== undefined && Object.keys(data).length === 1;
+    
+    // Get task with minimal includes for performance
     const task = await prisma.task.findUnique({
       where: { id: taskId },
-      include: { project: true },
+      include: { 
+        project: !isSimpleColumnMove,  // Only include project if needed for validation
+        subtasks: !isSimpleColumnMove, // Only include subtasks if needed
+      },
     });
 
     if (!task) {
       throw new Error('Task not found');
     }
 
-    // Validate workflow requirements
-    if (task.project.workflowType === 'AUTOMATED') {
+    // Validate workflow requirements (skip for simple column moves)
+    if (!isSimpleColumnMove && task.project?.workflowType === 'AUTOMATED') {
       // If updating dates, ensure both are provided
       if ((data.startDate || data.endDate) && !(data.startDate && data.endDate)) {
         const currentStartDate = data.startDate || task.startDate;
@@ -287,6 +356,37 @@ export class TaskService {
         if (!currentStartDate || !currentEndDate) {
           throw new Error('Both start date and end date are required for automated workflow projects');
         }
+      }
+    }
+
+    // Prevent changing status directly from COMPLETED
+    // Must use "Mark as Incomplete" button instead
+    if (task.status === 'COMPLETED' && data.status && data.status !== 'COMPLETED') {
+      throw new Error('Cannot change status of completed task directly. Use "Mark as Incomplete" button instead.');
+    }
+
+    // Handle assignee updates
+    if (data.assigneeIds !== undefined) {
+      // Update multiple assignees using raw queries
+      await prisma.$executeRaw`DELETE FROM "TaskAssignee" WHERE "taskId" = ${taskId}`;
+      
+      if (data.assigneeIds.length > 0) {
+        for (const userId of data.assigneeIds) {
+          await prisma.$executeRaw`
+            INSERT INTO "TaskAssignee" ("taskId", "userId", "assignedAt") 
+            VALUES (${taskId}, ${userId}, NOW())
+          `;
+        }
+      }
+    } else if (data.assigneeId !== undefined) {
+      // Handle single assignee for backward compatibility
+      await prisma.$executeRaw`DELETE FROM "TaskAssignee" WHERE "taskId" = ${taskId}`;
+      
+      if (data.assigneeId !== null) {
+        await prisma.$executeRaw`
+          INSERT INTO "TaskAssignee" ("taskId", "userId", "assignedAt") 
+          VALUES (${taskId}, ${data.assigneeId}, NOW())
+        `;
       }
     }
 
@@ -303,7 +403,10 @@ export class TaskService {
         ...(data.tags && { tags: data.tags }),
         ...(data.columnId !== undefined && { columnId: data.columnId }),
         ...(data.order !== undefined && { order: data.order }),
+        ...(data.labelText !== undefined && { labelText: data.labelText }),
+        ...(data.labelColor !== undefined && { labelColor: data.labelColor }),
       },
+
     });
 
     // Log activity if status changed
@@ -327,6 +430,87 @@ export class TaskService {
         );
       }
     }
+
+    // Log activity if column changed (for custom workflows)
+    if (data.columnId !== undefined && task.columnId !== data.columnId) {
+      // Get column names for better activity description
+      const fromColumnName = task.columnId ? await getColumnName(task.projectId, task.columnId) : 'Unassigned';
+      const toColumnName = data.columnId ? await getColumnName(task.projectId, data.columnId) : 'Unassigned';
+      
+      await activityService.logTaskColumnMove(
+        task.projectId,
+        taskId,
+        task.title,
+        fromColumnName,
+        toColumnName,
+        _userId
+      );
+    }
+
+    return updatedTask;
+  }
+
+  /**
+   * Mark a completed task as incomplete
+   * Determines new status based on subtask completion
+   */
+  static async markTaskIncomplete(taskId: number, _userId?: number): Promise<TaskResponse> {
+    // Get task with subtasks
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: { 
+        subtasks: true,
+        project: true,
+      },
+    });
+
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    // Allow marking incomplete if task is COMPLETED or IN_REVIEW
+    // This handles cases where subtasks were marked incomplete first
+    if (task.status !== 'COMPLETED' && task.status !== 'IN_REVIEW') {
+      throw new Error('Task must be completed or in review to mark as incomplete');
+    }
+
+    // Determine new status based on subtasks
+    let newStatus: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' = 'TODO'; // Default
+    const totalSubtasks = task.subtasks.length;
+    
+    if (totalSubtasks > 0) {
+      const completedSubtasks = task.subtasks.filter((st: any) => st.completed).length;
+      
+      // If all subtasks are complete, move to IN_REVIEW
+      if (completedSubtasks === totalSubtasks) {
+        newStatus = 'IN_REVIEW';
+      }
+      // If some subtasks are incomplete, move to IN_PROGRESS
+      else if (completedSubtasks > 0) {
+        newStatus = 'IN_PROGRESS';
+      }
+      // If no subtasks are complete, move to TODO
+      else {
+        newStatus = 'TODO';
+      }
+    }
+
+    const updatedTask = await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        status: newStatus,
+      },
+    });
+
+    // Log activity
+    await activityService.logTaskStatusChange(
+      task.projectId,
+      taskId,
+      task.title,
+      'COMPLETED',
+      newStatus,
+      _userId
+    );
 
     return updatedTask;
   }
@@ -368,6 +552,24 @@ export class TaskService {
   static async getTasksByColumn(projectId: number): Promise<Map<string, TaskResponse[]>> {
     const tasks = await prisma.task.findMany({
       where: { projectId },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        priority: true,
+        createdAt: true,
+        updatedAt: true,
+        projectId: true,
+        assigneeId: true,
+        order: true,
+        tags: true,
+        columnId: true,
+        endDate: true,
+        startDate: true,
+        labelText: true,
+        labelColor: true,
+      },
       orderBy: { order: 'asc' },
     });
 

@@ -105,7 +105,7 @@ const Dashboard = () => {
 					
 					// Map selectedTemplate to workflowType
 					const workflowType = selectedTemplate === "auto-sync" ? "AUTOMATED" : "CUSTOM";
-
+					
 					const response: any = await api.createProject({
 						title: projectData.name,
 						description: projectData.description || undefined,

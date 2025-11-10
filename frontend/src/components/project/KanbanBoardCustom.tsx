@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,8 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
     return 'TODO';
   };
 
+
+
   const handleCreateTask = async (taskData: any) => {
     if (!projectId) return;
     
@@ -91,7 +93,7 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         }
       }
       
-      // Invalidate cache to refresh
+      // Refresh tasks list
       queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
       
       // Notify parent to refresh
@@ -104,20 +106,16 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
   const handleQuickAddCard = async (columnId: number | string) => {
     if (newCardTitle.trim() && projectId) {
       try {
-        // Find the column to get its title
-        const column = customColumns.find(col => col.id === columnId);
-        const columnTitle = column ? column.title : 'To Do';
-        const statusValue = mapColumnTitleToStatus(columnTitle);
-        
         await api.createTask(projectId, {
           title: newCardTitle,
-          status: statusValue,
+          columnId: columnId.toString(),
+          status: 'TODO', // Default status for custom workflow tasks
           priority: 'MEDIUM',
           startDate: new Date().toISOString().split('T')[0],
           endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         });
         
-        // Invalidate cache to refresh
+        // Refresh tasks list
         queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
         
         // Notify parent to refresh
@@ -147,8 +145,9 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         };
         
         const newColumn = await api.createCustomColumn(projectId, newColumnData);
+        console.log("Stage created:", newColumn);
         
-        // Invalidate cache to refresh
+        // Refresh columns list
         queryClient.invalidateQueries({ queryKey: projectKeys.columns(projectId) });
         
         setNewColumnTitle("");
@@ -173,8 +172,9 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         await api.updateCustomColumn(typeof columnId === 'number' ? columnId : parseInt(columnId), {
           title: editingColumnTitle,
         });
+        console.log("Column updated:", editingColumnId);
         
-        // Invalidate cache to refresh
+        // Refresh columns list
         queryClient.invalidateQueries({ queryKey: projectKeys.columns(projectId) });
         
         setEditingColumnId(null);
@@ -210,14 +210,15 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
           }
         }
         
-        // Invalidate tasks cache
+        // Refresh tasks
         queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
       }
       
       // Delete the column from backend
       await api.deleteCustomColumn(typeof columnId === 'number' ? columnId : parseInt(columnId));
+      console.log("Stage deleted:", columnId);
       
-      // Invalidate columns cache
+      // Refresh columns list
       queryClient.invalidateQueries({ queryKey: projectKeys.columns(projectId) });
       
       // Notify parent that columns have changed
@@ -245,30 +246,24 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
     if (!projectId) return;
     
     try {
-      // Find the column to get its title
-      const column = customColumns.find(col => col.id === columnId);
-      const columnTitle = column ? column.title : 'To Do';
-      const statusValue = mapColumnTitleToStatus(columnTitle);
+      // Use optimized column move API for better performance
+      await api.moveTaskToColumn(taskId, columnId.toString());
       
-      // Update task status via API
-      await api.updateTask(taskId, { status: statusValue });
-      
-      // Invalidate cache to refresh
+      // Optimized: Update task cache using React Query
       queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
       
-      // Notify parent to refresh
+      // Notify parent to refresh (lightweight)
       onTasksChange?.();
+      
+      console.log(`Moved task ${taskId} to stage ${columnId}`);
     } catch (error) {
       console.error('Failed to move task:', error);
     }
   };
 
   const getTasksByColumn = (columnId: number | string) => {
-    // Find the column to get its title
-    const column = customColumns.find(col => col.id === columnId);
-    const columnTitle = column ? column.title : '';
-    const statusValue = mapColumnTitleToStatus(columnTitle);
-    return tasks.filter((task) => task.status === statusValue);
+    // For custom workflows, filter by columnId instead of status
+    return tasks.filter((task) => task.columnId === columnId.toString());
   };
 
   const getColumnColor = (color: string) => {
@@ -307,6 +302,19 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
     }
   };
 
+
+
+  // Helper function to calculate progress based on subtasks
+  const calculateTaskProgress = (task: any) => {
+    if (!task.subtasks || task.subtasks.length === 0) {
+      return 0;
+    }
+    const completedSubtasks = task.subtasks.filter((subtask: any) => subtask.completed).length;
+    return Math.round((completedSubtasks / task.subtasks.length) * 100);
+  };
+
+
+
   return (
     <>
       <div className="mb-4">
@@ -329,9 +337,74 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         </div>
       ) : (
         <>
-          {/* Kanban Board with Drag & Drop */}
-          <div className="flex gap-4 overflow-x-auto pb-4">
-            {customColumns.map((column) => {
+          {customColumns.length === 0 ? (
+            /* Empty State */
+            !isAddingColumn ? (
+              <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
+                <div className="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mb-6">
+                  <Plus className="w-12 h-12 text-purple-600" />
+                </div>
+                <h3 className="text-2xl font-semibold text-slate-900 mb-3">
+                  Start Building Your Workflow
+                </h3>
+                <p className="text-slate-600 max-w-md mb-8 leading-relaxed">
+                  Create your first stage to organize tasks your way. You can add as many stages as you need and customize them to fit your workflow.
+                </p>
+                <Button
+                  onClick={() => setIsAddingColumn(true)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-base font-medium"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Create Your First Stage
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 px-8">
+                <div className="w-80 bg-slate-50 rounded-lg border border-slate-200 p-4 flex flex-col gap-2">
+                  <Input
+                    autoFocus
+                    placeholder="Enter stage title..."
+                    value={newColumnTitle}
+                    onChange={(e) => setNewColumnTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddColumn();
+                      } else if (e.key === 'Escape') {
+                        setNewColumnTitle("");
+                        setIsAddingColumn(false);
+                      }
+                    }}
+                    className="h-10 border-slate-300 text-sm"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleAddColumn}
+                      className="bg-purple-600 hover:bg-purple-700 text-white h-8 flex-1"
+                    >
+                      Add stage
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setNewColumnTitle("");
+                        setIsAddingColumn(false);
+                      }}
+                      className="h-8 hover:bg-slate-100 text-slate-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )
+          ) : (
+            <>
+              {/* Kanban Board with Drag & Drop */}
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                {customColumns.map((column) => {
               const columnTasks = getTasksByColumn(column.id);
 
               return (
@@ -383,7 +456,7 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
                         size="sm"
                         onClick={() => handleStartEditColumn(column)}
                         className="h-6 w-6 p-0 hover:bg-slate-200 transition-colors"
-                        title="Edit column"
+                        title="Edit stage"
                       >
                         <Pencil className="w-3 h-3" />
                       </Button>
@@ -393,7 +466,7 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
                           size="sm"
                           onClick={() => handleDeleteColumn(column.id)}
                           className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600 transition-colors"
-                          title="Delete column"
+                          title="Delete stage"
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -417,30 +490,47 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
                         draggable
                         onDragStart={(e) => handleDragStart(e, task.id)}
                         onClick={() => setSelectedTask(task)}
-                        className="cursor-pointer group bg-white border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200"
+                        className="cursor-pointer group bg-white border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200 relative"
                       >
                         <CardContent className="p-3 space-y-3">
-                          {/* Drag Handle & Title */}
+                          {/* Drag Handle, Title & Label */}
                           <div className="flex items-start gap-2">
                             <GripVertical className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
-                            <h4 
-                              className="text-sm font-medium text-slate-900 group-hover:text-purple-600 transition-colors line-clamp-2 flex-1"
-                            >
-                              {task.title}
-                            </h4>
+                            <div className="flex-1 flex items-start justify-between gap-2">
+                              <h4 
+                                className="text-sm font-medium text-slate-900 group-hover:text-purple-600 transition-colors line-clamp-2"
+                              >
+                                {task.title}
+                              </h4>
+                              {/* Custom Label - Top Right Corner */}
+                              {task.labelText && task.labelColor && (
+                                <Badge
+                                  className="text-xs px-2 py-1 rounded-full text-white flex-shrink-0"
+                                  style={{ backgroundColor: task.labelColor }}
+                                >
+                                  {task.labelText}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
 
                           {/* Progress Bar */}
-                          {task.status === 'COMPLETED' && (
+                          {task.subtasks && task.subtasks.length > 0 && (
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between">
                                 <span className="text-xs text-slate-500 font-medium">Progress</span>
-                                <span className="text-xs font-semibold text-slate-700">100%</span>
+                                <span className="text-xs font-semibold text-slate-700">{calculateTaskProgress(task)}%</span>
                               </div>
                               <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
                                 <div 
-                                  className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all"
-                                  style={{ width: '100%' }}
+                                  className={task.labelColor ? "h-full transition-all" : "h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all"}
+                                  style={{ 
+                                    width: `${calculateTaskProgress(task)}%`,
+                                    ...(task.labelColor && { 
+                                      backgroundColor: task.labelColor,
+                                      backgroundImage: `linear-gradient(to right, ${task.labelColor}, ${task.labelColor}dd)`
+                                    })
+                                  }}
                                 />
                               </div>
                             </div>
@@ -514,7 +604,7 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
                       className="w-full justify-start text-slate-600 hover:bg-slate-200 h-9 text-sm font-normal"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add a card
+                      Add a task
                     </Button>
                   )}
                 </div>
@@ -532,14 +622,14 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
               className="w-full h-full min-h-[200px] flex flex-col items-center justify-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg transition-colors"
             >
               <Plus className="w-5 h-5" />
-              <span className="text-sm font-medium">Add another list</span>
+              <span className="text-sm font-medium">Add another stage</span>
             </Button>
           </div>
         ) : (
           <div className="flex-shrink-0 w-80 bg-slate-50 rounded-lg border border-slate-200 p-4 flex flex-col gap-2">
             <Input
               autoFocus
-              placeholder="Enter list title..."
+              placeholder="Enter stage title..."
               value={newColumnTitle}
               onChange={(e) => setNewColumnTitle(e.target.value)}
               onKeyDown={(e) => {
@@ -559,7 +649,7 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
                 onClick={handleAddColumn}
                 className="bg-purple-600 hover:bg-purple-700 text-white h-8 flex-1"
               >
-                Add list
+                Add stage
               </Button>
               <Button
                 size="sm"
@@ -575,7 +665,9 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
             </div>
           </div>
         )}
-      </div>
+              </div>
+            </>
+          )}
 
       {selectedTask && (
         <TaskModal
@@ -595,8 +687,23 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
             onTasksChange?.();
           }}
           onTaskUpdate={async () => {
-            queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
-            onTasksChange?.();
+            try {
+              queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+              console.log("KanbanBoardCustom - Refreshed tasks after update");
+              
+              // Update the selectedTask with fresh data to reflect changes in modal
+              if (selectedTask && projectId) {
+                // Get updated task data
+                const updatedTask = tasks.find(t => t.id === selectedTask.id);
+                if (updatedTask) {
+                  setSelectedTask(updatedTask);
+                }
+              }
+              
+              onTasksChange?.();
+            } catch (error) {
+              console.error('Failed to refetch tasks:', error);
+            }
           }}
           projectMembers={projectMembers}
         />
