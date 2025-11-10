@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar, CheckCircle2, Clock, AlertCircle, FileText, Archive, Plus } from "lucide-react";
 import TaskModal from "./TaskModal";
 import TaskFormModal from "./TaskFormModal";
-import { api, Task } from "@/lib/api";
+import { Task } from "@/lib/api";
+import { useProjectTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useProjectData";
 
 interface KanbanBoardAutoSyncProps {
   projectMembers: any[];
@@ -19,47 +20,26 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
   const projectId = propProjectId || (urlProjectId ? parseInt(urlProjectId) : undefined);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch tasks from API
-  useEffect(() => {
-    const fetchTasks = async () => {
-      if (!projectId) return;
-      
-      try {
-        setIsLoading(true);
-        const response: any = await api.getTasksByProject(projectId);
-        console.log("KanbanBoard - Fetched tasks:", response);
-        setTasks(Array.isArray(response) ? response : []);
-      } catch (error) {
-        console.error('Failed to fetch tasks:', error);
-        setTasks([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTasks();
-  }, [projectId]);
+  // Use cached tasks data
+  const { data: tasks = [], isLoading } = useProjectTasks(projectId);
+  const createTaskMutation = useCreateTask(projectId);
+  const updateTaskMutation = useUpdateTask(projectId);
+  const deleteTaskMutation = useDeleteTask(projectId);
 
   const handleCreateTask = async (taskData: any) => {
     if (!projectId) return;
-    
-    console.log('=== handleCreateTask DEBUG ===');
-    console.log('Task Data received:', taskData);
-    console.log('Subtasks in taskData:', taskData.subtasks);
     
     try {
       // Find the first assigned member and get their ID
       let assigneeId = null;
       if (taskData.assignees && taskData.assignees.length > 0) {
-        const assigneeName = taskData.assignees[0]; // Take first assignee for now
+        const assigneeName = taskData.assignees[0];
         const assignee = projectMembers.find(member => member.name === assigneeName);
         assigneeId = assignee ? assignee.id : null;
       }
 
-      const newTask: any = await api.createTask(projectId, {
+      const newTask: any = await createTaskMutation.mutateAsync({
         title: taskData.title,
         description: taskData.description,
         startDate: taskData.startDate,
@@ -68,44 +48,27 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
         assigneeId: assigneeId,
         tags: taskData.tags || [],
       });
-      
-      console.log("Task created successfully:", newTask);
-      console.log("Task ID:", newTask.id);
 
-      // Create subtasks if any
+      // Create subtasks if any (using direct API call for subtasks)
       if (taskData.subtasks && taskData.subtasks.length > 0 && newTask.id) {
+        const { api } = await import('@/lib/api');
         const taskId = newTask.id;
-        console.log(`Creating ${taskData.subtasks.length} subtasks for task ${taskId}`);
         
         for (let i = 0; i < taskData.subtasks.length; i++) {
           const subtask = taskData.subtasks[i];
-          console.log(`Creating subtask ${i + 1}:`, subtask);
           
           try {
-            const createdSubtask = await api.createSubtask(taskId, {
+            await api.createSubtask(taskId, {
               title: subtask.title,
               order: i,
             });
-            console.log(`Subtask ${i + 1} created:`, createdSubtask);
           } catch (subtaskError) {
             console.error(`Failed to create subtask ${i + 1}:`, subtaskError);
           }
         }
-        console.log(`Finished creating ${taskData.subtasks.length} subtasks`);
-      } else {
-        console.log('No subtasks to create. Checks:', {
-          hasSubtasks: !!taskData.subtasks,
-          subtasksLength: taskData.subtasks?.length,
-          hasTaskId: !!newTask.id
-        });
       }
       
-      // Refresh tasks list
-      const response: any = await api.getTasksByProject(projectId);
-      setTasks(Array.isArray(response) ? response : []);
-      
       // Notify parent component to refresh
-      console.log("Calling onTasksChange to refresh Overview");
       onTasksChange?.();
       
       setIsCreateTaskModalOpen(false);
@@ -314,19 +277,14 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
           task={selectedTask}
           open={!!selectedTask}
           onClose={() => setSelectedTask(null)}
-          onDelete={(taskId) => {
-            setTasks(tasks.filter(t => t.id !== taskId));
+          onDelete={async (taskId) => {
+            await deleteTaskMutation.mutateAsync(taskId);
             setSelectedTask(null);
+            onTasksChange?.();
           }}
           onTaskUpdate={async () => {
-            try {
-              const response: any = await api.getTasksByProject(projectId);
-              console.log("KanbanBoard - Refetched tasks after update:", response);
-              setTasks(Array.isArray(response) ? response : []);
-              onTasksChange?.();
-            } catch (error) {
-              console.error('Failed to refetch tasks:', error);
-            }
+            // Cache will auto-update via invalidation
+            onTasksChange?.();
           }}
           projectMembers={projectMembers}
         />
