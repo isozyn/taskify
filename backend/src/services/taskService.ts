@@ -167,6 +167,8 @@ export class TaskService {
         columnId: true,
         endDate: true,
         startDate: true,
+        labelText: true,
+        labelColor: true,
         assignee: {
           select: {
             id: true,
@@ -179,28 +181,8 @@ export class TaskService {
       orderBy: { order: 'asc' },
     });
 
-    // Fetch assignees and subtasks separately for all tasks
+    // Fetch subtasks separately for all tasks
     const taskIds = tasks.map(t => t.id);
-    const taskAssignees = taskIds.length > 0 ? await prisma.$queryRaw`
-      SELECT ta.*, u.id as user_id, u.name, u.email, u.avatar 
-      FROM "TaskAssignee" ta 
-      JOIN "User" u ON ta."userId" = u.id 
-      WHERE ta."taskId" = ANY(${taskIds})
-    ` : [];
-
-    // Group assignees by taskId
-    const assigneesByTaskId = (taskAssignees as any[]).reduce((acc: Record<number, any[]>, assignee: any) => {
-      if (!acc[assignee.taskId]) {
-        acc[assignee.taskId] = [];
-      }
-      acc[assignee.taskId].push({
-        id: assignee.user_id,
-        name: assignee.name,
-        email: assignee.email,
-        avatar: assignee.avatar,
-      });
-      return acc;
-    }, {});
     const allSubtasks = await (prisma as any).subtask.findMany({
       where: { taskId: { in: taskIds } },
       orderBy: { order: 'asc' },
@@ -279,7 +261,7 @@ export class TaskService {
           ...task,
           status: finalStatus,
           subtasks: taskSubtasks,
-          assignees: assigneesByTaskId[task.id] || [],
+          assignees: task.assignee ? [task.assignee] : [],
         };
       }));
 
@@ -290,7 +272,7 @@ export class TaskService {
     return tasks.map(task => ({
       ...task,
       subtasks: subtasksByTaskId[task.id] || [],
-      assignees: assigneesByTaskId[task.id] || [],
+      assignees: task.assignee ? [task.assignee] : [],
     }));
   }
 
@@ -585,6 +567,8 @@ export class TaskService {
         columnId: true,
         endDate: true,
         startDate: true,
+        labelText: true,
+        labelColor: true,
       },
       orderBy: { order: 'asc' },
     });

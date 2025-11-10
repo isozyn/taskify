@@ -66,6 +66,8 @@ export interface TaskResponse {
   assigneeId?: number | null; // Keep for backward compatibility
   tags: string[];
   columnId?: string | null;
+  labelText?: string | null;
+  labelColor?: string | null;
   order: number;
   createdAt: Date;
   updatedAt: Date;

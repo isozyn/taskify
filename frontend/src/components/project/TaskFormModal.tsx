@@ -17,6 +17,8 @@ interface Task {
   endDate: string;
   assignees: string[];
   priority: string;
+  labelText?: string | null;
+  labelColor?: string | null;
 }
 
 interface TaskFormData {
@@ -27,6 +29,8 @@ interface TaskFormData {
   endDate: string;
   assignees: string[];
   priority: string;
+  labelText?: string;
+  labelColor?: string;
   subtasks?: Array<{ title: string; completed: boolean }>;
 }
 
@@ -57,6 +61,8 @@ const TaskFormModal = ({
     endDate: "",
     assignees: [],
     priority: "medium",
+    labelText: "",
+    labelColor: "#64748b",
     subtasks: [],
   });
 
@@ -73,6 +79,8 @@ const TaskFormModal = ({
         endDate: editTask.endDate,
         assignees: editTask.assignees,
         priority: editTask.priority,
+        labelText: editTask.labelText || "",
+        labelColor: editTask.labelColor || "#64748b",
         subtasks: [],
       });
     } else {
@@ -84,6 +92,8 @@ const TaskFormModal = ({
         endDate: "",
         assignees: [],
         priority: "medium",
+        labelText: "",
+        labelColor: "#64748b",
         subtasks: [],
       });
     }
@@ -267,6 +277,45 @@ const TaskFormModal = ({
                   onChange={(e) => setTaskData({ ...taskData, endDate: e.target.value })}
                   className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all"
                 />
+              </div>
+            </div>
+
+            {/* Label */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="label-text" className="text-sm font-semibold text-slate-900">
+                  Label Text
+                </Label>
+                <Input
+                  id="label-text"
+                  type="text"
+                  placeholder="Enter label text"
+                  value={taskData.labelText || ""}
+                  onChange={(e) => setTaskData({ ...taskData, labelText: e.target.value })}
+                  className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="label-color" className="text-sm font-semibold text-slate-900">
+                  Label Color
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="label-color"
+                    type="color"
+                    value={taskData.labelColor || "#64748b"}
+                    onChange={(e) => setTaskData({ ...taskData, labelColor: e.target.value })}
+                    className="h-10 w-16 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all p-1"
+                  />
+                  <Input
+                    type="text"
+                    value={taskData.labelColor || "#64748b"}
+                    onChange={(e) => setTaskData({ ...taskData, labelColor: e.target.value })}
+                    className="h-10 flex-1 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all"
+                    placeholder="#64748b"
+                  />
+                </div>
               </div>
             </div>
 
