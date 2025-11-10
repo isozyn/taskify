@@ -44,7 +44,40 @@ export class ProjectService {
 
 		// Custom workflow starts empty - users add columns as needed
 
-		return project;
+		// Fetch and return the complete project with members and owner
+		const completeProject = await prisma.project.findUnique({
+			where: { id: project.id },
+			include: {
+				customColumns: {
+					orderBy: { order: "asc" },
+				},
+				members: {
+					include: {
+						user: {
+							select: {
+								id: true,
+								name: true,
+								email: true,
+								avatar: true,
+								username: true,
+							},
+						},
+					},
+					orderBy: { joinedAt: "asc" },
+				},
+				owner: {
+					select: {
+						id: true,
+						name: true,
+						email: true,
+						avatar: true,
+						username: true,
+					},
+				},
+			},
+		});
+
+		return completeProject!;
 	}
 
 	/**

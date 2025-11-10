@@ -62,6 +62,7 @@ const Dashboard = () => {
 	const [activeTab, setActiveTab] = useState("recent");
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+	const [isCreatingProject, setIsCreatingProject] = useState(false);
 
 	// Fetch projects from database
 	useEffect(() => {
@@ -86,12 +87,15 @@ const Dashboard = () => {
 			const { createProject, selectedTemplate, projectData } = location.state || {};
 			
 			if (createProject && selectedTemplate && projectData) {
-				console.log("Creating project with data:", { selectedTemplate, projectData });
-				console.log("User authenticated:", isAuthenticated, "User:", user);
+				// Prevent duplicate execution in React Strict Mode
+				if (isCreatingProject) return;
+				
+				setIsCreatingProject(true);
 				
 				if (!isAuthenticated) {
 					console.error("User not authenticated, redirecting to login");
 					navigate("/auth");
+					setIsCreatingProject(false);
 					return;
 				}
 				
@@ -102,7 +106,6 @@ const Dashboard = () => {
 					// Map selectedTemplate to workflowType
 					const workflowType = selectedTemplate === "auto-sync" ? "AUTOMATED" : "CUSTOM";
 
-					console.log("Calling API to create project...");
 					const response: any = await api.createProject({
 						title: projectData.name,
 						description: projectData.description || undefined,
@@ -110,8 +113,6 @@ const Dashboard = () => {
 						startDate: projectData.startDate || undefined,
 						endDate: projectData.endDate || undefined,
 					});
-
-					console.log("Project created successfully:", response);
 
 					// Invite team members if any (excluding current user)
 					if (projectData.teamMembers && Array.isArray(projectData.teamMembers)) {
@@ -128,7 +129,6 @@ const Dashboard = () => {
 										role: member.role
 									}))
 								);
-								console.log("Team members invited successfully");
 							} catch (inviteError) {
 								console.error('Failed to send some invitations:', inviteError);
 								// Continue anyway, project was created successfully
@@ -136,26 +136,27 @@ const Dashboard = () => {
 						}
 					}
 
-					// Refresh projects list
-					console.log("Refreshing projects list...");
-					const updatedResponse: any = await api.getProjects();
-					setProjects(updatedResponse || []);
-					console.log("Projects updated:", updatedResponse);
-
-					// Navigate to the new project workspace
+					// Navigate directly to the new project board with project data to avoid refetch
 					if (response.id) {
-						console.log("Navigating to project:", response.id);
-						navigate(`/project/${response.id}`, { replace: true });
+						navigate(`/project/${response.id}`, { 
+							replace: true,
+							state: { 
+								projectData: response,
+								skipLoading: true 
+							}
+						});
+						return;
 					}
 				} catch (error) {
 					console.error("Failed to create project:", error);
 					alert(`Failed to create project: ${error.message || 'Unknown error'}`);
+					setIsCreatingProject(false);
 				}
 			}
 		};
 
 		handleProjectCreation();
-	}, [location.state, navigate, isAuthenticated, user]);
+	}, [location.state, navigate, isAuthenticated, isCreatingProject]);
 
 	// Mock active tasks data
 	const activeTasks = [
@@ -539,6 +540,21 @@ const Dashboard = () => {
 			</div>
 		);
 	};
+
+	// Show loading screen when creating project
+	if (isCreatingProject) {
+		return (
+			<div className="min-h-screen bg-slate-50">
+				<Navbar />
+				<div className="h-[calc(100vh-64px)] flex items-center justify-center">
+					<div className="text-center">
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+						<p className="text-slate-600 font-medium">Creating your project...</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="min-h-screen bg-slate-50">

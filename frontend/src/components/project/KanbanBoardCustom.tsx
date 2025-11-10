@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,9 @@ import {
 import TaskModal from "./TaskModal";
 import TaskFormModal from "./TaskFormModal";
 import { api, Task as ApiTask, CustomColumn } from "@/lib/api";
+import { useProjectTasks, useCustomColumns, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useProjectData";
+import { useQueryClient } from "@tanstack/react-query";
+import { projectKeys } from "@/hooks/useProjectData";
 
 interface KanbanBoardCustomProps {
   projectMembers: any[];
@@ -34,11 +37,16 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [editingColumnId, setEditingColumnId] = useState<number | string | null>(null);
   const [editingColumnTitle, setEditingColumnTitle] = useState("");
-  const [tasks, setTasks] = useState<ApiTask[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Custom columns - user can create/edit/delete these
-  const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
+  // Use cached data
+  const { data: tasks = [], isLoading: isLoadingTasks } = useProjectTasks(projectId);
+  const { data: customColumns = [], isLoading: isLoadingColumns } = useCustomColumns(projectId, true);
+  const createTaskMutation = useCreateTask(projectId);
+  const updateTaskMutation = useUpdateTask(projectId);
+  const deleteTaskMutation = useDeleteTask(projectId);
+  const queryClient = useQueryClient();
+
+  const isLoading = isLoadingTasks || isLoadingColumns;
 
   // Helper function to map column title to valid TaskStatus enum
   const mapColumnTitleToStatus = (columnTitle: string): string => {
@@ -111,7 +119,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
     
     try {
       const newTask: any = await api.createTask(projectId, taskData);
-      console.log("Created custom task:", newTask);
 
       // Create subtasks if any
       if (taskData.subtasks && taskData.subtasks.length > 0 && newTask.id) {
@@ -123,7 +130,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
             order: i,
           });
         }
-        console.log(`Created ${taskData.subtasks.length} subtasks`);
       }
       
       // Refresh tasks list
@@ -765,8 +771,8 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
               });
             }
           }}
-          onDelete={(taskId) => {
-            setTasks(tasks.filter(t => t.id !== taskId));
+          onDelete={async (taskId) => {
+            await deleteTaskMutation.mutateAsync(taskId);
             setSelectedTask(null);
             onTasksChange?.();
           }}
