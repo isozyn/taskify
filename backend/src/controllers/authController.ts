@@ -148,7 +148,7 @@ export const login = async (
 		res.cookie("refreshToken", refreshToken, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
 			path: "/",
 			maxAge: rememberMe
 				? 30 * 24 * 60 * 60 * 1000 // 30 days
@@ -159,7 +159,7 @@ export const login = async (
 		res.cookie("accessToken", accessToken, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
 			path: "/",
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
@@ -282,7 +282,7 @@ export const refresh = async (
 		res.cookie("accessToken", newAccessToken, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
 			path: "/",
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
@@ -317,14 +317,14 @@ export const logout = async (
 		res.clearCookie("refreshToken", {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
 			path: "/",
 		});
 
 		res.clearCookie("accessToken", {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
 			path: "/",
 		});
 
@@ -390,7 +390,7 @@ export const verifyEmail = async (
 			res.cookie("refreshToken", refreshToken, {
 				httpOnly: true,
 				secure: process.env.NODE_ENV === "production",
-				sameSite: "strict",
+				sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
 				maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 			});
 
@@ -398,7 +398,7 @@ export const verifyEmail = async (
 			res.cookie("accessToken", accessToken, {
 				httpOnly: true,
 				secure: process.env.NODE_ENV === "production",
-				sameSite: "strict",
+				sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
 				maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 			});
 
@@ -438,7 +438,7 @@ export const verifyEmail = async (
 		res.cookie("refreshToken", refreshToken, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
 			maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 		});
 
@@ -446,7 +446,7 @@ export const verifyEmail = async (
 		res.cookie("accessToken", accessToken, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
 
@@ -617,12 +617,15 @@ try {
 		user = await userService.findUserByEmail(googleUser.email);
 
 		if (user) {
-			// Link Google account to existing user
+			// Link Google account to existing user and save tokens
 			user = await userService.updateUser(user.id, {
 				googleId: googleUser.googleId,
 				authProvider: 'GOOGLE',
 				avatar: googleUser.picture || user.avatar,
 				isEmailVerified: true, // Google emails are verified
+				googleAccessToken: googleUser.accessToken,
+				googleRefreshToken: googleUser.refreshToken,
+				googleTokenExpiry: googleUser.tokenExpiry,
 			} as any);
 		} else {
 			// Create new user with Google account
@@ -646,8 +649,18 @@ try {
 				authProvider: 'GOOGLE',
 				avatar: googleUser.picture,
 				isEmailVerified: true, // Google emails are verified
+				googleAccessToken: googleUser.accessToken,
+				googleRefreshToken: googleUser.refreshToken,
+				googleTokenExpiry: googleUser.tokenExpiry,
 			});
 		}
+	} else {
+		// User exists, update tokens
+		user = await userService.updateUser(user.id, {
+			googleAccessToken: googleUser.accessToken,
+			googleRefreshToken: googleUser.refreshToken,
+			googleTokenExpiry: googleUser.tokenExpiry,
+		} as any);
 	}
 
 	// Generate tokens

@@ -22,6 +22,10 @@ model User {
   username             String                @unique
   googleId             String?               @unique
   authProvider         AuthProvider          @default(LOCAL)
+  googleAccessToken    String?
+  googleRefreshToken   String?
+  googleTokenExpiry    DateTime?
+  calendarSyncEnabled  Boolean               @default(false)
   comments             Comment[]
   notifications        Notification[]
   ownedProjects        Project[]             @relation("ProjectOwner")
@@ -85,24 +89,25 @@ model ProjectMember {
 }
 
 model Task {
-  id          Int        @id @default(autoincrement())
-  title       String
-  description String?
-  status      TaskStatus @default(TODO)
-  priority    Priority   @default(MEDIUM)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  projectId   Int
-  assigneeId  Int?
-  order       Int        @default(0)
-  tags        String[]   @default([])
-  columnId    String?
-  endDate     DateTime?
-  startDate   DateTime?
-  comments    Comment[]
-  subtasks    Subtask[]
-  assignee    User?      @relation(fields: [assigneeId], references: [id])
-  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id                    Int        @id @default(autoincrement())
+  title                 String
+  description           String?
+  status                TaskStatus @default(TODO)
+  priority              Priority   @default(MEDIUM)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  projectId             Int
+  assigneeId            Int?
+  order                 Int        @default(0)
+  tags                  String[]   @default([])
+  columnId              String?
+  endDate               DateTime?
+  startDate             DateTime?
+  googleCalendarEventId String?
+  comments              Comment[]
+  subtasks              Subtask[]
+  assignee              User?      @relation(fields: [assigneeId], references: [id])
+  project               Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([assigneeId])

@@ -1,10 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
-import { Filter, Download } from "lucide-react";
+import { Filter, Download, CheckCircle2, Calendar as CalendarIcon } from "lucide-react";
 import TaskModal from "./TaskModal";
+import { api, CalendarSyncStatus } from "@/lib/api";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar-styles.css';
 
@@ -17,6 +19,23 @@ interface CalendarViewProps {
 const CalendarView = ({ projectMembers }: CalendarViewProps) => {
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [currentView, setCurrentView] = useState<any>(Views.MONTH);
+    const [syncStatus, setSyncStatus] = useState<CalendarSyncStatus>({
+        calendarSyncEnabled: false,
+        calendarConnected: false,
+    });
+
+    // Fetch sync status
+    useEffect(() => {
+        const fetchSyncStatus = async () => {
+            try {
+                const response: any = await api.getCalendarSyncStatus();
+                setSyncStatus(response);
+            } catch (error) {
+                console.error("Failed to fetch sync status:", error);
+            }
+        };
+        fetchSyncStatus();
+    }, []);
 
     // Mock tasks data - same as TimelineView for consistency
     const tasks = [
@@ -183,6 +202,25 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
 
     return (
         <div className="space-y-6">
+            {/* Google Calendar Sync Status Banner */}
+            {syncStatus.calendarSyncEnabled && syncStatus.calendarConnected && (
+                <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <div className="flex-1">
+                        <p className="text-sm font-medium text-green-900">
+                            Google Calendar Sync Active
+                        </p>
+                        <p className="text-xs text-green-700">
+                            Tasks are automatically syncing to your Google Calendar
+                        </p>
+                    </div>
+                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+                        <CalendarIcon className="w-3 h-3 mr-1" />
+                        Synced
+                    </Badge>
+                </div>
+            )}
+
             {/* Calendar Header with Stats and Actions */}
             <div className="flex items-center justify-between">
                 <div className="space-y-1">

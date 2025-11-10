@@ -147,9 +147,16 @@ const Dashboard = () => {
 						console.log("Navigating to project:", response.id);
 						navigate(`/project/${response.id}`, { replace: true });
 					}
-				} catch (error) {
+				} catch (error: any) {
 					console.error("Failed to create project:", error);
-					alert(`Failed to create project: ${error.message || 'Unknown error'}`);
+					const errorMessage = error?.message || error?.error || 'Unknown error';
+					alert(`Failed to create project: ${errorMessage}`);
+					
+					// If it's an auth error, redirect to login
+					if (error?.status === 401 || error?.status === 403) {
+						console.log("Authentication error, redirecting to login");
+						navigate("/auth");
+					}
 				}
 			}
 		};

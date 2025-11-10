@@ -97,6 +97,33 @@ export class TaskService {
       data.assigneeId
     );
     
+    // Auto-sync to Google Calendar if enabled
+    if (data.assigneeId) {
+      try {
+        const { GoogleCalendarService } = await import('./googleCalendarService');
+        const isSyncEnabled = await GoogleCalendarService.isCalendarSyncEnabled(data.assigneeId);
+        
+        if (isSyncEnabled) {
+          const calendarEvent = await GoogleCalendarService.createCalendarEvent(
+            data.assigneeId,
+            task
+          );
+          
+          // Update task with calendar event ID
+          if (calendarEvent.id) {
+            await prisma.task.update({
+              where: { id: task.id },
+              data: { googleCalendarEventId: calendarEvent.id },
+            });
+            console.log('Task synced to Google Calendar:', calendarEvent.id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to sync task to calendar:', error);
+        // Don't fail task creation if calendar sync fails
+      }
+    }
+    
     return task;
   }
 
@@ -328,6 +355,43 @@ export class TaskService {
       }
     }
 
+    // Auto-sync to Google Calendar if enabled
+    if (updatedTask.assigneeId) {
+      try {
+        const { GoogleCalendarService } = await import('./googleCalendarService');
+        const isSyncEnabled = await GoogleCalendarService.isCalendarSyncEnabled(updatedTask.assigneeId);
+        
+        if (isSyncEnabled) {
+          if (updatedTask.googleCalendarEventId) {
+            // Update existing calendar event
+            await GoogleCalendarService.updateCalendarEvent(
+              updatedTask.assigneeId,
+              updatedTask.googleCalendarEventId,
+              updatedTask
+            );
+            console.log('Task updated in Google Calendar');
+          } else {
+            // Create new calendar event
+            const calendarEvent = await GoogleCalendarService.createCalendarEvent(
+              updatedTask.assigneeId,
+              updatedTask
+            );
+            
+            if (calendarEvent.id) {
+              await prisma.task.update({
+                where: { id: updatedTask.id },
+                data: { googleCalendarEventId: calendarEvent.id },
+              });
+              console.log('Task synced to Google Calendar');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to sync task update to calendar:', error);
+        // Don't fail task update if calendar sync fails
+      }
+    }
+
     return updatedTask;
   }
 
@@ -343,6 +407,21 @@ export class TaskService {
       
       if (!task) {
         return false;
+      }
+      
+      // Delete from Google Calendar if synced
+      if (task.googleCalendarEventId && task.assigneeId) {
+        try {
+          const { GoogleCalendarService } = await import('./googleCalendarService');
+          await GoogleCalendarService.deleteCalendarEvent(
+            task.assigneeId,
+            task.googleCalendarEventId
+          );
+          console.log('Task deleted from Google Calendar');
+        } catch (error) {
+          console.error('Failed to delete task from calendar:', error);
+          // Continue with task deletion even if calendar delete fails
+        }
       }
       
       await prisma.task.delete({

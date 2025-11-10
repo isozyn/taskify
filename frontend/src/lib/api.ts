@@ -478,6 +478,47 @@ class ApiClient {
 		});
 	}
 
+	// Calendar methods
+	async enableCalendarSync() {
+		return this.request('/calendar/sync/enable', {
+			method: 'POST',
+		});
+	}
+
+	async disableCalendarSync() {
+		return this.request('/calendar/sync/disable', {
+			method: 'POST',
+		});
+	}
+
+	async getCalendarSyncStatus() {
+		return this.request('/calendar/sync/status', {
+			method: 'GET',
+		});
+	}
+
+	async getCalendarEvents(timeMin?: Date, timeMax?: Date) {
+		const params = new URLSearchParams();
+		if (timeMin) params.append('timeMin', timeMin.toISOString());
+		if (timeMax) params.append('timeMax', timeMax.toISOString());
+		
+		return this.request(`/calendar/events?${params.toString()}`, {
+			method: 'GET',
+		});
+	}
+
+	async syncTaskToCalendar(taskId: number) {
+		return this.request(`/calendar/sync/task/${taskId}`, {
+			method: 'POST',
+		});
+	}
+
+	async unsyncTaskFromCalendar(taskId: number) {
+		return this.request(`/calendar/sync/task/${taskId}`, {
+			method: 'DELETE',
+		});
+	}
+
 	async deleteComment(commentId: number) {
 		return this.request(`/comments/${commentId}`, {
 			method: "DELETE",
@@ -647,4 +688,29 @@ export interface ConversationResponse {
 export interface MessagesResponse {
 	messages?: Message[];
 	messageData?: Message;
+}
+
+// Calendar response types
+export interface CalendarSyncStatus {
+	calendarSyncEnabled: boolean;
+	calendarConnected: boolean;
+}
+
+export interface CalendarEvent {
+	id: string;
+	summary: string;
+	description?: string;
+	start: {
+		dateTime: string;
+		timeZone?: string;
+	};
+	end: {
+		dateTime: string;
+		timeZone?: string;
+	};
+	colorId?: string;
+}
+
+export interface CalendarEventsResponse {
+	events: CalendarEvent[];
 }

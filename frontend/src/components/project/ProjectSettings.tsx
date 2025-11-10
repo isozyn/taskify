@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, UserPlus, Activity, Crown, User, Mail, Copy } from "lucide-react";
+import { Trash2, UserPlus, Activity, Crown, User, Mail, Copy, Calendar } from "lucide-react";
 import MemberDetailModal from "./MemberDetailModal";
+import CalendarSettings from "./CalendarSettings";
 
 interface ProjectSettingsProps {
   project: any;
@@ -157,6 +158,10 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
       <TabsList>
         <TabsTrigger value="general">General</TabsTrigger>
         <TabsTrigger value="team">Team</TabsTrigger>
+        <TabsTrigger value="calendar">
+          <Calendar className="w-4 h-4 mr-2" />
+          Calendar
+        </TabsTrigger>
         <TabsTrigger value="activity">Activity Log</TabsTrigger>
       </TabsList>
 
@@ -343,6 +348,10 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
           isOpen={isMemberModalOpen}
           onOpenChange={setIsMemberModalOpen}
         />
+      </TabsContent>
+
+      <TabsContent value="calendar" className="space-y-4">
+        <CalendarSettings />
       </TabsContent>
 
       <TabsContent value="activity" className="space-y-4">

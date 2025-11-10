@@ -17,6 +17,8 @@ export const getGoogleAuthUrl = (): string => {
   const scopes = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
+    'https://www.googleapis.com/auth/calendar',           // Calendar access
+    'https://www.googleapis.com/auth/calendar.events',    // Calendar events
   ];
 
   const authUrl = client.generateAuthUrl({
@@ -50,13 +52,16 @@ export const verifyGoogleToken = async (code: string) => {
       throw new Error('Failed to get user payload from Google');
     }
 
-    // Return user information
+    // Return user information and tokens
     return {
       email: payload.email!,
       name: payload.name!,
       picture: payload.picture,
       emailVerified: payload.email_verified || false,
       googleId: payload.sub, // Google's unique user ID
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      tokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
     };
   } catch (error) {
     console.error('Error verifying Google token:', error);
