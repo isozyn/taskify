@@ -57,9 +57,10 @@ class ApiClient {
 					}
 				}
 
+				// Support different backend error shapes: { message } or { error }
 				throw {
-					message: data.message || "An error occurred",
-					errors: data.errors || [],
+					message: data.message || (data.error as string) || "An error occurred",
+					errors: data.errors || data.errorDetails || [],
 					status: response.status,
 				};
 			}
@@ -241,6 +242,9 @@ class ApiClient {
 			assigneeId?: number;
 			tags?: string[];
 			columnId?: string;
+			color?: string;
+			labelText?: string;
+			labelColor?: string;
 		}
 	) {
 		console.log("Creating task with data:", data);
@@ -260,14 +264,26 @@ class ApiClient {
 			priority?: string;
 			startDate?: string;
 			endDate?: string;
-			assigneeId?: number;
+			assigneeId?: number; // Keep for backward compatibility
+			assigneeIds?: number[]; // New multiple assignees field
 			tags?: string[];
 			columnId?: string;
+			color?: string;
+			labelText?: string;
+			labelColor?: string;
 		}
 	) {
 		return this.request(`/tasks/${taskId}`, {
 			method: "PUT",
 			body: JSON.stringify(data),
+		});
+	}
+
+	// Fast column move for drag and drop operations
+	async moveTaskToColumn(taskId: number, columnId: string) {
+		return this.request(`/tasks/${taskId}/move`, {
+			method: "PATCH",
+			body: JSON.stringify({ columnId }),
 		});
 	}
 
@@ -564,6 +580,9 @@ export interface Task {
 	assigneeId?: number | null;
 	tags: string[];
 	columnId?: string | null;
+	color?: string | null;
+	labelText?: string | null;
+	labelColor?: string | null;
 	order: number;
 	createdAt: string;
 	updatedAt: string;

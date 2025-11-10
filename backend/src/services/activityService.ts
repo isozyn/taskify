@@ -115,6 +115,25 @@ export const activityService = {
       description: `Task "${taskTitle}" was deleted`,
     });
   },
+
+  // Log task column move (for custom workflows)
+  async logTaskColumnMove(
+    projectId: number,
+    taskId: number,
+    taskTitle: string,
+    fromColumn: string,
+    toColumn: string,
+    userId?: number
+  ) {
+    return this.logActivity({
+      projectId,
+      userId,
+      action: 'TASK_COLUMN_MOVED',
+      targetType: 'TASK',
+      targetId: taskId,
+      description: `Task "${taskTitle}" moved from "${fromColumn}" to "${toColumn}"`,
+    });
+  },
 };
 
 export default activityService;

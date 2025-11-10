@@ -13,7 +13,7 @@ export class TaskController {
       const projectId = parseInt(req.params.projectId);
       
       if (!userId) {
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ message: 'Unauthorized' });
         return;
       }
 
@@ -52,7 +52,7 @@ export class TaskController {
 
       if (!projectId || isNaN(projectId)) {
         console.log('Invalid project ID:', req.params.projectId);
-        res.status(400).json({ error: 'Invalid project ID' });
+        res.status(400).json({ message: 'Invalid project ID' });
         return;
       }
 
@@ -70,7 +70,7 @@ export class TaskController {
         stack: error.stack,
         code: error.code
       });
-      res.status(400).json({ error: error.message || 'Failed to create task' });
+      res.status(400).json({ message: error.message || 'Failed to create task' });
     }
   }
 
@@ -83,12 +83,12 @@ export class TaskController {
       const taskId = parseInt(req.params.taskId);
       
       if (!userId) {
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ message: 'Unauthorized' });
         return;
       }
 
       if (!taskId || isNaN(taskId)) {
-        res.status(400).json({ error: 'Invalid task ID' });
+        res.status(400).json({ message: 'Invalid task ID' });
         return;
       }
 
@@ -102,7 +102,7 @@ export class TaskController {
       res.status(200).json(task);
     } catch (error: any) {
       console.error('Get task error:', error);
-      res.status(500).json({ error: error.message || 'Failed to fetch task' });
+      res.status(500).json({ message: error.message || 'Failed to fetch task' });
     }
   }
 
@@ -115,12 +115,12 @@ export class TaskController {
       const taskId = parseInt(req.params.taskId);
       
       if (!userId) {
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ message: 'Unauthorized' });
         return;
       }
 
       if (!taskId || isNaN(taskId)) {
-        res.status(400).json({ error: 'Invalid task ID' });
+        res.status(400).json({ message: 'Invalid task ID' });
         return;
       }
 
@@ -134,7 +134,47 @@ export class TaskController {
       res.status(200).json(task);
     } catch (error: any) {
       console.error('Update task error:', error);
-      res.status(400).json({ error: error.message || 'Failed to update task' });
+      res.status(400).json({ message: error.message || 'Failed to update task' });
+    }
+  }
+
+  /**
+   * Fast column move endpoint for drag and drop operations
+   * Optimized for performance with minimal response data
+   */
+  static async moveTaskToColumn(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const taskId = parseInt(req.params.taskId);
+      const { columnId } = req.body;
+      
+      if (!userId) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
+
+      if (!taskId || isNaN(taskId)) {
+        res.status(400).json({ message: 'Invalid task ID' });
+        return;
+      }
+
+      if (!columnId) {
+        res.status(400).json({ message: 'Column ID is required' });
+        return;
+      }
+
+      // Use optimized update for column moves only
+      const task = await TaskService.updateTask(taskId, { columnId }, userId);
+      
+      // Return minimal response for performance
+      res.status(200).json({ 
+        success: true, 
+        taskId: task.id, 
+        columnId: task.columnId 
+      });
+    } catch (error: any) {
+      console.error('Move task error:', error);
+      res.status(400).json({ message: error.message || 'Failed to move task' });
     }
   }
 
@@ -147,12 +187,12 @@ export class TaskController {
       const taskId = parseInt(req.params.taskId);
       
       if (!userId) {
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ message: 'Unauthorized' });
         return;
       }
 
       if (!taskId || isNaN(taskId)) {
-        res.status(400).json({ error: 'Invalid task ID' });
+        res.status(400).json({ message: 'Invalid task ID' });
         return;
       }
 
@@ -166,7 +206,7 @@ export class TaskController {
       res.status(200).json({ message: 'Task deleted successfully' });
     } catch (error: any) {
       console.error('Delete task error:', error);
-      res.status(500).json({ error: error.message || 'Failed to delete task' });
+      res.status(500).json({ message: error.message || 'Failed to delete task' });
     }
   }
 
@@ -179,12 +219,12 @@ export class TaskController {
       const taskId = parseInt(req.params.taskId);
       
       if (!userId) {
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ message: 'Unauthorized' });
         return;
       }
 
       if (!taskId || isNaN(taskId)) {
-        res.status(400).json({ error: 'Invalid task ID' });
+        res.status(400).json({ message: 'Invalid task ID' });
         return;
       }
 
@@ -192,7 +232,7 @@ export class TaskController {
       res.status(200).json(task);
     } catch (error: any) {
       console.error('Mark task incomplete error:', error);
-      res.status(400).json({ error: error.message || 'Failed to mark task as incomplete' });
+      res.status(400).json({ message: error.message || 'Failed to mark task as incomplete' });
     }
   }
 }

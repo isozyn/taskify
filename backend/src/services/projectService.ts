@@ -6,12 +6,10 @@ import {
 	ProjectUpdateInput,
 	ProjectResponse,
 } from "../models";
-import { CustomColumnService } from "./customColumnService";
 
 export class ProjectService {
 	/**
 	 * Create a new project
-	 * Automatically creates default columns if workflow type is CUSTOM
 	 * Automatically adds the creator as an OWNER member
 	 */
 	static async createProject(
@@ -44,16 +42,7 @@ export class ProjectService {
 			`[Project] Creator (userId: ${data.ownerId}) added as OWNER to project ${project.id}`
 		);
 
-		// If CUSTOM workflow, create default columns
-		if (project.workflowType === "CUSTOM") {
-			try {
-				await CustomColumnService.createDefaultColumns(project.id);
-			} catch (error) {
-				console.error("Failed to create default columns:", error);
-				// Don't fail the entire project creation if columns fail
-				// Columns can be created later by the user
-			}
-		}
+		// Custom workflow starts empty - users add columns as needed
 
 		return project;
 	}

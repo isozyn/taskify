@@ -22,12 +22,14 @@ model User {
   username             String                @unique
   googleId             String?               @unique
   authProvider         AuthProvider          @default(LOCAL)
+  calendarSyncEnabled  Boolean               @default(false)
   comments             Comment[]
   notifications        Notification[]
   ownedProjects        Project[]             @relation("ProjectOwner")
   projectMembers       ProjectMember[]
   refreshTokens        RefreshToken[]
-  tasks                Task[]
+  tasks                Task[]                // Keep for backward compatibility
+  taskAssignments      TaskAssignee[]        // New multiple assignees relation
   messages             Message[]
   conversationMembers  ConversationMember[]
 
@@ -85,30 +87,47 @@ model ProjectMember {
 }
 
 model Task {
-  id          Int        @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   title       String
   description String?
-  status      TaskStatus @default(TODO)
-  priority    Priority   @default(MEDIUM)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  status      TaskStatus     @default(TODO)
+  priority    Priority       @default(MEDIUM)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   projectId   Int
-  assigneeId  Int?
-  order       Int        @default(0)
-  tags        String[]   @default([])
+  assigneeId  Int?           // Keep for backward compatibility
+  order       Int            @default(0)
+  tags        String[]       @default([])
   columnId    String?
+  color       String?        @default("slate")
+  labelText   String?
+  labelColor  String?
   endDate     DateTime?
   startDate   DateTime?
   comments    Comment[]
   subtasks    Subtask[]
-  assignee    User?      @relation(fields: [assigneeId], references: [id])
-  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee    User?          @relation(fields: [assigneeId], references: [id]) // Keep for backward compatibility
+  assignees   TaskAssignee[] // New multiple assignees relation
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([assigneeId])
   @@index([status])
   @@index([priority])
   @@index([columnId])
+}
+
+model TaskAssignee {
+  id         Int      @id @default(autoincrement())
+  taskId     Int
+  userId     Int
+  assignedAt DateTime @default(now())
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
 }
 
 model Subtask {

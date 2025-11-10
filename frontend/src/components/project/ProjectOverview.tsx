@@ -15,7 +15,12 @@ import {
   Activity,
   Target,
   ArrowUpRight,
-  Layers
+  Layers,
+  RefreshCw,
+  Plus,
+  Settings,
+  X,
+  Check
 } from "lucide-react";
 import MemberDetailModal from "./MemberDetailModal";
 import { api, Task, CustomColumn } from "@/lib/api";
@@ -50,6 +55,44 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
   const [loading, setLoading] = useState(true);
   const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const [selectedColumnIds, setSelectedColumnIds] = useState<Set<number>>(new Set());
+  const [isColumnSelectorOpen, setIsColumnSelectorOpen] = useState(false);
+
+  // Functions to save/load column preferences
+  const getStorageKey = () => `taskify_column_selection_${project.id}`;
+
+  const saveColumnPreferences = (columnIds: Set<number>) => {
+    try {
+      localStorage.setItem(getStorageKey(), JSON.stringify(Array.from(columnIds)));
+    } catch (error) {
+      console.error("Failed to save column preferences:", error);
+    }
+  };
+
+  const loadColumnPreferences = (): Set<number> | null => {
+    try {
+      const saved = localStorage.getItem(getStorageKey());
+      if (saved) {
+        const ids = JSON.parse(saved);
+        return new Set(ids);
+      }
+    } catch (error) {
+      console.error("Failed to load column preferences:", error);
+    }
+    return null;
+  };
+
+  // Function to fetch activities
+  const fetchActivities = async () => {
+    try {
+      const activitiesResponse: any = await api.getProjectActivities(project.id, 10);
+      console.log("ProjectOverview - Fetched activities:", activitiesResponse);
+      setActivities(activitiesResponse?.activities || []);
+    } catch (error) {
+      console.error("Failed to fetch activities:", error);
+      setActivities([]);
+    }
+  };
 
   // Fetch tasks and custom columns when component mounts
   useEffect(() => {
@@ -67,7 +110,25 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
           try {
             const columnsResponse: any = await api.getCustomColumns(project.id);
             console.log("ProjectOverview - Fetched columns:", columnsResponse);
-            setCustomColumns(Array.isArray(columnsResponse) ? columnsResponse : columnsResponse?.columns || []);
+            const columnsArray = Array.isArray(columnsResponse) ? columnsResponse : columnsResponse?.columns || [];
+            setCustomColumns(columnsArray);
+            
+            // Load saved preferences or show all columns by default
+            const savedSelection = loadColumnPreferences();
+            if (savedSelection && savedSelection.size > 0) {
+              // Filter saved selection to only include existing columns
+              const validColumnIds = new Set<number>(
+                Array.from(savedSelection).filter(id => 
+                  columnsArray.some((col: any) => col.id === id)
+                )
+              );
+              setSelectedColumnIds(validColumnIds);
+            } else {
+              // Initially show all columns if no saved preferences
+              const allColumnIds = new Set<number>(columnsArray.map((col: any) => col.id as number));
+              setSelectedColumnIds(allColumnIds);
+              saveColumnPreferences(allColumnIds);
+            }
           } catch (error) {
             console.error("Failed to fetch custom columns:", error);
             setCustomColumns([]);
@@ -75,14 +136,7 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
         }
         
         // Fetch recent activities
-        try {
-          const activitiesResponse: any = await api.getProjectActivities(project.id, 10);
-          console.log("ProjectOverview - Fetched activities:", activitiesResponse);
-          setActivities(activitiesResponse?.activities || []);
-        } catch (error) {
-          console.error("Failed to fetch activities:", error);
-          setActivities([]);
-        }
+        await fetchActivities();
       } catch (error) {
         console.error("Failed to fetch tasks:", error);
       } finally {
@@ -92,6 +146,15 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
 
     fetchData();
   }, [project.id, workflowType]);
+
+  // Periodically refresh activities every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchActivities();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [project.id]);
 
   // Calculate stats from real task data
   const stats = {
@@ -156,9 +219,15 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
     return 'TODO';
   };
 
-  // Group tasks by custom column
-  const getTasksByColumn = (columnTitle: string) => {
-    const statusValue = mapColumnTitleToStatus(columnTitle);
+  // Group tasks by column. For custom workflows we store columnId on tasks.
+  const getTasksByColumn = (column: CustomColumn) => {
+    if (workflowType === 'custom') {
+      // Filter by columnId (stored as string) for custom workflows
+      return tasks.filter(task => task.columnId === String(column.id));
+    }
+
+    // Fallback for auto-sync workflows: map column title to status
+    const statusValue = mapColumnTitleToStatus(column.title);
     return tasks.filter(task => task.status === statusValue);
   };
 
@@ -174,6 +243,33 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
     };
     return colorMap[color] || colorMap.slate;
   };
+
+  // Handle column selection for overview display
+  const toggleColumnSelection = (columnId: number) => {
+    const newSelection = new Set(selectedColumnIds);
+    if (newSelection.has(columnId)) {
+      newSelection.delete(columnId);
+    } else {
+      newSelection.add(columnId);
+    }
+    setSelectedColumnIds(newSelection);
+    saveColumnPreferences(newSelection);
+  };
+
+  const selectAllColumns = () => {
+    const allColumnIds = new Set(customColumns.map(col => col.id));
+    setSelectedColumnIds(allColumnIds);
+    saveColumnPreferences(allColumnIds);
+  };
+
+  const deselectAllColumns = () => {
+    const emptySet = new Set<number>();
+    setSelectedColumnIds(emptySet);
+    saveColumnPreferences(emptySet);
+  };
+
+  // Get filtered columns for display
+  const displayedColumns = customColumns.filter(col => selectedColumnIds.has(col.id));
 
   // Determine theme colors based on workflow type
   const handleMemberClick = (memberId: number) => {
@@ -248,27 +344,109 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
         </div>
       )}
 
+      {/* Simple Task Stats for Custom Workflow */}
+      {workflowType === "custom" && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600">Total Tasks</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.totalTasks}</p>
+                  <p className="text-xs text-slate-500">All work items</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600">Workflow Stages</p>
+                  <p className="text-3xl font-bold text-slate-900">{customColumns.length}</p>
+                  <p className="text-xs text-slate-500">Custom columns</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <Layers className="w-5 h-5 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600">Team Size</p>
+                  <p className="text-3xl font-bold text-slate-900">{project.members?.length || 0}</p>
+                  <p className="text-xs text-slate-500">Active members</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Custom Workflow Status Section */}
       {workflowType === "custom" && customColumns.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-slate-900">Workflow Status</h3>
-              <p className="text-sm text-slate-600">Task distribution across custom columns</p>
+              <p className="text-sm text-slate-600">
+                {displayedColumns.length === 0 
+                  ? "No stages selected for display" 
+                  : `Showing ${displayedColumns.length} of ${customColumns.length} stages`
+                }
+              </p>
             </div>
-            <Badge variant="outline" className="text-xs">
-              {customColumns.length} columns
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                {displayedColumns.length}/{customColumns.length} stages
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsColumnSelectorOpen(true)}
+                className="h-8 px-2"
+              >
+                <Settings className="w-4 h-4 mr-1" />
+                Customize
+              </Button>
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {customColumns
-              .sort((a, b) => a.order - b.order)
-              .map((column) => {
-                const columnTasks = getTasksByColumn(column.title);
-                const percentage = stats.totalTasks > 0 
-                  ? Math.round((columnTasks.length / stats.totalTasks) * 100) 
-                  : 0;
+          {displayedColumns.length === 0 ? (
+            <Card className="border-2 border-dashed border-slate-300 bg-slate-50">
+              <CardContent className="p-8">
+                <div className="text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center mx-auto">
+                    <Settings className="w-6 h-6 text-slate-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                      No Stages Selected
+                    </h3>
+                    <p className="text-xs text-slate-600">
+                      Click "Customize" to choose which workflow stages to display
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {displayedColumns
+                .sort((a, b) => a.order - b.order)
+                .map((column) => {
+                const columnTasks = getTasksByColumn(column);
                 const colors = getColumnColorClass(column.color);
 
                 return (
@@ -299,21 +477,8 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
                               {columnTasks.length}
                             </span>
                             <span className="text-sm text-slate-500">
-                              tasks
+                              {columnTasks.length === 1 ? "task" : "tasks"}
                             </span>
-                          </div>
-                          <p className="text-xs text-slate-600">
-                            {percentage}% of total
-                          </p>
-                        </div>
-
-                        {/* Mini Progress Bar */}
-                        <div className="pt-2">
-                          <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${colors.icon} transition-all duration-300`}
-                              style={{ width: `${percentage}%` }}
-                            />
                           </div>
                         </div>
                       </div>
@@ -321,7 +486,8 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
                   </Card>
                 );
               })}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -355,56 +521,98 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - 2/3 width */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Overall Progress Card */}
-          <Card className="border-0 bg-white shadow-sm">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg font-semibold text-slate-900">Overall Progress</CardTitle>
-                  <CardDescription className="text-sm text-slate-600 mt-1">
-                    Project Completion
-                  </CardDescription>
-                </div>
-                <Badge className="bg-blue-50 text-blue-700 border-blue-200 font-semibold">
-                  {stats.completed} / {stats.totalTasks} tasks
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-3">
-                <Progress value={progress} className="h-3 rounded-full" />
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600 font-medium">
-                    {Math.round(progress)}% Complete
-                  </span>
-                  <span className="text-slate-500">
-                    {stats.totalTasks - stats.completed} remaining
-                  </span>
-                </div>
-              </div>
-              <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <TrendingUp className="w-4 h-4 text-blue-600" />
-                  </div>
+          {/* Show Progress Card only for Auto-Sync workflow */}
+          {workflowType === "auto-sync" && (
+            <Card className="border-0 bg-white shadow-sm">
+              <CardHeader className="border-b border-slate-100 pb-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
-                      {stats.totalTasks === 0 ? "Get started!" : progress >= 75 ? "Great progress!" : progress >= 50 ? "Keep it up!" : "Just getting started"}
-                    </p>
-                    <p className="text-xs text-slate-600 mt-1">
-                      {stats.totalTasks === 0 
-                        ? "Create your first task to start tracking progress." 
-                        : progress >= 75
-                        ? "You're almost there! Keep up the momentum to reach your project goals."
-                        : progress >= 50
-                        ? "Halfway there! The team is making solid progress."
-                        : "Keep going! Every completed task brings you closer to your goals."}
-                    </p>
+                    <CardTitle className="text-lg font-semibold text-slate-900">Overall Progress</CardTitle>
+                    <CardDescription className="text-sm text-slate-600 mt-1">
+                      Project Completion
+                    </CardDescription>
+                  </div>
+                  <Badge className="bg-blue-50 text-blue-700 border-blue-200 font-semibold">
+                    {stats.completed} / {stats.totalTasks} tasks
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                <div className="space-y-3">
+                  <Progress value={progress} className="h-3 rounded-full" />
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600 font-medium">
+                      {Math.round(progress)}% Complete
+                    </span>
+                    <span className="text-slate-500">
+                      {stats.totalTasks - stats.completed} remaining
+                    </span>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {stats.totalTasks === 0 ? "Get started!" : progress >= 75 ? "Great progress!" : progress >= 50 ? "Keep it up!" : "Just getting started"}
+                      </p>
+                      <p className="text-xs text-slate-600 mt-1">
+                        {stats.totalTasks === 0 
+                          ? "Create your first task to start tracking progress." 
+                          : progress >= 75
+                          ? "You're almost there! Keep up the momentum to reach your project goals."
+                          : progress >= 50
+                          ? "Halfway there! The team is making solid progress."
+                          : "Keep going! Every completed task brings you closer to your goals."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Show Task Overview Card for Custom workflow */}
+          {workflowType === "custom" && (
+            <Card className="border-0 bg-white shadow-sm">
+              <CardHeader className="border-b border-slate-100 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-semibold text-slate-900">Task Overview</CardTitle>
+                    <CardDescription className="text-sm text-slate-600 mt-1">
+                      Current work distribution
+                    </CardDescription>
+                  </div>
+                  <Badge className="bg-purple-50 text-purple-700 border-purple-200 font-semibold">
+                    {stats.totalTasks} total tasks
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                      <Layers className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {stats.totalTasks === 0 ? "Ready to start!" : customColumns.length === 0 ? "Create your workflow!" : "Workflow active"}
+                      </p>
+                      <p className="text-xs text-slate-600 mt-1">
+                        {stats.totalTasks === 0 
+                          ? "Create your first task and organize it in your custom workflow." 
+                          : customColumns.length === 0
+                          ? "Set up your custom columns in the Board tab to organize your work."
+                          : `Tasks are organized across ${customColumns.length} custom workflow stages.`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Recent Activity Card */}
           <Card className="border-0 bg-white shadow-sm">
@@ -416,6 +624,15 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
                     Stay up to date with what's happening across the space
                   </CardDescription>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={fetchActivities}
+                  className="h-8 w-8 p-0 hover:bg-slate-100"
+                  title="Refresh activities"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
@@ -489,54 +706,144 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
             </CardContent>
           </Card>
 
-          {/* Project Insights Card */}
-          <Card className="border-0 bg-gradient-to-br from-slate-50 to-blue-50 shadow-sm">
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4 text-blue-600" />
+          {/* Project Insights Card - Auto-Sync workflow */}
+          {workflowType === "auto-sync" && (
+            <Card className="border-0 bg-gradient-to-br from-slate-50 to-blue-50 shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <CardTitle className="text-base font-semibold text-slate-900">Project Insights</CardTitle>
                 </div>
-                <CardTitle className="text-base font-semibold text-slate-900">Project Insights</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-slate-600">Completion Rate</span>
-                  <span className="text-xs font-bold text-slate-400">
-                    {stats.totalTasks > 0 ? (progress >= 50 ? "↑" : "→") : "--"}
-                  </span>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-slate-600">Completion Rate</span>
+                    <span className="text-xs font-bold text-slate-400">
+                      {stats.totalTasks > 0 ? (progress >= 50 ? "↑" : "→") : "--"}
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">{Math.round(progress)}%</p>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{Math.round(progress)}%</p>
-              </div>
-              
-              <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-slate-600">Team Velocity</span>
-                  <span className="text-xs font-bold text-slate-400">
-                    {tasks.length > 0 ? "→" : "--"}
-                  </span>
+                
+                <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-slate-600">Team Velocity</span>
+                    <span className="text-xs font-bold text-slate-400">
+                      {tasks.length > 0 ? "→" : "--"}
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">{calculateVelocity()}</p>
+                  <p className="text-xs text-slate-500 mt-1">tasks/day average</p>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{calculateVelocity()}</p>
-                <p className="text-xs text-slate-500 mt-1">tasks/day average</p>
-              </div>
 
-              <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-slate-600">Est. Completion</span>
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <div className="p-3 bg-white/80 backdrop-blur rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-slate-600">Est. Completion</span>
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  </div>
+                  <p className="text-base font-bold text-slate-900">
+                    {estimateCompletion() || "--"}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {estimateCompletion() ? "Based on current pace" : "No data yet"}
+                  </p>
                 </div>
-                <p className="text-base font-bold text-slate-900">
-                  {estimateCompletion() || "--"}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {estimateCompletion() ? "Based on current pace" : "No data yet"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
+
         </div>
       </div>
+
+      {/* Column Selector Modal */}
+      {isColumnSelectorOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-900">Customize Workflow Display</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsColumnSelectorOpen(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <p className="text-sm text-slate-600 mb-4">
+                Choose which workflow stages to display on the overview
+              </p>
+
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {customColumns.map((column) => {
+                  const colors = getColumnColorClass(column.color);
+                  const isSelected = selectedColumnIds.has(column.id);
+                  
+                  return (
+                    <div
+                      key={column.id}
+                      onClick={() => toggleColumnSelection(column.id)}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        isSelected 
+                          ? `${colors.bg} ${colors.border} border-2` 
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${isSelected ? 'bg-green-500' : 'border-2 border-slate-300'} flex items-center justify-center`}>
+                        {isSelected && <Check className="w-2 h-2 text-white" />}
+                      </div>
+                      <div className={`w-8 h-8 rounded-lg ${colors.icon} flex items-center justify-center`}>
+                        <Layers className={`w-4 h-4 ${colors.text}`} />
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-sm font-medium ${isSelected ? colors.text : 'text-slate-700'}`}>
+                          {column.title}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {getTasksByColumn(column).length} tasks
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-200">
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={selectAllColumns}
+                    className="text-xs"
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={deselectAllColumns}
+                    className="text-xs"
+                  >
+                    Clear All
+                  </Button>
+                </div>
+                <Button
+                  onClick={() => setIsColumnSelectorOpen(false)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Member Detail Modal */}
       <MemberDetailModal
