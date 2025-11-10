@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import React from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, GripVertical } from "lucide-react";
 import KanbanBoardAutoSync from "./KanbanBoardAutoSync";
@@ -15,10 +15,10 @@ interface KanbanBoardProps {
 }
 
 const KanbanBoard = ({ projectMembers, onWorkflowChange, workflowType: initialWorkflowType, projectId, onTasksChange, onColumnsChange }: KanbanBoardProps) => {
-  const [boardTemplate, setBoardTemplate] = useState<"auto-sync" | "custom">(initialWorkflowType || "auto-sync");
+  // Use the current workflow type directly from props, with fallback to auto-sync
+  const currentWorkflowType = initialWorkflowType || "auto-sync";
 
   const handleTemplateChange = async (template: "auto-sync" | "custom") => {
-    setBoardTemplate(template);
     onWorkflowChange?.(template);
     
     // Update the project's workflow type in the backend
@@ -36,7 +36,7 @@ const KanbanBoard = ({ projectMembers, onWorkflowChange, workflowType: initialWo
 
   return (
     <div className="space-y-4">
-      {boardTemplate === "auto-sync" ? (
+      {currentWorkflowType === "auto-sync" ? (
         <KanbanBoardAutoSync projectMembers={projectMembers} projectId={projectId} onTasksChange={onTasksChange} />
       ) : (
         <KanbanBoardCustom projectMembers={projectMembers} projectId={projectId} onTasksChange={onTasksChange} onColumnsChange={onColumnsChange} />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +23,7 @@ import {
   Check
 } from "lucide-react";
 import MemberDetailModal from "./MemberDetailModal";
+import { api } from "@/lib/api";
 import { Task, CustomColumn } from "@/lib/api";
 import { useProjectTasks, useCustomColumns, useProjectActivities } from "@/hooks/useProjectData";
 

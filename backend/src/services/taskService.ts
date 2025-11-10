@@ -152,7 +152,21 @@ export class TaskService {
 
     const tasks = await prisma.task.findMany({
       where: { projectId },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        priority: true,
+        createdAt: true,
+        updatedAt: true,
+        projectId: true,
+        assigneeId: true,
+        order: true,
+        tags: true,
+        columnId: true,
+        endDate: true,
+        startDate: true,
         assignee: {
           select: {
             id: true,
@@ -556,6 +570,22 @@ export class TaskService {
   static async getTasksByColumn(projectId: number): Promise<Map<string, TaskResponse[]>> {
     const tasks = await prisma.task.findMany({
       where: { projectId },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        priority: true,
+        createdAt: true,
+        updatedAt: true,
+        projectId: true,
+        assigneeId: true,
+        order: true,
+        tags: true,
+        columnId: true,
+        endDate: true,
+        startDate: true,
+      },
       orderBy: { order: 'asc' },
     });
 

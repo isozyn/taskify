@@ -15,6 +15,8 @@ export class ProjectService {
 	static async createProject(
 		data: ProjectCreateInput
 	): Promise<ProjectResponse> {
+
+		
 		const project = await prisma.project.create({
 			data: {
 				title: data.title,
@@ -117,6 +119,8 @@ export class ProjectService {
 				},
 			},
 		});
+
+
 
 		return project;
 	}
