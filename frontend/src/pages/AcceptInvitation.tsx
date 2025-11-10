@@ -30,7 +30,7 @@ const AcceptInvitation = () => {
 
       try {
         // Check if user is already logged in
-        const userResponse = await api.getCurrentUser();
+        const userResponse: any = await api.getCurrentUser();
         setCurrentUser(userResponse.user);
         
         // If logged in user email matches invitation email, they can proceed
