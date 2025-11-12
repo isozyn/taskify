@@ -12,7 +12,7 @@ const FROM_NAME = process.env.SENDGRID_FROM_NAME || "Taskify";
 console.log("📧 SendGrid Email Service Initialized");
 console.log(`   FROM_EMAIL: ${FROM_EMAIL}`);
 console.log(`   FROM_NAME: ${FROM_NAME}`);
-console.log(`   API_KEY configured: ${SENDGRID_API_KEY ? 'Yes' : 'No'}`);
+console.log(`   API_KEY configured: ${SENDGRID_API_KEY ? "Yes" : "No"}`);
 
 if (!SENDGRID_API_KEY) {
 	console.error("❌ CRITICAL: SENDGRID_API_KEY is not set!");
@@ -30,7 +30,9 @@ export const sendVerificationEmail = async (
 	userName: string
 ): Promise<void> => {
 	try {
-		console.log(`📧 [SendGrid] Attempting to send verification email to: ${email}`);
+		console.log(
+			`📧 [SendGrid] Attempting to send verification email to: ${email}`
+		);
 
 		// Validate configuration
 		if (!SENDGRID_API_KEY) {
@@ -51,7 +53,9 @@ export const sendVerificationEmail = async (
 		// Build verification link
 		const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
-		console.log(`📧 [SendGrid] Verification link generated: ${verificationLink}`);
+		console.log(
+			`📧 [SendGrid] Verification link generated: ${verificationLink}`
+		);
 
 		// Email HTML content
 		const htmlContent = `
@@ -110,22 +114,33 @@ export const sendVerificationEmail = async (
 			text: `Hi ${userName},\n\nPlease verify your email by clicking this link:\n${verificationLink}\n\nThis link will expire in 7 days.\n\nIf you didn't create this account, you can safely ignore this email.`,
 		});
 
-		console.log(`✅ [SendGrid] Verification email sent successfully to ${email}`);
+		console.log(
+			`✅ [SendGrid] Verification email sent successfully to ${email}`
+		);
 		console.log(`   SendGrid Response Status: ${result[0]?.statusCode}`);
 	} catch (error: any) {
 		console.error("❌ [SendGrid] Failed to send verification email");
 		console.error("   Recipient:", email);
 		console.error("   Error type:", error.constructor.name);
 		console.error("   Error message:", error.message);
-		
+
 		// Log detailed SendGrid error
 		if (error.response) {
-			console.error("   SendGrid Response Status:", error.response.statusCode);
-			console.error("   SendGrid Response Body:", JSON.stringify(error.response.body, null, 2));
+			console.error(
+				"   SendGrid Response Status:",
+				error.response.statusCode
+			);
+			console.error(
+				"   SendGrid Response Body:",
+				JSON.stringify(error.response.body, null, 2)
+			);
 		}
 
 		// Throw a more descriptive error
-		const errorMessage = error.response?.body?.errors?.[0]?.message || error.message || "Unknown SendGrid error";
+		const errorMessage =
+			error.response?.body?.errors?.[0]?.message ||
+			error.message ||
+			"Unknown SendGrid error";
 		throw new Error(`SendGrid Error: ${errorMessage}`);
 	}
 };
