@@ -57,37 +57,41 @@ export const sendVerificationEmail = async (
 			`📧 [SendGrid] Verification link generated: ${verificationLink}`
 		);
 
-		// Email HTML content
+		// Email HTML content - optimized for email clients
 		const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #007bff; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-            .content { background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
-            .footer { text-align: center; font-size: 12px; color: #666; margin-top: 20px; }
-            .button { display: inline-block; background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+            .header { background-color: #007bff; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9f9f9; }
+            .button-wrapper { text-align: center; margin: 20px 0; }
+            .button { display: inline-block; background-color: #007bff !important; color: white !important; padding: 14px 32px !important; text-decoration: none !important; border-radius: 5px; font-weight: bold; border: none; cursor: pointer; }
+            .button:hover { background-color: #0056b3 !important; }
+            .link-text { margin: 20px 0; padding: 10px; background-color: #fff; border: 1px solid #ddd; border-radius: 3px; word-break: break-all; font-size: 12px; }
+            .footer { text-align: center; font-size: 12px; color: #666; padding: 20px; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1>Verify Your Email</h1>
+              <h1 style="margin: 0; font-size: 24px;">Verify Your Email</h1>
             </div>
             <div class="content">
               <p>Hi ${userName},</p>
               <p>Welcome to Taskify! Please verify your email address to complete your registration.</p>
               <p>Click the button below to verify your email:</p>
-              <a href="${verificationLink}" style="background-color: #000; color: #fff;" class="button">Verify Email</a>
-              <p>Or copy and paste this link in your browser:</p>
-              <p style="word-break: break-all; background-color: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 3px;">
-                ${verificationLink}
-              </p>
-              <p>This link will expire in 7 days.</p>
-              <p>If you didn't create this account, you can safely ignore this email.</p>
+              <div class="button-wrapper">
+                <a href="${verificationLink}" class="button" style="background-color: #007bff; color: white; padding: 14px 32px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Verify Email</a>
+              </div>
+              <p style="text-align: center; margin-top: 15px;">Or copy and paste this link in your browser:</p>
+              <p class="link-text">${verificationLink}</p>
+              <p style="color: #666; font-size: 13px;">This link will expire in 7 days.</p>
+              <p style="color: #999; font-size: 13px;">If you didn't create this account, you can safely ignore this email.</p>
             </div>
             <div class="footer">
               <p>&copy; 2025 Taskify. All rights reserved.</p>
@@ -204,26 +208,33 @@ export const sendProjectInvitationEmail = async (
             `
 				: "";
 
-		// Email HTML content
+		// Email HTML content - optimized for email clients
 		const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #28a745; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-            .content { background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
-            .footer { text-align: center; font-size: 12px; color: #666; margin-top: 20px; }
-            .button { display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+            .header { background-color: #28a745; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9f9f9; }
+            .button-wrapper { text-align: center; margin: 20px 0; }
+            .button { display: inline-block; background-color: #28a745 !important; color: white !important; padding: 14px 32px !important; text-decoration: none !important; border-radius: 5px; font-weight: bold; border: none; cursor: pointer; }
+            .button:hover { background-color: #218838 !important; }
+            .link-text { margin: 20px 0; padding: 10px; background-color: #fff; border: 1px solid #ddd; border-radius: 3px; word-break: break-all; font-size: 12px; }
+            .timeline { background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin: 15px 0; }
+            .timeline h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; }
+            .timeline p { margin: 5px 0; }
             .role-badge { background-color: #007bff; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px; }
+            .footer { text-align: center; font-size: 12px; color: #666; padding: 20px; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1>You're Invited to Join a Project!</h1>
+              <h1 style="margin: 0; font-size: 24px;">You're Invited to Join a Project!</h1>
             </div>
             <div class="content">
               <p>Hi there,</p>
@@ -231,13 +242,13 @@ export const sendProjectInvitationEmail = async (
               <p>You've been assigned the role: <span class="role-badge">${role}</span></p>
               ${timelineSection}
               <p>Click the button below to accept the invitation and get started:</p>
-              <a href="${invitationLink}" class="button">Accept Invitation</a>
-              <p>Or copy and paste this link in your browser:</p>
-              <p style="word-break: break-all; background-color: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 3px;">
-                ${invitationLink}
-              </p>
-              <p>If you don't have a Taskify account yet, you'll be able to create one during the invitation process.</p>
-              <p>Looking forward to collaborating with you!</p>
+              <div class="button-wrapper">
+                <a href="${invitationLink}" class="button" style="background-color: #28a745; color: white; padding: 14px 32px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Accept Invitation</a>
+              </div>
+              <p style="text-align: center; margin-top: 15px;">Or copy and paste this link in your browser:</p>
+              <p class="link-text">${invitationLink}</p>
+              <p style="color: #666; font-size: 13px;">If you don't have a Taskify account yet, you'll be able to create one during the invitation process.</p>
+              <p style="color: #666; font-size: 13px;">Looking forward to collaborating with you!</p>
             </div>
             <div class="footer">
               <p>&copy; 2025 Taskify. All rights reserved.</p>
@@ -300,36 +311,40 @@ export const sendPasswordResetEmail = async (
 		// Build reset link
 		const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-		// Email HTML content
+		// Email HTML content - optimized for email clients
 		const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #dc3545; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-            .content { background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
-            .footer { text-align: center; font-size: 12px; color: #666; margin-top: 20px; }
-            .button { display: inline-block; background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+            .header { background-color: #dc3545; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9f9f9; }
+            .button-wrapper { text-align: center; margin: 20px 0; }
+            .button { display: inline-block; background-color: #dc3545 !important; color: white !important; padding: 14px 32px !important; text-decoration: none !important; border-radius: 5px; font-weight: bold; border: none; cursor: pointer; }
+            .button:hover { background-color: #c82333 !important; }
+            .link-text { margin: 20px 0; padding: 10px; background-color: #fff; border: 1px solid #ddd; border-radius: 3px; word-break: break-all; font-size: 12px; }
+            .footer { text-align: center; font-size: 12px; color: #666; padding: 20px; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1>Reset Your Password</h1>
+              <h1 style="margin: 0; font-size: 24px;">Reset Your Password</h1>
             </div>
             <div class="content">
               <p>Hi ${userName},</p>
               <p>We received a request to reset your Taskify password. Click the button below to reset it:</p>
-              <a href="${resetLink}" class="button">Reset Password</a>
-              <p>Or copy and paste this link in your browser:</p>
-              <p style="word-break: break-all; background-color: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 3px;">
-                ${resetLink}
-              </p>
-              <p>This link will expire in 1 hour.</p>
-              <p>If you didn't request this, you can safely ignore this email.</p>
+              <div class="button-wrapper">
+                <a href="${resetLink}" class="button" style="background-color: #dc3545; color: white; padding: 14px 32px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset Password</a>
+              </div>
+              <p style="text-align: center; margin-top: 15px;">Or copy and paste this link in your browser:</p>
+              <p class="link-text">${resetLink}</p>
+              <p style="color: #666; font-size: 13px;">This link will expire in 1 hour.</p>
+              <p style="color: #999; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
             </div>
             <div class="footer">
               <p>&copy; 2025 Taskify. All rights reserved.</p>
