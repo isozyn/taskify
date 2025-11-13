@@ -145,11 +145,19 @@ export const login = async (
 		);
 
 		// Set refresh token as httpOnly cookie
-		res.cookie("refreshToken", refreshToken, {
+		const cookieOptions = {
 			httpOnly: true,
 			secure: true,
-			sameSite: "none",
+			sameSite: "none" as const,
 			path: "/",
+		};
+
+		console.log("[Login] Setting cookies with options:", cookieOptions);
+		console.log("[Login] Request origin:", req.headers.origin);
+		console.log("[Login] CORS allowed origin:", process.env.FRONTEND_URL);
+
+		res.cookie("refreshToken", refreshToken, {
+			...cookieOptions,
 			maxAge: rememberMe
 				? 30 * 24 * 60 * 60 * 1000 // 30 days
 				: 7 * 24 * 60 * 60 * 1000, // 7 days
@@ -157,12 +165,11 @@ export const login = async (
 
 		// Set access token as httpOnly cookie
 		res.cookie("accessToken", accessToken, {
-			httpOnly: true,
-			secure: true,
-			sameSite: "none",
-			path: "/",
+			...cookieOptions,
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
+
+		console.log("[Login] ✅ Cookies set successfully");
 
 		// Return user info only (no tokens in response)
 		const userResponse = userService.toUserResponse(user);
