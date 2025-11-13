@@ -20,17 +20,21 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 	useEffect(() => {
 		const checkAuth = async () => {
 			console.log("[UserContext] Checking authentication...");
-			
+
 			// First check if token exists in localStorage
 			const accessToken = localStorage.getItem("accessToken");
 			if (!accessToken) {
-				console.log("[UserContext] ❌ No access token found in localStorage");
+				console.log(
+					"[UserContext] ❌ No access token found in localStorage"
+				);
 				setUser(null);
 				setLoading(false);
 				return;
 			}
 
-			console.log("[UserContext] ✅ Access token found, fetching user data...");
+			console.log(
+				"[UserContext] ✅ Access token found, fetching user data..."
+			);
 
 			try {
 				const response = (await api.getCurrentUser()) as { user: User };
@@ -52,7 +56,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 					"[UserContext] ❌ Authentication failed:",
 					error.message || "Not authenticated"
 				);
-				
+
 				// Clear invalid tokens
 				localStorage.removeItem("accessToken");
 				localStorage.removeItem("refreshToken");
