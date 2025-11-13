@@ -62,7 +62,7 @@ const Navbar = () => {
                 <Button 
                   variant="ghost" 
                   onClick={() => navigate("/auth")}
-                  className="text-sm font-medium hidden sm:inline-flex hover:bg-slate-100"
+                  className="text-sm font-medium hidden sm:inline-flex text-slate-700 hover:text-slate-900 hover:bg-slate-100/80"
                 >
                   Sign in
                 </Button>

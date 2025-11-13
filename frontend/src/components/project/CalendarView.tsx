@@ -46,28 +46,7 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
 
     // Convert custom events to calendar events (memoized to prevent unnecessary re-renders)
     const calendarEvents = useMemo(() => {
-        const events: any[] = [];
-
-        // Add project as a calendar event if it has dates
-        if (project?.startDate && project?.endDate) {
-            events.push({
-                id: `project-${project.id}`,
-                title: `📋 ${project.title}`,
-                start: new Date(project.startDate),
-                end: new Date(project.endDate),
-                resource: {
-                    id: project.id,
-                    title: project.title,
-                    description: project.description,
-                    eventType: 'project',
-                    status: 'project',
-                    isProject: true,
-                },
-                allDay: true,
-            });
-        }
-
-        // Add custom created events (meetings/tasks)
+        // Only show custom created events (meetings/tasks) - no project timeline
         const customCalendarEvents = customEvents.map(event => ({
             id: event.id,
             title: event.title,
@@ -80,8 +59,8 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
             allDay: event.allDay || false,
         }));
 
-        return [...events, ...customCalendarEvents];
-    }, [customEvents, project]);
+        return customCalendarEvents;
+    }, [customEvents]);
 
     // Custom event style getter for calendar (memoized) - Google Calendar style
     const eventStyleGetter = useMemo(() => (event: any) => {
@@ -89,10 +68,7 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
         let backgroundColor = '#3174ad';
         let borderColor = '#3174ad';
 
-        if (task.eventType === 'project') {
-            backgroundColor = '#059669';
-            borderColor = '#047857';
-        } else if (task.eventType === 'meeting') {
+        if (task.eventType === 'meeting') {
             backgroundColor = '#1a73e8';
             borderColor = '#1557b0';
         } else {
@@ -132,11 +108,7 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
 
     // Handle calendar event selection
     const handleSelectEvent = (event: any) => {
-        if (event.resource.eventType === 'project') {
-            // Show project details
-            console.log('Project clicked:', event);
-            // Could open a project details modal here
-        } else if (event.resource.eventType === 'meeting') {
+        if (event.resource.eventType === 'meeting') {
             // Open meeting details modal
             setSelectedMeeting(event.resource);
         } else {
@@ -229,12 +201,11 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
 
     // Get event statistics
     const getEventStats = () => {
-        const total = customEvents.length + (project?.startDate && project?.endDate ? 1 : 0);
+        const total = customEvents.length;
         const meetings = customEvents.filter(event => event.type === 'meeting').length;
         const tasks = customEvents.filter(event => event.type === 'task').length;
-        const projects = project?.startDate && project?.endDate ? 1 : 0;
 
-        return { total, meetings, tasks, projects };
+        return { total, meetings, tasks };
     };
 
     const stats = getEventStats();
@@ -323,7 +294,7 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
                             onSelectSlot={handleSelectSlot}
                             selectable={true}
                             eventPropGetter={eventStyleGetter}
-                            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+                            views={[Views.MONTH, Views.WEEK, Views.DAY]}
                             defaultView={Views.MONTH}
                             view={currentView}
                             onView={(view) => setCurrentView(view)}
@@ -336,7 +307,6 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
                             components={{
                                 event: ({ event }) => {
                                     const isMeeting = event.resource.eventType === 'meeting';
-                                    const isProject = event.resource.eventType === 'project';
                                     const isComplete = event.resource.status === 'complete';
                                     const hasMeetingLink = event.resource.meetingLink;
                                     
@@ -352,14 +322,9 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
                                                     📹 Google Meet
                                                 </div>
                                             )}
-                                            {!isMeeting && !isProject && event.resource.assignees && event.resource.assignees.length > 0 && (
+                                            {!isMeeting && event.resource.assignees && event.resource.assignees.length > 0 && (
                                                 <div className="text-xs opacity-90 truncate">
                                                     {event.resource.assignees[0]}{event.resource.assignees.length > 1 ? ` +${event.resource.assignees.length - 1}` : ''}
-                                                </div>
-                                            )}
-                                            {isProject && (
-                                                <div className="text-xs opacity-90 truncate">
-                                                    Project Timeline
                                                 </div>
                                             )}
                                         </div>
@@ -399,8 +364,7 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
                                             {[
                                                 { key: Views.MONTH, label: 'Month' },
                                                 { key: Views.WEEK, label: 'Week' },
-                                                { key: Views.DAY, label: 'Day' },
-                                                { key: Views.AGENDA, label: 'Agenda' }
+                                                { key: Views.DAY, label: 'Day' }
                                             ].map(({ key, label }) => (
                                                 <Button
                                                     key={key}
@@ -425,10 +389,6 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
             <Card className="border border-slate-200 shadow-sm bg-white">
                 <CardContent className="p-4">
                     <div className="flex items-center justify-center gap-8">
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded bg-green-600"></div>
-                            <span className="text-sm font-medium text-slate-700">Project Timeline</span>
-                        </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 rounded bg-blue-600"></div>
                             <span className="text-sm font-medium text-slate-700">Meetings</span>

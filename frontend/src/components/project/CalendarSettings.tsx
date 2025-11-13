@@ -12,9 +12,12 @@ const CalendarSettings = () => {
 		calendarSyncEnabled: false,
 		calendarConnected: false,
 	});
-	const [isLoading, setIsLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(false);
 	const [isSyncing, setIsSyncing] = useState(false);
 	const { toast } = useToast();
+	
+	// Calendar sync is disabled - using non-sensitive OAuth scopes only
+	const CALENDAR_SYNC_DISABLED = true;
 
 	// Fetch sync status on mount
 	useEffect(() => {
@@ -95,6 +98,47 @@ const CalendarSettings = () => {
 			});
 		}
 	};
+
+	if (CALENDAR_SYNC_DISABLED) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle className="flex items-center gap-2">
+						<Calendar className="w-5 h-5" />
+						Google Calendar Integration
+					</CardTitle>
+					<CardDescription>
+						Calendar sync is currently unavailable
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+						<div className="flex items-start gap-3">
+							<XCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+							<div>
+								<p className="font-medium text-amber-900 mb-1">
+									Calendar Sync Not Available
+								</p>
+								<p className="text-sm text-amber-700">
+									Google Calendar integration requires additional OAuth permissions that are currently not enabled. 
+									This feature may be available in a future update.
+								</p>
+							</div>
+						</div>
+					</div>
+					
+					<div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+						<h3 className="font-semibold text-slate-900 mb-2">Alternative Options:</h3>
+						<ul className="text-sm text-slate-600 space-y-1 list-disc list-inside">
+							<li>Use the built-in calendar view to manage your tasks</li>
+							<li>Export tasks manually to your preferred calendar app</li>
+							<li>Set up email reminders for important deadlines</li>
+						</ul>
+					</div>
+				</CardContent>
+			</Card>
+		);
+	}
 
 	if (isLoading) {
 		return (

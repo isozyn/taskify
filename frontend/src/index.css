@@ -112,13 +112,68 @@
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground font-inter antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  html {
-    scroll-behavior: smooth;
+  /* Ensure dark mode applies to all elements */
+  .dark {
+    color-scheme: dark;
+  }
+
+  .light {
+    color-scheme: light;
+  }
+
+  /* Make sure all cards and components respect theme */
+  .dark .bg-white {
+    @apply bg-card;
+  }
+
+  .dark .text-slate-900 {
+    @apply text-foreground;
+  }
+
+  .dark .text-slate-800 {
+    @apply text-foreground;
+  }
+
+  .dark .text-slate-700 {
+    @apply text-card-foreground;
+  }
+
+  .dark .text-slate-600 {
+    @apply text-muted-foreground;
+  }
+
+  .dark .text-slate-500 {
+    @apply text-muted-foreground;
+  }
+
+  .dark .border-slate-200 {
+    @apply border-border;
+  }
+
+  .dark .border-slate-300 {
+    @apply border-border;
+  }
+
+  .dark .bg-slate-50 {
+    @apply bg-background;
+  }
+
+  .dark .bg-slate-100 {
+    @apply bg-muted;
+  }
+
+  .dark .bg-slate-200 {
+    @apply bg-muted;
   }
 }
 
@@ -206,5 +261,35 @@
 @layer utilities {
   .font-inter {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slideDown {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

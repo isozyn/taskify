@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider } from "@/contexts/UserContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicRoute } from "@/components/PublicRoute";
 import Index from "./pages/Index";
@@ -18,6 +19,7 @@ import CheckEmail from "./pages/CheckEmail";
 import TemplateSelection from "./pages/TemplateSelection";
 import ProjectSetup from "./pages/ProjectSetup";
 import AcceptInvitation from "./pages/AcceptInvitation";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,10 +27,11 @@ const queryClient = new QueryClient();
 const App = () => (
 	<QueryClientProvider client={queryClient}>
 		<TooltipProvider>
-			<UserProvider>
-				<Toaster />
-				<Sonner />
-				<BrowserRouter
+			<ThemeProvider>
+				<UserProvider>
+					<Toaster />
+					<Sonner />
+					<BrowserRouter
 					future={{
 						v7_startTransition: true,
 						v7_relativeSplatPath: true,
@@ -132,12 +135,21 @@ const App = () => (
 								</ProtectedRoute>
 							}
 						/>
+						<Route
+							path="/settings"
+							element={
+								<ProtectedRoute>
+									<Settings />
+								</ProtectedRoute>
+							}
+						/>
 
 						{/* 404 Page */}
 						<Route path="*" element={<NotFound />} />
 					</Routes>
 				</BrowserRouter>
-			</UserProvider>
+				</UserProvider>
+			</ThemeProvider>
 		</TooltipProvider>
 	</QueryClientProvider>
 );
