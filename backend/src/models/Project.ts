@@ -14,10 +14,9 @@ export interface Project {
 	endDate?: Date | null;
 	ownerId: number;
 	isStarred: boolean;
+	googleCalendarEventId?: string | null;
 	createdAt: Date;
 	updatedAt: Date;
-	googleCalendarEventId?: string | null;
-	isStarred: boolean;
 }
 
 export interface ProjectCreateInput {
@@ -53,8 +52,7 @@ export interface ProjectResponse {
 	endDate?: Date | null;
 	ownerId: number;
 	isStarred: boolean;
+	googleCalendarEventId?: string | null;
 	createdAt: Date;
 	updatedAt: Date;
-	googleCalendarEventId?: string | null;
-	isStarred: boolean;
 }
