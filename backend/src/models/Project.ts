@@ -13,6 +13,7 @@ export interface Project {
 	startDate?: Date | null;
 	endDate?: Date | null;
 	ownerId: number;
+	isStarred: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -48,6 +49,7 @@ export interface ProjectResponse {
 	startDate?: Date | null;
 	endDate?: Date | null;
 	ownerId: number;
+	isStarred: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 }
