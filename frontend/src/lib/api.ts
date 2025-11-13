@@ -67,7 +67,10 @@ class ApiClient {
 
 				// Support different backend error shapes: { message } or { error }
 				throw {
-					message: data.message || (data.error as string) || "An error occurred",
+					message:
+						data.message ||
+						(data.error as string) ||
+						"An error occurred",
 					errors: data.errors || data.errorDetails || [],
 					status: response.status,
 				};
@@ -152,9 +155,12 @@ class ApiClient {
 	}
 
 	async verifyEmail(token: string) {
-		const response: any = await this.request(`/auth/verify-email?token=${token}`, {
-			method: "GET",
-		});
+		const response: any = await this.request(
+			`/auth/verify-email?token=${token}`,
+			{
+				method: "GET",
+			}
+		);
 
 		// Store tokens in localStorage
 		if (response.accessToken) {
