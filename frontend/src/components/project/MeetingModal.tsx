@@ -1,0 +1,271 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Video, Calendar, Clock, Users, MapPin, X, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface MeetingModalProps {
+    open: boolean;
+    onClose: () => void;
+    selectedDate?: Date;
+    selectedSlot?: { start: Date; end: Date };
+    projectMembers: any[];
+    onCreateEvent: (eventData: any) => void;
+}
+
+const MeetingModal = ({ open, onClose, selectedDate, selectedSlot, projectMembers, onCreateEvent }: MeetingModalProps) => {
+    const [meetingType, setMeetingType] = useState<'task' | 'meeting'>('meeting');
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [startDate, setStartDate] = useState(
+        selectedSlot?.start || selectedDate || new Date()
+    );
+    const [endDate, setEndDate] = useState(
+        selectedSlot?.end || new Date(Date.now() + 60 * 60 * 1000)
+    );
+    const [location, setLocation] = useState('');
+    const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+
+    const formatDateTimeLocal = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+    // Generate a Google Meet-style link
+    const generateGoogleMeetLink = () => {
+        // Generate a random meeting code (Google Meet style: xxx-xxxx-xxx)
+        const chars = 'abcdefghijklmnopqrstuvwxyz';
+        const part1 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        const part2 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        const part3 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        return `https://meet.google.com/${part1}-${part2}-${part3}`;
+    };
+
+    const handleSubmit = () => {
+        // For meetings, always generate Google Meet link
+        const meetLink = meetingType === 'meeting' ? generateGoogleMeetLink() : null;
+        
+        const eventData = {
+            type: meetingType,
+            title,
+            description,
+            startDate,
+            endDate,
+            location: meetingType === 'meeting' ? 'Google Meet' : location,
+            meetingLink: meetLink,
+            attendees: selectedMembers,
+            assignees: selectedMembers,
+            includeGoogleMeet: meetingType === 'meeting',
+            allDay: false,
+        };
+        console.log('Creating event:', eventData);
+        
+        // Call the parent callback to add event to calendar
+        onCreateEvent(eventData);
+        
+        // TODO: Implement API call to save event to backend
+        
+        // Reset form and close
+        setTitle('');
+        setDescription('');
+        setLocation('');
+        setSelectedMembers([]);
+        onClose();
+    };
+
+    const toggleMember = (memberId: string) => {
+        setSelectedMembers(prev =>
+            prev.includes(memberId)
+                ? prev.filter(id => id !== memberId)
+                : [...prev, memberId]
+        );
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold">
+                        {meetingType === 'meeting' ? 'Schedule Meeting' : 'Create Task'}
+                    </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-6 py-4">
+                    {/* Event Type Selector */}
+                    <div className="flex gap-2">
+                        <Button
+                            variant={meetingType === 'meeting' ? 'default' : 'outline'}
+                            onClick={() => setMeetingType('meeting')}
+                            className="flex-1"
+                        >
+                            <Video className="w-4 h-4 mr-2" />
+                            Meeting
+                        </Button>
+                        <Button
+                            variant={meetingType === 'task' ? 'default' : 'outline'}
+                            onClick={() => setMeetingType('task')}
+                            className="flex-1"
+                        >
+                            <Calendar className="w-4 h-4 mr-2" />
+                            Task
+                        </Button>
+                    </div>
+
+                    {/* Title */}
+                    <div className="space-y-2">
+                        <Label htmlFor="title">Title *</Label>
+                        <Input
+                            id="title"
+                            placeholder={meetingType === 'meeting' ? 'Team Standup' : 'Complete design mockups'}
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Date and Time */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="startDate">
+                                <Clock className="w-4 h-4 inline mr-1" />
+                                Start
+                            </Label>
+                            <Input
+                                id="startDate"
+                                type="datetime-local"
+                                value={formatDateTimeLocal(startDate)}
+                                onChange={(e) => setStartDate(new Date(e.target.value))}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="endDate">
+                                <Clock className="w-4 h-4 inline mr-1" />
+                                End
+                            </Label>
+                            <Input
+                                id="endDate"
+                                type="datetime-local"
+                                value={formatDateTimeLocal(endDate)}
+                                onChange={(e) => setEndDate(new Date(e.target.value))}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Google Meet Info (for meetings only) */}
+                    {meetingType === 'meeting' && (
+                        <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <Video className="w-5 h-5 text-blue-600" />
+                            <div>
+                                <p className="font-medium text-blue-900">Google Meet video conferencing</p>
+                                <p className="text-sm text-blue-700">A meeting link will be automatically generated</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Location (for tasks only) */}
+                    {meetingType === 'task' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="location">
+                                <MapPin className="w-4 h-4 inline mr-1" />
+                                Location (optional)
+                            </Label>
+                            <Input
+                                id="location"
+                                placeholder="Office, Home, etc."
+                                value={location}
+                                onChange={(e) => setLocation(e.target.value)}
+                            />
+                        </div>
+                    )}
+
+                    {/* Description */}
+                    <div className="space-y-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                            id="description"
+                            placeholder={meetingType === 'meeting' ? 'Meeting agenda and notes...' : 'Task details...'}
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            rows={4}
+                        />
+                    </div>
+
+                    {/* Attendees/Assignees */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-base font-semibold">
+                                <Users className="w-4 h-4 inline mr-1" />
+                                {meetingType === 'meeting' ? 'Attendees' : 'Assignees'}
+                            </Label>
+                            {selectedMembers.length > 0 && (
+                                <span className="text-sm text-slate-600">
+                                    {selectedMembers.length} selected
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-sm text-slate-500">
+                            Click to add or remove {meetingType === 'meeting' ? 'attendees' : 'assignees'}
+                        </p>
+                        <div className="flex flex-wrap gap-2 p-4 border-2 border-slate-200 rounded-lg min-h-[80px] bg-slate-50 hover:border-blue-300 transition-colors">
+                            {projectMembers.length > 0 ? (
+                                projectMembers.map((member) => {
+                                    const isSelected = selectedMembers.includes(member.id);
+                                    return (
+                                        <Badge
+                                            key={member.id}
+                                            variant={isSelected ? 'default' : 'outline'}
+                                            className={`cursor-pointer transition-all text-sm py-1.5 px-3 ${
+                                                isSelected 
+                                                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                                    : 'hover:bg-blue-50 hover:border-blue-400'
+                                            }`}
+                                            onClick={() => toggleMember(member.id)}
+                                        >
+                                            <span className="flex items-center gap-1.5">
+                                                {member.name}
+                                                {isSelected && <X className="w-3.5 h-3.5" />}
+                                            </span>
+                                        </Badge>
+                                    );
+                                })
+                            ) : (
+                                <p className="text-sm text-slate-400 w-full text-center py-4">
+                                    No project members available
+                                </p>
+                            )}
+                        </div>
+                        {selectedMembers.length > 0 && (
+                            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded border border-green-200">
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>
+                                    {meetingType === 'meeting' 
+                                        ? 'Calendar invites will be sent to selected attendees'
+                                        : 'Selected members will be assigned to this task'}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-3 pt-4 border-t">
+                        <Button variant="outline" onClick={onClose}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSubmit} disabled={!title}>
+                            {meetingType === 'meeting' ? 'Schedule Meeting' : 'Create Task'}
+                        </Button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+export default MeetingModal;

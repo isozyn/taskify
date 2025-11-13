@@ -6,6 +6,7 @@ import {
 	ProjectUpdateInput,
 	ProjectResponse,
 } from "../models";
+import { GoogleCalendarService } from "./googleCalendarService";
 
 export class ProjectService {
 	/**
@@ -77,6 +78,34 @@ export class ProjectService {
 			},
 		});
 
+		// Auto-sync to Google Calendar if enabled and project has dates
+		if (project.startDate || project.endDate) {
+			try {
+				const isSyncEnabled =
+					await GoogleCalendarService.isCalendarSyncEnabled(
+						data.ownerId
+					);
+				if (isSyncEnabled) {
+					const calendarEvent =
+						await GoogleCalendarService.createProjectCalendarEvent(
+							data.ownerId,
+							project
+						);
+
+					// Update project with calendar event ID
+					await prisma.project.update({
+						where: { id: project.id },
+						data: {
+							googleCalendarEventId: calendarEvent.id || null,
+						},
+					});
+				}
+			} catch (error) {
+				console.error("Failed to sync project to calendar:", error);
+				// Don't fail project creation if calendar sync fails
+			}
+		}
+
 		return completeProject!;
 	}
 
@@ -126,7 +155,8 @@ export class ProjectService {
 	 */
 	static async updateProject(
 		projectId: number,
-		data: ProjectUpdateInput
+		data: ProjectUpdateInput,
+		userId?: number
 	): Promise<ProjectResponse> {
 		const project = await prisma.project.update({
 			where: { id: projectId },
@@ -146,6 +176,42 @@ export class ProjectService {
 				...(data.workflowType && { workflowType: data.workflowType }),
 			},
 		});
+
+		// Auto-sync to Google Calendar if enabled and project has dates
+		if (userId && (project.startDate || project.endDate)) {
+			try {
+				const isSyncEnabled =
+					await GoogleCalendarService.isCalendarSyncEnabled(userId);
+				if (isSyncEnabled) {
+					if (project.googleCalendarEventId) {
+						// Update existing calendar event
+						await GoogleCalendarService.updateProjectCalendarEvent(
+							userId,
+							project.googleCalendarEventId,
+							project
+						);
+					} else {
+						// Create new calendar event
+						const calendarEvent =
+							await GoogleCalendarService.createProjectCalendarEvent(
+								userId,
+								project
+							);
+
+						// Update project with calendar event ID
+						await prisma.project.update({
+							where: { id: project.id },
+							data: {
+								googleCalendarEventId: calendarEvent.id || null,
+							},
+						});
+					}
+				}
+			} catch (error) {
+				console.error("Failed to sync project to calendar:", error);
+				// Don't fail project update if calendar sync fails
+			}
+		}
 
 		return project;
 	}

@@ -641,6 +641,9 @@ export const googleCallback = async (
 					authProvider: "GOOGLE",
 					avatar: googleUser.picture || user.avatar,
 					isEmailVerified: true, // Google emails are verified
+					googleAccessToken: googleUser.accessToken,
+					googleRefreshToken: googleUser.refreshToken,
+					googleTokenExpiry: googleUser.tokenExpiry,
 				} as any);
 			} else {
 				// Create new user with Google account
@@ -664,8 +667,18 @@ export const googleCallback = async (
 					authProvider: "GOOGLE",
 					avatar: googleUser.picture,
 					isEmailVerified: true, // Google emails are verified
+					googleAccessToken: googleUser.accessToken,
+					googleRefreshToken: googleUser.refreshToken,
+					googleTokenExpiry: googleUser.tokenExpiry,
 				});
 			}
+		} else {
+			// User exists with Google ID, update tokens
+			user = await userService.updateUser(user.id, {
+				googleAccessToken: googleUser.accessToken,
+				googleRefreshToken: googleUser.refreshToken,
+				googleTokenExpiry: googleUser.tokenExpiry,
+			} as any);
 		}
 
 		// Generate tokens
@@ -703,7 +716,137 @@ export const googleCallback = async (
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
 
-		// Redirect to frontend dashboard
+		// In development with debug flag, show token for testing
+		// Set OAUTH_DEBUG=true in .env to enable this page
+		if (process.env.NODE_ENV === "development" && process.env.OAUTH_DEBUG === "true") {
+			res.send(`
+				<!DOCTYPE html>
+				<html>
+				<head>
+					<title>Google OAuth Success</title>
+					<style>
+						body {
+							font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+							max-width: 800px;
+							margin: 50px auto;
+							padding: 20px;
+							background: #f5f5f5;
+						}
+						.container {
+							background: white;
+							padding: 40px;
+							border-radius: 10px;
+							box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+						}
+						h1 { color: #28a745; margin-bottom: 20px; }
+						.token-box {
+							background: #f4f4f4;
+							padding: 15px;
+							border-radius: 5px;
+							word-break: break-all;
+							font-family: 'Courier New', monospace;
+							font-size: 12px;
+							margin: 20px 0;
+							max-height: 200px;
+							overflow-y: auto;
+						}
+						button {
+							background: #28a745;
+							color: white;
+							border: none;
+							padding: 12px 24px;
+							border-radius: 5px;
+							cursor: pointer;
+							font-size: 16px;
+							margin: 10px 5px 10px 0;
+						}
+						button:hover { background: #218838; }
+						.info { background: #d1ecf1; padding: 15px; border-radius: 5px; margin: 20px 0; }
+						.user-info { background: #e7f3ff; padding: 15px; border-radius: 5px; margin: 20px 0; }
+					</style>
+				</head>
+				<body>
+					<div class="container">
+						<h1>✅ Google OAuth Successful!</h1>
+						
+						<div class="user-info">
+							<h3>👤 User Information:</h3>
+							<p><strong>Name:</strong> ${user.name}</p>
+							<p><strong>Email:</strong> ${user.email}</p>
+							<p><strong>User ID:</strong> ${user.id}</p>
+						</div>
+
+						<h3>🔑 Your Access Token:</h3>
+						<div class="token-box" id="token">${accessToken}</div>
+						<button onclick="copyToken()">📋 Copy Token</button>
+						<button onclick="testAPI()">🧪 Test Calendar API</button>
+						
+						<div class="info">
+							<h4>📝 How to use this token:</h4>
+							<p><strong>1. Copy the token above</strong></p>
+							<p><strong>2. Use it in your API requests:</strong></p>
+							<div class="token-box">
+curl -H "Authorization: Bearer YOUR_TOKEN" \\
+  http://localhost:5000/api/v1/calendar/sync/status
+							</div>
+							<p><strong>3. Or test it right here by clicking "Test Calendar API"</strong></p>
+						</div>
+
+						<div id="testResult"></div>
+
+						<button onclick="goToDashboard()" style="background: #007bff;">
+							🚀 Go to Dashboard
+						</button>
+					</div>
+
+					<script>
+						function copyToken() {
+							const token = document.getElementById('token').textContent;
+							navigator.clipboard.writeText(token).then(() => {
+								alert('✅ Token copied to clipboard!');
+							});
+						}
+
+						async function testAPI() {
+							const token = document.getElementById('token').textContent;
+							const result = document.getElementById('testResult');
+							result.innerHTML = '<div style="padding: 15px; background: #fff3cd; border-radius: 5px;">⏳ Testing API...</div>';
+							
+							try {
+								const response = await fetch('http://localhost:5000/api/v1/calendar/sync/status', {
+									headers: { 'Authorization': 'Bearer ' + token }
+								});
+								const data = await response.json();
+								
+								result.innerHTML = \`
+									<div style="padding: 15px; background: #d4edda; border-radius: 5px; margin-top: 20px;">
+										<h3>✅ API Test Successful!</h3>
+										<div class="token-box">\${JSON.stringify(data, null, 2)}</div>
+										<p><strong>Calendar Connected:</strong> \${data.calendarConnected ? '✅ Yes' : '❌ No'}</p>
+										<p><strong>Sync Enabled:</strong> \${data.calendarSyncEnabled ? '✅ Yes' : '❌ No'}</p>
+									</div>
+								\`;
+							} catch (error) {
+								result.innerHTML = \`
+									<div style="padding: 15px; background: #f8d7da; border-radius: 5px; margin-top: 20px;">
+										<h3>❌ API Test Failed</h3>
+										<p>\${error.message}</p>
+									</div>
+								\`;
+							}
+						}
+
+						function goToDashboard() {
+							window.location.href = '${process.env.FRONTEND_URL}/dashboard';
+						}
+					</script>
+				</body>
+				</html>
+			`);
+			return;
+		}
+
+		// In production, redirect to frontend dashboard
 		res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
 	} catch (error) {
 		console.error("Google OAuth callback error:", error);

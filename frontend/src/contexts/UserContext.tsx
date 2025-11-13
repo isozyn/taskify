@@ -21,21 +21,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 		const checkAuth = async () => {
 			console.log("[UserContext] Checking authentication...");
 
-			// First check if token exists in localStorage
-			const accessToken = localStorage.getItem("accessToken");
-			if (!accessToken) {
-				console.log(
-					"[UserContext] ❌ No access token found in localStorage"
-				);
-				setUser(null);
-				setLoading(false);
-				return;
-			}
-
-			console.log(
-				"[UserContext] ✅ Access token found, fetching user data..."
-			);
-
 			try {
 				const response = (await api.getCurrentUser()) as { user: User };
 				if (response.user) {
@@ -56,10 +41,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 					"[UserContext] ❌ Authentication failed:",
 					error.message || "Not authenticated"
 				);
-
-				// Clear invalid tokens
-				localStorage.removeItem("accessToken");
-				localStorage.removeItem("refreshToken");
 			} finally {
 				setLoading(false);
 				console.log("[UserContext] Authentication check complete");
@@ -76,10 +57,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 		} catch (error) {
 			console.error("Logout error:", error);
 		} finally {
-			// Clear user state and localStorage regardless of API call result
+			// Clear user state
 			setUser(null);
-			localStorage.removeItem("accessToken");
-			localStorage.removeItem("refreshToken");
 		}
 	};
 

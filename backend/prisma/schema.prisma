@@ -63,8 +63,8 @@ model Project {
   color                 String?
   title                 String
   workflowType          WorkflowType    @default(CUSTOM)
-  googleCalendarEventId String?
   isStarred             Boolean         @default(false)
+  googleCalendarEventId String?
   activities            Activity[]
   conversations         Conversation[]
   customColumns         CustomColumn[]

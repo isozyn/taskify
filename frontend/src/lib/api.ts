@@ -23,14 +23,10 @@ class ApiClient {
 	): Promise<T> {
 		const url = `${this.baseURL}${endpoint}`;
 
-		// Get token from localStorage for Authorization header
-		const accessToken = localStorage.getItem("accessToken");
-
 		const config: RequestInit = {
 			...options,
 			headers: {
 				"Content-Type": "application/json",
-				...(accessToken && { Authorization: `Bearer ${accessToken}` }),
 				...options.headers,
 			},
 			credentials: "include", // Include cookies for authentication
@@ -560,6 +556,98 @@ class ApiClient {
 		});
 	}
 
+	// Calendar methods
+	async enableCalendarSync() {
+		return this.request("/calendar/sync/enable", {
+			method: "POST",
+		});
+	}
+
+	async disableCalendarSync() {
+		return this.request("/calendar/sync/disable", {
+			method: "POST",
+		});
+	}
+
+	async getCalendarSyncStatus() {
+		return this.request("/calendar/sync/status", {
+			method: "GET",
+		});
+	}
+
+	async getCalendarEvents(timeMin?: Date, timeMax?: Date) {
+		const params = new URLSearchParams();
+		if (timeMin) params.append("timeMin", timeMin.toISOString());
+		if (timeMax) params.append("timeMax", timeMax.toISOString());
+
+		return this.request(`/calendar/events?${params.toString()}`, {
+			method: "GET",
+		});
+	}
+
+	async syncTaskToCalendar(taskId: number) {
+		return this.request(`/calendar/sync/task/${taskId}`, {
+			method: "POST",
+		});
+	}
+
+	async unsyncTaskFromCalendar(taskId: number) {
+		return this.request(`/calendar/sync/task/${taskId}`, {
+			method: "DELETE",
+		});
+	}
+
+	async syncProjectToCalendar(projectId: number) {
+		return this.request(`/calendar/sync/project/${projectId}`, {
+			method: "POST",
+		});
+	}
+
+	async unsyncProjectFromCalendar(projectId: number) {
+		return this.request(`/calendar/sync/project/${projectId}`, {
+			method: "DELETE",
+		});
+	}
+
+	// Create calendar event with Google Meet
+	async createCalendarEvent(data: {
+		summary: string;
+		description?: string;
+		startDateTime: string;
+		endDateTime: string;
+		attendees?: string[];
+		includeGoogleMeet?: boolean;
+	}) {
+		return this.request("/calendar/events", {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
+
+	// Update calendar event
+	async updateCalendarEvent(
+		eventId: string,
+		data: {
+			summary?: string;
+			description?: string;
+			startDateTime?: string;
+			endDateTime?: string;
+			attendees?: string[];
+		}
+	) {
+		return this.request(`/calendar/events/${eventId}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		});
+	}
+
+	// Delete calendar event
+	async deleteCalendarEvent(eventId: string) {
+		return this.request(`/calendar/events/${eventId}`, {
+			method: "DELETE",
+		});
+	}
+
 	async deleteComment(commentId: number) {
 		return this.request(`/comments/${commentId}`, {
 			method: "DELETE",
@@ -573,14 +661,20 @@ class ApiClient {
 		});
 	}
 
-	async createNote(projectId: number, data: { title: string; content: string; color: string }) {
+	async createNote(
+		projectId: number,
+		data: { title: string; content: string; color: string }
+	) {
 		return this.request(`/projects/${projectId}/notes`, {
 			method: "POST",
 			body: JSON.stringify(data),
 		});
 	}
 
-	async updateNote(noteId: number, data: Partial<{ title: string; content: string; color: string }>) {
+	async updateNote(
+		noteId: number,
+		data: Partial<{ title: string; content: string; color: string }>
+	) {
 		return this.request(`/notes/${noteId}`, {
 			method: "PATCH",
 			body: JSON.stringify(data),
@@ -760,6 +854,31 @@ export interface ConversationResponse {
 export interface MessagesResponse {
 	messages?: Message[];
 	messageData?: Message;
+}
+
+// Calendar response types
+export interface CalendarSyncStatus {
+	calendarSyncEnabled: boolean;
+	calendarConnected: boolean;
+}
+
+export interface CalendarEvent {
+	id: string;
+	summary: string;
+	description?: string;
+	start: {
+		dateTime: string;
+		timeZone?: string;
+	};
+	end: {
+		dateTime: string;
+		timeZone?: string;
+	};
+	colorId?: string;
+}
+
+export interface CalendarEventsResponse {
+	events: CalendarEvent[];
 }
 
 export default api;

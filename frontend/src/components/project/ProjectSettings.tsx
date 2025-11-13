@@ -56,9 +56,10 @@ import {
 	ChevronDown,
 	Loader2,
 	AlertCircle,
+	Calendar,
 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import MemberDetailModal from "./MemberDetailModal";
+import CalendarSettings from "./CalendarSettings";
 import api from "@/lib/api";
 
 interface ProjectSettingsProps {
@@ -469,6 +470,10 @@ const ProjectSettings = ({
 				<TabsList>
 					<TabsTrigger value="general">General</TabsTrigger>
 					<TabsTrigger value="team">Team</TabsTrigger>
+					<TabsTrigger value="calendar">
+						<Calendar className="w-4 h-4 mr-2" />
+						Calendar
+					</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="general" className="space-y-6">
@@ -956,6 +961,11 @@ const ProjectSettings = ({
 							}
 						}}
 					/>
+				</TabsContent>
+
+				{/* Calendar Tab */}
+				<TabsContent value="calendar" className="space-y-4">
+					<CalendarSettings />
 				</TabsContent>
 			</Tabs>
 
