@@ -33,6 +33,18 @@ router.post("/projects/:projectId/invite", ProjectController.inviteMembers);
 // Get project members
 router.get("/projects/:projectId/members", ProjectController.getProjectMembers);
 
+// Update project member role
+router.patch(
+	"/projects/:projectId/members/:memberId",
+	ProjectController.updateMemberRole
+);
+
+// Remove project member
+router.delete(
+	"/projects/:projectId/members/:memberId",
+	ProjectController.removeMember
+);
+
 // Accept project invitation
 router.post("/projects/accept-invitation", ProjectController.acceptInvitation);
 

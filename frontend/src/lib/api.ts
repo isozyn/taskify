@@ -257,6 +257,19 @@ class ApiClient {
 		});
 	}
 
+	async updateMemberRole(projectId: number, memberId: number, role: string) {
+		return this.request(`/projects/${projectId}/members/${memberId}`, {
+			method: "PATCH",
+			body: JSON.stringify({ role }),
+		});
+	}
+
+	async removeMember(projectId: number, memberId: number) {
+		return this.request(`/projects/${projectId}/members/${memberId}`, {
+			method: "DELETE",
+		});
+	}
+
 	async acceptProjectInvitation(projectName: string, role: string) {
 		return this.request(`/projects/accept-invitation`, {
 			method: "POST",
@@ -721,3 +734,5 @@ export interface MessagesResponse {
 	messages?: Message[];
 	messageData?: Message;
 }
+
+export default api;

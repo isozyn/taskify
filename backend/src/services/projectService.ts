@@ -353,6 +353,46 @@ export class ProjectService {
 	}
 
 	/**
+	 * Update project member role
+	 */
+	static async updateMemberRole(
+		projectId: number,
+		memberId: number,
+		role: string
+	) {
+		// Check if member exists in project
+		const member = await prisma.projectMember.findFirst({
+			where: {
+				projectId,
+				id: memberId,
+			},
+		});
+
+		if (!member) {
+			throw new Error("Member not found in this project");
+		}
+
+		// Update member role
+		const updatedMember = await prisma.projectMember.update({
+			where: { id: memberId },
+			data: { role: role as any },
+			include: {
+				user: {
+					select: {
+						id: true,
+						name: true,
+						email: true,
+						avatar: true,
+						username: true,
+					},
+				},
+			},
+		});
+
+		return updatedMember;
+	}
+
+	/**
 	 * Accept project invitation
 	 * Adds user to project if they're not already a member
 	 */
@@ -410,5 +450,71 @@ export class ProjectService {
 				message: "Failed to accept invitation",
 			};
 		}
+	}
+
+	/**
+	 * Remove a member from a project (only owners can remove members)
+	 */
+	static async removeMember(
+		projectId: number,
+		memberId: number,
+		requestingUserId: number
+	): Promise<void> {
+		// Check if requesting user is an owner of the project
+		const requestingMember = await prisma.projectMember.findUnique({
+			where: {
+				userId_projectId: {
+					userId: requestingUserId,
+					projectId: projectId,
+				},
+			},
+		});
+
+		if (!requestingMember || requestingMember.role !== "OWNER") {
+			throw new Error("Only project owners can remove members");
+		}
+
+		// Check if member to be removed exists
+		const memberToRemove = await prisma.projectMember.findUnique({
+			where: {
+				userId_projectId: {
+					userId: memberId,
+					projectId: projectId,
+				},
+			},
+		});
+
+		if (!memberToRemove) {
+			throw new Error("Member not found in this project");
+		}
+
+		// Prevent removing yourself
+		if (memberId === requestingUserId) {
+			throw new Error("You cannot remove yourself from the project");
+		}
+
+		// Prevent removing the last owner
+		if (memberToRemove.role === "OWNER") {
+			const ownerCount = await prisma.projectMember.count({
+				where: {
+					projectId: projectId,
+					role: "OWNER",
+				},
+			});
+
+			if (ownerCount <= 1) {
+				throw new Error("Cannot remove the last owner of the project");
+			}
+		}
+
+		// Remove the member
+		await prisma.projectMember.delete({
+			where: {
+				userId_projectId: {
+					userId: memberId,
+					projectId: projectId,
+				},
+			},
+		});
 	}
 }
