@@ -63,6 +63,7 @@ model Project {
   color         String?
   title         String
   workflowType  WorkflowType    @default(CUSTOM)
+  isStarred     Boolean         @default(false)
   activities    Activity[]
   conversations Conversation[]
   customColumns CustomColumn[]

@@ -234,10 +234,10 @@ class ApiClient {
 		});
 	}
 
-	async toggleProjectFavorite(projectId: number, isFavorite: boolean) {
-		return this.request(`/projects/${projectId}/favorite`, {
+	async toggleProjectStar(projectId: number, isStarred: boolean) {
+		return this.request(`/projects/${projectId}/star`, {
 			method: "PATCH",
-			body: JSON.stringify({ isFavorite }),
+			body: JSON.stringify({ isStarred }),
 		});
 	}
 
@@ -589,7 +589,7 @@ export interface Project {
 	endDate?: string | null;
 	createdAt: string;
 	updatedAt: string;
-	isFavorite?: boolean;
+	isStarred?: boolean;
 	owner?: {
 		id: number;
 		name: string;
