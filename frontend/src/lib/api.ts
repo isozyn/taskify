@@ -565,6 +565,33 @@ class ApiClient {
 			method: "DELETE",
 		});
 	}
+
+	// Note endpoints
+	async getNotesByProject(projectId: number) {
+		return this.request(`/projects/${projectId}/notes`, {
+			method: "GET",
+		});
+	}
+
+	async createNote(projectId: number, data: { title: string; content: string; color: string }) {
+		return this.request(`/projects/${projectId}/notes`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async updateNote(noteId: number, data: Partial<{ title: string; content: string; color: string }>) {
+		return this.request(`/notes/${noteId}`, {
+			method: "PATCH",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async deleteNote(noteId: number) {
+		return this.request(`/notes/${noteId}`, {
+			method: "DELETE",
+		});
+	}
 }
 
 // Export a singleton instance

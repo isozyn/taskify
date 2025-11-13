@@ -21,9 +21,9 @@ model User {
   resetTokenExpiry    DateTime?
   username            String               @unique
   authProvider        AuthProvider         @default(LOCAL)
-  googleId            String?              @unique
   calendarSyncEnabled Boolean              @default(false)
   googleAccessToken   String?
+  googleId            String?              @unique
   googleRefreshToken  String?
   googleTokenExpiry   DateTime?
   comments            Comment[]
@@ -52,24 +52,26 @@ model RefreshToken {
 }
 
 model Project {
-  id            Int             @id @default(autoincrement())
-  description   String?
-  status        ProjectStatus   @default(ACTIVE)
-  startDate     DateTime?
-  endDate       DateTime?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  ownerId       Int
-  color         String?
-  title         String
-  workflowType  WorkflowType    @default(CUSTOM)
-  isStarred     Boolean         @default(false)
-  activities    Activity[]
-  conversations Conversation[]
-  customColumns CustomColumn[]
-  owner         User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members       ProjectMember[]
-  tasks         Task[]
+  id                    Int             @id @default(autoincrement())
+  description           String?
+  status                ProjectStatus   @default(ACTIVE)
+  startDate             DateTime?
+  endDate               DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  ownerId               Int
+  color                 String?
+  title                 String
+  workflowType          WorkflowType    @default(CUSTOM)
+  googleCalendarEventId String?
+  isStarred             Boolean         @default(false)
+  activities            Activity[]
+  conversations         Conversation[]
+  customColumns         CustomColumn[]
+  owner                 User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members               ProjectMember[]
+  tasks                 Task[]
+  notes                 Note[]
 
   @@index([ownerId])
   @@index([status])
@@ -90,26 +92,27 @@ model ProjectMember {
 }
 
 model Task {
-  id          Int        @id @default(autoincrement())
-  title       String
-  description String?
-  status      TaskStatus @default(TODO)
-  priority    Priority   @default(MEDIUM)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  projectId   Int
-  assigneeId  Int?
-  order       Int        @default(0)
-  tags        String[]   @default([])
-  columnId    String?
-  endDate     DateTime?
-  startDate   DateTime?
-  labelText   String?
-  labelColor  String?    @default("slate")
-  comments    Comment[]
-  subtasks    Subtask[]
-  assignee    User?      @relation(fields: [assigneeId], references: [id])
-  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id                    Int        @id @default(autoincrement())
+  title                 String
+  description           String?
+  status                TaskStatus @default(TODO)
+  priority              Priority   @default(MEDIUM)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  projectId             Int
+  assigneeId            Int?
+  order                 Int        @default(0)
+  tags                  String[]   @default([])
+  columnId              String?
+  endDate               DateTime?
+  startDate             DateTime?
+  labelColor            String?    @default("slate")
+  labelText             String?
+  googleCalendarEventId String?
+  comments              Comment[]
+  subtasks              Subtask[]
+  assignee              User?      @relation(fields: [assigneeId], references: [id])
+  project               Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([assigneeId])
@@ -228,6 +231,21 @@ model Message {
   @@index([conversationId])
   @@index([senderId])
   @@index([createdAt])
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  color     String   @default("bg-blue-50 border-blue-200")
+  projectId Int
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([userId])
 }
 
 enum Role {

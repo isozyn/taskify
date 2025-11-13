@@ -47,6 +47,8 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
         priority: taskData.priority || 'MEDIUM',
         assigneeId: assigneeId,
         tags: taskData.tags || [],
+        labelText: taskData.labelText || null,
+        labelColor: taskData.labelColor || null,
       });
 
       // Create subtasks if any (using direct API call for subtasks)
@@ -129,6 +131,31 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
     return tasks.filter((task) => task.status === taskStatus);
   };
 
+  // Helper function to calculate progress based on subtasks
+  const calculateTaskProgress = (task: any) => {
+    if (!task.subtasks || task.subtasks.length === 0) {
+      return 0;
+    }
+    const completedSubtasks = task.subtasks.filter((subtask: any) => subtask.completed).length;
+    return Math.round((completedSubtasks / task.subtasks.length) * 100);
+  };
+
+  // Helper function to get progress bar color based on task status
+  const getProgressBarColor = (taskStatus: string) => {
+    switch (taskStatus) {
+      case 'IN_PROGRESS':
+        return 'h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all';
+      case 'IN_REVIEW':
+        return 'h-full bg-gradient-to-r from-green-500 to-green-600 transition-all';
+      case 'COMPLETED':
+        return 'h-full bg-gradient-to-r from-yellow-500 to-yellow-600 transition-all';
+      case 'BLOCKED':
+        return 'h-full bg-gradient-to-r from-red-500 to-red-600 transition-all';
+      default:
+        return 'h-full bg-gradient-to-r from-gray-500 to-gray-600 transition-all';
+    }
+  };
+
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
@@ -200,10 +227,21 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
                         onClick={() => setSelectedTask(task)}
                       >
                         <CardContent className="p-3 space-y-3">
-                          {/* Task Title */}
-                          <h4 className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-                            {task.title}
-                          </h4>
+                          {/* Task Title & Label */}
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 flex-1">
+                              {task.title}
+                            </h4>
+                            {/* Custom Label - Top Right Corner */}
+                            {task.labelText && task.labelColor && (
+                              <Badge
+                                className="text-xs px-2 py-1 rounded-full text-white flex-shrink-0"
+                                style={{ backgroundColor: task.labelColor }}
+                              >
+                                {task.labelText}
+                              </Badge>
+                            )}
+                          </div>
 
                           {/* Priority Badge */}
                           <div className="flex items-center justify-between">
@@ -228,6 +266,48 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
                               </div>
                             )}
                           </div>
+
+                          {/* Progress Bar */}
+                          {task.subtasks && task.subtasks.length > 0 && task.status !== 'UPCOMING' && (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-slate-500 font-medium">Progress</span>
+                                <span className="text-xs font-semibold text-slate-700">{calculateTaskProgress(task)}%</span>
+                              </div>
+                              <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner">
+                                <div 
+                                  className={`${getProgressBarColor(task.status)} rounded-full shadow-sm`}
+                                  style={{ 
+                                    width: `${calculateTaskProgress(task)}%`,
+                                    transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    background: task.status === 'IN_PROGRESS' ? 'linear-gradient(90deg, #3b82f6 0%, #1d4ed8 50%, #60a5fa 100%)' :
+                                               task.status === 'IN_REVIEW' ? 'linear-gradient(90deg, #22c55e 0%, #16a34a 50%, #4ade80 100%)' :
+                                               task.status === 'COMPLETED' ? 'linear-gradient(90deg, #eab308 0%, #ca8a04 50%, #fbbf24 100%)' :
+                                               task.status === 'BLOCKED' ? 'linear-gradient(90deg, #ef4444 0%, #dc2626 50%, #f87171 100%)' :
+                                               'linear-gradient(90deg, #6b7280 0%, #4b5563 50%, #9ca3af 100%)',
+                                    boxShadow: calculateTaskProgress(task) > 0 ? '0 0 8px rgba(59, 130, 246, 0.3)' : 'none'
+                                  }}
+                                />
+                                {/* Animated shimmer effect for active progress */}
+                                {calculateTaskProgress(task) > 0 && calculateTaskProgress(task) < 100 && (
+                                  <div 
+                                    className="absolute top-0 left-0 h-full w-full opacity-30"
+                                    style={{
+                                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)',
+                                      animation: 'shimmer 2s infinite',
+                                      width: `${calculateTaskProgress(task)}%`,
+                                    }}
+                                  />
+                                )}
+                              </div>
+                              <style>{`
+                                @keyframes shimmer {
+                                  0% { transform: translateX(-100%); }
+                                  100% { transform: translateX(200%); }
+                                }
+                              `}</style>
+                            </div>
+                          )}
 
                           {/* Dates */}
                           {(task.startDate || task.endDate) && (
