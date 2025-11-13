@@ -26,4 +26,15 @@ router.post('/calendar/sync/task/:taskId', CalendarController.syncTask);
 // Remove task from calendar
 router.delete('/calendar/sync/task/:taskId', CalendarController.unsyncTask);
 
+// Sync specific project
+router.post('/calendar/sync/project/:projectId', CalendarController.syncProject);
+
+// Remove project from calendar
+router.delete('/calendar/sync/project/:projectId', CalendarController.unsyncProject);
+
+// Create, update, delete calendar events
+router.post('/calendar/events', CalendarController.createEvent);
+router.put('/calendar/events/:eventId', CalendarController.updateEvent);
+router.delete('/calendar/events/:eventId', CalendarController.deleteEvent);
+
 export default router;

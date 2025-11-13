@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
-import { Filter, Download, CheckCircle2, Calendar as CalendarIcon } from "lucide-react";
+import { Filter, Download, CheckCircle2, Calendar as CalendarIcon, Plus, Video } from "lucide-react";
 import TaskModal from "./TaskModal";
+import MeetingModal from "./MeetingModal";
+import MeetingDetailsModal from "./MeetingDetailsModal";
 import { api, CalendarSyncStatus } from "@/lib/api";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar-styles.css';
@@ -14,11 +16,16 @@ const localizer = momentLocalizer(moment);
 
 interface CalendarViewProps {
     projectMembers: any[];
+    project?: any;
 }
 
-const CalendarView = ({ projectMembers }: CalendarViewProps) => {
+const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
     const [selectedTask, setSelectedTask] = useState<any>(null);
+    const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
     const [currentView, setCurrentView] = useState<any>(Views.MONTH);
+    const [showMeetingModal, setShowMeetingModal] = useState(false);
+    const [selectedSlot, setSelectedSlot] = useState<{ start: Date; end: Date } | null>(null);
+    const [customEvents, setCustomEvents] = useState<any[]>([]);
     const [syncStatus, setSyncStatus] = useState<CalendarSyncStatus>({
         calendarSyncEnabled: false,
         calendarConnected: false,
@@ -37,168 +44,200 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
         fetchSyncStatus();
     }, []);
 
-    // Mock tasks data - same as TimelineView for consistency
-    const tasks = [
-        {
-            id: 1,
-            title: "UX Research",
-            description: "Conduct user interviews and analyze user behavior patterns to inform design decisions.",
-            assignees: ["John Doe", "Jane Smith"],
-            startDate: "2024-11-04",
-            endDate: "2024-11-12",
-            status: "in-progress",
-            progress: 48,
-            color: "from-blue-500 to-blue-600",
-            priority: "high",
-            tags: ["research", "ux"],
-            subtasks: [
-                { id: 1, title: "User interviews", completed: true },
-                { id: 2, title: "Survey analysis", completed: true },
-                { id: 3, title: "Persona creation", completed: false },
-                { id: 4, title: "Journey mapping", completed: false },
-            ],
-        },
-        {
-            id: 2,
-            title: "Information Architecture",
-            description: "Design the site structure and navigation flow for optimal user experience.",
-            assignees: ["Jane Smith", "Mike Johnson", "Sarah Wilson"],
-            startDate: "2024-11-06",
-            endDate: "2024-11-14",
-            status: "complete",
-            progress: 100,
-            color: "from-emerald-500 to-emerald-600",
-            priority: "medium",
-            tags: ["architecture", "navigation"],
-            subtasks: [
-                { id: 1, title: "Site map creation", completed: true },
-                { id: 2, title: "Navigation design", completed: true },
-                { id: 3, title: "Content hierarchy", completed: true },
-                { id: 4, title: "User flow diagrams", completed: true },
-            ],
-        },
-        {
-            id: 3,
-            title: "Design Phase",
-            description: "Create visual designs and mockups for all key pages and components.",
-            assignees: ["Mike Johnson", "Sarah Wilson"],
-            startDate: "2024-11-08",
-            endDate: "2024-11-20",
-            status: "in-progress",
-            progress: 54,
-            color: "from-teal-500 to-teal-600",
-            priority: "high",
-            tags: ["design", "mockups"],
-            subtasks: [
-                { id: 1, title: "Wireframes", completed: true },
-                { id: 2, title: "Visual design", completed: true },
-                { id: 3, title: "Component library", completed: false },
-                { id: 4, title: "Responsive layouts", completed: false },
-            ],
-        },
-        {
-            id: 4,
-            title: "Prototyping",
-            description: "Build interactive prototypes for user testing and stakeholder review.",
-            assignees: ["Sarah Wilson", "John Doe"],
-            startDate: "2024-11-18",
-            endDate: "2024-11-28",
-            status: "upcoming",
-            progress: 39,
-            color: "from-sky-500 to-sky-600",
-            priority: "medium",
-            tags: ["prototype", "testing"],
-            subtasks: [
-                { id: 1, title: "Low-fi prototype", completed: true },
-                { id: 2, title: "High-fi prototype", completed: false },
-                { id: 3, title: "User testing", completed: false },
-                { id: 4, title: "Iteration", completed: false },
-            ],
-        },
-        {
-            id: 5,
-            title: "Development",
-            description: "Implement the frontend and backend functionality according to specifications.",
-            assignees: ["Mike Johnson", "Jane Smith"],
-            startDate: "2024-11-14",
-            endDate: "2024-11-22",
-            status: "in-progress",
-            progress: 54,
-            color: "from-orange-500 to-orange-600",
-            priority: "high",
-            tags: ["development", "coding"],
-            subtasks: [
-                { id: 1, title: "Setup development environment", completed: true },
-                { id: 2, title: "Core functionality", completed: true },
-                { id: 3, title: "API integration", completed: false },
-                { id: 4, title: "Testing", completed: false },
-            ],
-        },
-    ];
+    // Convert custom events to calendar events (memoized to prevent unnecessary re-renders)
+    const calendarEvents = useMemo(() => {
+        const events: any[] = [];
 
-    // Convert tasks to calendar events (memoized to prevent unnecessary re-renders)
-    const calendarEvents = useMemo(() =>
-        tasks.map(task => ({
-            id: task.id,
-            title: task.title,
-            start: new Date(task.startDate),
-            end: new Date(task.endDate),
-            resource: task,
-            allDay: false,
-        })), [tasks]
-    );
+        // Add project as a calendar event if it has dates
+        if (project?.startDate && project?.endDate) {
+            events.push({
+                id: `project-${project.id}`,
+                title: `📋 ${project.title}`,
+                start: new Date(project.startDate),
+                end: new Date(project.endDate),
+                resource: {
+                    id: project.id,
+                    title: project.title,
+                    description: project.description,
+                    eventType: 'project',
+                    status: 'project',
+                    isProject: true,
+                },
+                allDay: true,
+            });
+        }
 
-    // Custom event style getter for calendar (memoized)
+        // Add custom created events (meetings/tasks)
+        const customCalendarEvents = customEvents.map(event => ({
+            id: event.id,
+            title: event.title,
+            start: new Date(event.startDate),
+            end: new Date(event.endDate),
+            resource: {
+                ...event,
+                eventType: event.type,
+            },
+            allDay: event.allDay || false,
+        }));
+
+        return [...events, ...customCalendarEvents];
+    }, [customEvents, project]);
+
+    // Custom event style getter for calendar (memoized) - Google Calendar style
     const eventStyleGetter = useMemo(() => (event: any) => {
         const task = event.resource;
         let backgroundColor = '#3174ad';
+        let borderColor = '#3174ad';
 
-        switch (task.status) {
-            case 'complete':
-                backgroundColor = '#10b981';
-                break;
-            case 'in-progress':
-                backgroundColor = '#f59e0b';
-                break;
-            case 'upcoming':
-                backgroundColor = '#6366f1';
-                break;
-            default:
-                backgroundColor = '#8b5cf6';
+        if (task.eventType === 'project') {
+            backgroundColor = '#059669';
+            borderColor = '#047857';
+        } else if (task.eventType === 'meeting') {
+            backgroundColor = '#1a73e8';
+            borderColor = '#1557b0';
+        } else {
+            switch (task.status) {
+                case 'complete':
+                    backgroundColor = '#10b981';
+                    borderColor = '#059669';
+                    break;
+                case 'in-progress':
+                    backgroundColor = '#f59e0b';
+                    borderColor = '#d97706';
+                    break;
+                case 'upcoming':
+                    backgroundColor = '#6366f1';
+                    borderColor = '#4f46e5';
+                    break;
+                default:
+                    backgroundColor = '#8b5cf6';
+                    borderColor = '#7c3aed';
+            }
         }
 
         return {
             style: {
                 backgroundColor,
-                borderRadius: '6px',
-                opacity: 0.9,
+                borderRadius: '4px',
+                opacity: 0.95,
                 color: 'white',
-                border: '0px',
+                border: `1px solid ${borderColor}`,
                 display: 'block',
-                fontSize: '12px',
-                fontWeight: '600',
+                fontSize: '13px',
+                fontWeight: '500',
+                padding: '2px 6px',
             }
         };
     }, []);
 
     // Handle calendar event selection
     const handleSelectEvent = (event: any) => {
-        setSelectedTask(event.resource);
+        if (event.resource.eventType === 'project') {
+            // Show project details
+            console.log('Project clicked:', event);
+            // Could open a project details modal here
+        } else if (event.resource.eventType === 'meeting') {
+            // Open meeting details modal
+            setSelectedMeeting(event.resource);
+        } else {
+            setSelectedTask(event.resource);
+        }
+    };
+
+    // Handle event deletion
+    const handleDeleteEvent = async (eventId: string) => {
+        const event = customEvents.find(e => e.id === eventId);
+        
+        // Remove from local state
+        setCustomEvents(prev => prev.filter(event => event.id !== eventId));
+        
+        // If it has a Google Calendar event ID, delete from Google Calendar too
+        if (event?.googleCalendarEventId && syncStatus.calendarSyncEnabled) {
+            try {
+                await api.deleteCalendarEvent(event.googleCalendarEventId);
+                console.log('Google Calendar event deleted successfully');
+            } catch (error) {
+                console.error('Failed to delete Google Calendar event:', error);
+            }
+        }
+    };
+
+    // Handle slot selection (clicking on empty calendar space)
+    const handleSelectSlot = (slotInfo: any) => {
+        setSelectedSlot({
+            start: slotInfo.start,
+            end: slotInfo.end,
+        });
+        setShowMeetingModal(true);
+    };
+
+    // Handle event creation
+    const handleCreateEvent = async (eventData: any) => {
+        const newEvent = {
+            id: `custom-${Date.now()}`,
+            ...eventData,
+            status: eventData.type === 'meeting' ? 'meeting' : 'upcoming',
+        };
+        
+        // Add to local state immediately for instant feedback
+        setCustomEvents(prev => [...prev, newEvent]);
+        console.log('Event created and added to calendar:', newEvent);
+
+        // If it's a meeting and calendar sync is enabled, create in Google Calendar
+        if (eventData.type === 'meeting' && syncStatus.calendarSyncEnabled && syncStatus.calendarConnected) {
+            try {
+                // Get attendee emails
+                const attendeeEmails = eventData.attendees
+                    .map((id: string) => projectMembers.find(m => m.id === id)?.email)
+                    .filter(Boolean);
+
+                const calendarEventData = {
+                    summary: eventData.title,
+                    description: eventData.description || '',
+                    startDateTime: new Date(eventData.startDate).toISOString(),
+                    endDateTime: new Date(eventData.endDate).toISOString(),
+                    attendees: attendeeEmails,
+                    includeGoogleMeet: true,
+                };
+
+                console.log('Creating Google Calendar event:', calendarEventData);
+                const response: any = await api.createCalendarEvent(calendarEventData);
+                
+                if (response.event) {
+                    // Update the event with the real Google Calendar event ID and Meet link
+                    const updatedEvent = {
+                        ...newEvent,
+                        googleCalendarEventId: response.event.id,
+                        meetingLink: response.event.hangoutLink || response.event.conferenceData?.entryPoints?.[0]?.uri || newEvent.meetingLink,
+                    };
+                    
+                    // Update the event in state with real Google Meet link
+                    setCustomEvents(prev => 
+                        prev.map(e => e.id === newEvent.id ? updatedEvent : e)
+                    );
+                    
+                    console.log('Google Calendar event created successfully:', response.event);
+                }
+            } catch (error) {
+                console.error('Failed to create Google Calendar event:', error);
+                // Event is still in local calendar even if Google sync fails
+            }
+        }
     };
 
 
 
-    // Get task statistics
-    const getTaskStats = () => {
-        const total = tasks.length;
-        const completed = tasks.filter(task => task.status === 'complete').length;
-        const inProgress = tasks.filter(task => task.status === 'in-progress').length;
-        const upcoming = tasks.filter(task => task.status === 'upcoming').length;
+    // Get event statistics
+    const getEventStats = () => {
+        const total = customEvents.length + (project?.startDate && project?.endDate ? 1 : 0);
+        const meetings = customEvents.filter(event => event.type === 'meeting').length;
+        const tasks = customEvents.filter(event => event.type === 'task').length;
+        const projects = project?.startDate && project?.endDate ? 1 : 0;
 
-        return { total, completed, inProgress, upcoming };
+        return { total, meetings, tasks, projects };
     };
 
-    const stats = getTaskStats();
+    const stats = getEventStats();
 
     return (
         <div className="space-y-6">
@@ -237,17 +276,26 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                         </div>
                         <div className="w-px h-8 bg-slate-200"></div>
                         <div className="text-center">
-                            <div className="text-lg font-bold text-green-600">{stats.completed}</div>
-                            <div className="text-xs text-slate-500">Done</div>
+                            <div className="text-lg font-bold text-blue-600">{stats.meetings}</div>
+                            <div className="text-xs text-slate-500">Meetings</div>
                         </div>
                         <div className="w-px h-8 bg-slate-200"></div>
                         <div className="text-center">
-                            <div className="text-lg font-bold text-amber-600">{stats.inProgress}</div>
-                            <div className="text-xs text-slate-500">Active</div>
+                            <div className="text-lg font-bold text-purple-600">{stats.tasks}</div>
+                            <div className="text-xs text-slate-500">Tasks</div>
                         </div>
                     </div>
 
                     {/* Action Buttons */}
+                    <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={() => setShowMeetingModal(true)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create
+                    </Button>
 
                     <Button variant="outline" size="sm">
                         <Filter className="w-4 h-4 mr-2" />
@@ -272,7 +320,8 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                             endAccessor="end"
                             style={{ height: '100%' }}
                             onSelectEvent={handleSelectEvent}
-                            selectable={false}
+                            onSelectSlot={handleSelectSlot}
+                            selectable={true}
                             eventPropGetter={eventStyleGetter}
                             views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
                             defaultView={Views.MONTH}
@@ -280,18 +329,42 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                             onView={(view) => setCurrentView(view)}
                             popup
                             showMultiDayTimes
-                            step={60}
+                            step={30}
+                            timeslots={2}
                             showAllEvents
 
                             components={{
-                                event: ({ event }) => (
-                                    <div className="p-1">
-                                        <div className="font-semibold text-xs truncate">{event.title}</div>
-                                        <div className="text-xs opacity-90">
-                                            {event.resource.progress}% • {event.resource.assignees.length} assignee{event.resource.assignees.length !== 1 ? 's' : ''}
+                                event: ({ event }) => {
+                                    const isMeeting = event.resource.eventType === 'meeting';
+                                    const isProject = event.resource.eventType === 'project';
+                                    const isComplete = event.resource.status === 'complete';
+                                    const hasMeetingLink = event.resource.meetingLink;
+                                    
+                                    return (
+                                        <div className="px-1 py-0.5">
+                                            <div className="flex items-center gap-1">
+                                                {isMeeting && <Video className="w-3 h-3" />}
+                                                {isComplete && <span className="text-xs">✓</span>}
+                                                <span className="font-medium text-xs truncate">{event.title}</span>
+                                            </div>
+                                            {isMeeting && hasMeetingLink && (
+                                                <div className="text-xs opacity-90 truncate">
+                                                    📹 Google Meet
+                                                </div>
+                                            )}
+                                            {!isMeeting && !isProject && event.resource.assignees && event.resource.assignees.length > 0 && (
+                                                <div className="text-xs opacity-90 truncate">
+                                                    {event.resource.assignees[0]}{event.resource.assignees.length > 1 ? ` +${event.resource.assignees.length - 1}` : ''}
+                                                </div>
+                                            )}
+                                            {isProject && (
+                                                <div className="text-xs opacity-90 truncate">
+                                                    Project Timeline
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                ),
+                                    );
+                                },
 
                                 toolbar: ({ label, onNavigate, onView, view }) => (
                                     <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
@@ -353,20 +426,16 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                 <CardContent className="p-4">
                     <div className="flex items-center justify-center gap-8">
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded bg-green-500"></div>
-                            <span className="text-sm font-medium text-slate-700">Complete</span>
+                            <div className="w-4 h-4 rounded bg-green-600"></div>
+                            <span className="text-sm font-medium text-slate-700">Project Timeline</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded bg-amber-500"></div>
-                            <span className="text-sm font-medium text-slate-700">In Progress</span>
+                            <div className="w-4 h-4 rounded bg-blue-600"></div>
+                            <span className="text-sm font-medium text-slate-700">Meetings</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 rounded bg-indigo-500"></div>
-                            <span className="text-sm font-medium text-slate-700">Upcoming</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded bg-purple-500"></div>
-                            <span className="text-sm font-medium text-slate-700">Other</span>
+                            <span className="text-sm font-medium text-slate-700">Tasks</span>
                         </div>
                     </div>
                 </CardContent>
@@ -382,7 +451,28 @@ const CalendarView = ({ projectMembers }: CalendarViewProps) => {
                 />
             )}
 
+            {/* Meeting/Event Creation Modal */}
+            <MeetingModal
+                open={showMeetingModal}
+                onClose={() => {
+                    setShowMeetingModal(false);
+                    setSelectedSlot(null);
+                }}
+                selectedSlot={selectedSlot || undefined}
+                projectMembers={projectMembers}
+                onCreateEvent={handleCreateEvent}
+            />
 
+            {/* Meeting Details Modal */}
+            {selectedMeeting && (
+                <MeetingDetailsModal
+                    open={!!selectedMeeting}
+                    onClose={() => setSelectedMeeting(null)}
+                    meeting={selectedMeeting}
+                    projectMembers={projectMembers}
+                    onDelete={handleDeleteEvent}
+                />
+            )}
         </div>
     );
 };

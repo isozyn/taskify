@@ -151,7 +151,7 @@ const ProjectWorkspace = () => {
       case "timeline":
         return <TimelineView projectMembers={projectMembers} />;
       case "calendar":
-        return <CalendarView projectMembers={projectMembers} />;
+        return <CalendarView projectMembers={projectMembers} project={proj} />;
       case "messages":
         return <MessagesView projectMembers={projectMembers} project={proj ? { id: proj.id, title: proj.title, description: proj.description } : undefined} />;
       case "settings":

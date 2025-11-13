@@ -76,9 +76,24 @@ const CalendarSettings = () => {
 		}
 	};
 
-	const handleConnectGoogle = () => {
-		// Redirect to Google OAuth
-		window.location.href = `${import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'}/api/v1/auth/google`;
+	const handleConnectGoogle = async () => {
+		try {
+			// Fetch the Google OAuth URL from the API
+			const response: any = await api.googleAuth();
+			if (response.url) {
+				// Redirect to Google OAuth consent screen
+				window.location.href = response.url;
+			} else {
+				throw new Error('No OAuth URL received');
+			}
+		} catch (error: any) {
+			console.error('Failed to initiate Google OAuth:', error);
+			toast({
+				title: "Error",
+				description: "Failed to connect to Google Calendar. Please try again.",
+				variant: "destructive",
+			});
+		}
 	};
 
 	if (isLoading) {
@@ -182,7 +197,8 @@ const CalendarSettings = () => {
 				{/* Help Text */}
 				<div className="text-xs text-slate-500 space-y-1">
 					<p>• Tasks with start and end dates will be synced as calendar events</p>
-					<p>• Updates to tasks will automatically update the calendar event</p>
+					<p>• Project timelines will be synced as all-day events</p>
+					<p>• Updates to tasks and projects will automatically update the calendar</p>
 					<p>• Deleting a task will remove it from your calendar</p>
 					<p>• Events are color-coded: Red (Urgent), Blue (High), Yellow (Medium), Green (Low)</p>
 				</div>

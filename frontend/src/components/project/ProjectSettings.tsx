@@ -218,6 +218,40 @@ const ProjectSettings = ({ project }: ProjectSettingsProps) => {
 
         <Card>
           <CardHeader>
+            <CardTitle>Project Timeline</CardTitle>
+            <CardDescription>Set project start and end dates</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start-date">Start Date</Label>
+                <Input 
+                  id="start-date" 
+                  type="date" 
+                  defaultValue={project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : ''} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-date">End Date</Label>
+                <Input 
+                  id="end-date" 
+                  type="date" 
+                  defaultValue={project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : ''} 
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Project timeline will be displayed in the calendar view and synced to Google Calendar if enabled
+            </p>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline">Cancel</Button>
+              <Button>Save Timeline</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Danger Zone</CardTitle>
             <CardDescription>Irreversible actions for this project</CardDescription>
           </CardHeader>

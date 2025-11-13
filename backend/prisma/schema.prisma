@@ -8,32 +8,32 @@ datasource db {
 }
 
 model User {
-  id                   Int                   @id @default(autoincrement())
-  name                 String
-  email                String                @unique
-  password             String?
-  role                 Role                  @default(USER)
-  isEmailVerified      Boolean               @default(false)
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  avatar               String?
-  resetToken           String?
-  resetTokenExpiry     DateTime?
-  username             String                @unique
-  googleId             String?               @unique
-  authProvider         AuthProvider          @default(LOCAL)
-  googleAccessToken    String?
-  googleRefreshToken   String?
-  googleTokenExpiry    DateTime?
-  calendarSyncEnabled  Boolean               @default(false)
-  comments             Comment[]
-  notifications        Notification[]
-  ownedProjects        Project[]             @relation("ProjectOwner")
-  projectMembers       ProjectMember[]
-  refreshTokens        RefreshToken[]
-  tasks                Task[]
-  messages             Message[]
-  conversationMembers  ConversationMember[]
+  id                  Int                  @id @default(autoincrement())
+  name                String
+  email               String               @unique
+  password            String?
+  role                Role                 @default(USER)
+  isEmailVerified     Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  avatar              String?
+  resetToken          String?
+  resetTokenExpiry    DateTime?
+  username            String               @unique
+  authProvider        AuthProvider         @default(LOCAL)
+  calendarSyncEnabled Boolean              @default(false)
+  googleAccessToken   String?
+  googleId            String?              @unique
+  googleRefreshToken  String?
+  googleTokenExpiry   DateTime?
+  comments            Comment[]
+  conversationMembers ConversationMember[]
+  messages            Message[]
+  notifications       Notification[]
+  ownedProjects       Project[]            @relation("ProjectOwner")
+  projectMembers      ProjectMember[]
+  refreshTokens       RefreshToken[]
+  tasks               Task[]
 
   @@index([email])
   @@index([username])
@@ -52,23 +52,25 @@ model RefreshToken {
 }
 
 model Project {
-  id            Int             @id @default(autoincrement())
-  description   String?
-  status        ProjectStatus   @default(ACTIVE)
-  startDate     DateTime?
-  endDate       DateTime?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  ownerId       Int
-  color         String?
-  title         String
-  workflowType  WorkflowType    @default(CUSTOM)
-  customColumns CustomColumn[]
-  owner         User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members       ProjectMember[]
-  tasks         Task[]
-  conversations Conversation[]
-  activities    Activity[]
+  id                    Int             @id @default(autoincrement())
+  description           String?
+  status                ProjectStatus   @default(ACTIVE)
+  startDate             DateTime?
+  endDate               DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  ownerId               Int
+  color                 String?
+  title                 String
+  workflowType          WorkflowType    @default(CUSTOM)
+  isStarred             Boolean         @default(false)
+  googleCalendarEventId String?
+  activities            Activity[]
+  conversations         Conversation[]
+  customColumns         CustomColumn[]
+  owner                 User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members               ProjectMember[]
+  tasks                 Task[]
 
   @@index([ownerId])
   @@index([status])
@@ -103,6 +105,8 @@ model Task {
   columnId              String?
   endDate               DateTime?
   startDate             DateTime?
+  labelColor            String?    @default("slate")
+  labelText             String?
   googleCalendarEventId String?
   comments              Comment[]
   subtasks              Subtask[]
@@ -171,6 +175,63 @@ model Activity {
   @@index([createdAt])
 }
 
+model Notification {
+  id        Int              @id @default(autoincrement())
+  type      NotificationType
+  message   String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  userId    Int
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+}
+
+model Conversation {
+  id        Int                  @id @default(autoincrement())
+  name      String?
+  type      ConversationType     @default(PROJECT)
+  projectId Int?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  project   Project?             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  members   ConversationMember[]
+  messages  Message[]
+
+  @@index([projectId])
+}
+
+model ConversationMember {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  conversationId Int
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId])
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  content        String
+  senderId       Int
+  conversationId Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  isEdited       Boolean      @default(false)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
 enum Role {
   USER
   ADMIN
@@ -226,61 +287,4 @@ enum ConversationType {
   PROJECT
   DIRECT
   GROUP
-}
-
-model Notification {
-  id        Int              @id @default(autoincrement())
-  type      NotificationType
-  message   String
-  read      Boolean          @default(false)
-  createdAt DateTime         @default(now())
-  userId    Int
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([read])
-}
-
-model Conversation {
-  id          Int                   @id @default(autoincrement())
-  name        String?
-  type        ConversationType      @default(PROJECT)
-  projectId   Int?
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  project     Project?              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  members     ConversationMember[]
-  messages    Message[]
-
-  @@index([projectId])
-}
-
-model ConversationMember {
-  id             Int          @id @default(autoincrement())
-  userId         Int
-  conversationId Int
-  joinedAt       DateTime     @default(now())
-  lastReadAt     DateTime?
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, conversationId])
-  @@index([userId])
-  @@index([conversationId])
-}
-
-model Message {
-  id             Int          @id @default(autoincrement())
-  content        String
-  senderId       Int
-  conversationId Int
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  isEdited       Boolean      @default(false)
-  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@index([conversationId])
-  @@index([senderId])
-  @@index([createdAt])
 }

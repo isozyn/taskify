@@ -87,13 +87,14 @@ export class ProjectController {
   static async updateProject(req: Request, res: Response): Promise<void> {
     try {
       const projectId = parseInt(req.params.projectId);
+      const userId = (req as any).user?.id;
       
       if (isNaN(projectId)) {
         res.status(400).json({ error: 'Invalid project ID' });
         return;
       }
 
-      const project = await ProjectService.updateProject(projectId, req.body);
+      const project = await ProjectService.updateProject(projectId, req.body, userId);
 
       if (!project) {
         res.status(404).json({ error: 'Project not found' });

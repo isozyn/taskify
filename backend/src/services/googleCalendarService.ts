@@ -248,4 +248,214 @@ export class GoogleCalendarService {
     });
     return !!(user?.googleAccessToken && user?.googleRefreshToken);
   }
+
+  /**
+   * Create a calendar event from a project
+   */
+  static async createProjectCalendarEvent(userId: number, project: any) {
+    const oauth2Client = await this.getOAuth2Client(userId);
+    if (!oauth2Client) {
+      throw new Error('User not connected to Google Calendar');
+    }
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    // Ensure dates are valid
+    const startDate = project.startDate ? new Date(project.startDate) : new Date();
+    const endDate = project.endDate ? new Date(project.endDate) : new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000); // 1 week later
+
+    const event = {
+      summary: `📋 ${project.title}`,
+      description: project.description || 'Project timeline',
+      start: {
+        date: startDate.toISOString().split('T')[0], // All-day event
+      },
+      end: {
+        date: endDate.toISOString().split('T')[0], // All-day event
+      },
+      colorId: '10', // Green for projects
+      extendedProperties: {
+        private: {
+          taskifyProjectId: project.id.toString(),
+          taskifyType: 'project',
+        },
+      },
+    };
+
+    const response = await calendar.events.insert({
+      calendarId: 'primary',
+      requestBody: event,
+    });
+
+    return response.data;
+  }
+
+  /**
+   * Update a project calendar event
+   */
+  static async updateProjectCalendarEvent(
+    userId: number,
+    eventId: string,
+    project: any
+  ) {
+    const oauth2Client = await this.getOAuth2Client(userId);
+    if (!oauth2Client) {
+      throw new Error('User not connected to Google Calendar');
+    }
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    // Ensure dates are valid
+    const startDate = project.startDate ? new Date(project.startDate) : new Date();
+    const endDate = project.endDate ? new Date(project.endDate) : new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const event = {
+      summary: `📋 ${project.title}`,
+      description: project.description || 'Project timeline',
+      start: {
+        date: startDate.toISOString().split('T')[0], // All-day event
+      },
+      end: {
+        date: endDate.toISOString().split('T')[0], // All-day event
+      },
+      colorId: '10', // Green for projects
+      extendedProperties: {
+        private: {
+          taskifyProjectId: project.id.toString(),
+          taskifyType: 'project',
+        },
+      },
+    };
+
+    const response = await calendar.events.update({
+      calendarId: 'primary',
+      eventId: eventId,
+      requestBody: event,
+    });
+
+    return response.data;
+  }
+
+  /**
+   * Create a meeting event with Google Meet
+   */
+  static async createMeetingEvent(
+    userId: number,
+    data: {
+      summary: string;
+      description?: string;
+      startDateTime: Date;
+      endDateTime: Date;
+      attendees?: string[];
+      includeGoogleMeet?: boolean;
+    }
+  ) {
+    const oauth2Client = await this.getOAuth2Client(userId);
+    if (!oauth2Client) {
+      throw new Error('User not connected to Google Calendar');
+    }
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    const event: any = {
+      summary: data.summary,
+      description: data.description || '',
+      start: {
+        dateTime: data.startDateTime.toISOString(),
+        timeZone: 'UTC',
+      },
+      end: {
+        dateTime: data.endDateTime.toISOString(),
+        timeZone: 'UTC',
+      },
+      attendees: data.attendees?.map(email => ({ email })) || [],
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'email', minutes: 24 * 60 },
+          { method: 'popup', minutes: 10 },
+        ],
+      },
+    };
+
+    // Add Google Meet conference if requested
+    if (data.includeGoogleMeet !== false) {
+      event.conferenceData = {
+        createRequest: {
+          requestId: `meet-${Date.now()}`,
+          conferenceSolutionKey: { type: 'hangoutsMeet' },
+        },
+      };
+    }
+
+    const response = await calendar.events.insert({
+      calendarId: 'primary',
+      requestBody: event,
+      conferenceDataVersion: 1, // Required for Google Meet
+      sendUpdates: 'all', // Send invites to attendees
+    });
+
+    return response.data;
+  }
+
+  /**
+   * Update a meeting event
+   */
+  static async updateMeetingEvent(
+    userId: number,
+    eventId: string,
+    data: {
+      summary?: string;
+      description?: string;
+      startDateTime?: Date;
+      endDateTime?: Date;
+      attendees?: string[];
+    }
+  ) {
+    const oauth2Client = await this.getOAuth2Client(userId);
+    if (!oauth2Client) {
+      throw new Error('User not connected to Google Calendar');
+    }
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    // Get existing event first
+    const existingEvent = await calendar.events.get({
+      calendarId: 'primary',
+      eventId: eventId,
+    });
+
+    const event: any = {
+      ...existingEvent.data,
+    };
+
+    // Update only provided fields
+    if (data.summary) event.summary = data.summary;
+    if (data.description !== undefined) event.description = data.description;
+    if (data.startDateTime) {
+      event.start = {
+        dateTime: data.startDateTime.toISOString(),
+        timeZone: 'UTC',
+      };
+    }
+    if (data.endDateTime) {
+      event.end = {
+        dateTime: data.endDateTime.toISOString(),
+        timeZone: 'UTC',
+      };
+    }
+    if (data.attendees) {
+      event.attendees = data.attendees.map(email => ({ email }));
+    }
+
+    const response = await calendar.events.update({
+      calendarId: 'primary',
+      eventId: eventId,
+      requestBody: event,
+      conferenceDataVersion: 1,
+      sendUpdates: 'all', // Send updates to attendees
+    });
+
+    return response.data;
+  }
 }

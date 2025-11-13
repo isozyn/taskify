@@ -235,4 +235,240 @@ export class CalendarController {
       });
     }
   }
+
+  /**
+   * Sync project to Google Calendar
+   * POST /api/v1/calendar/sync/project/:projectId
+   */
+  static async syncProject(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+      const { projectId } = req.params;
+      
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      // Get project from database
+      const project = await prisma.project.findUnique({
+        where: { id: parseInt(projectId) },
+      });
+
+      if (!project) {
+        res.status(404).json({ error: 'Project not found' });
+        return;
+      }
+
+      // Check if user has access to project
+      const member = await prisma.projectMember.findFirst({
+        where: {
+          projectId: project.id,
+          userId: userId,
+        },
+      });
+
+      if (!member && project.ownerId !== userId) {
+        res.status(403).json({ error: 'Access denied' });
+        return;
+      }
+
+      // Create or update calendar event
+      let calendarEvent;
+      if (project.googleCalendarEventId) {
+        calendarEvent = await GoogleCalendarService.updateProjectCalendarEvent(
+          userId,
+          project.googleCalendarEventId,
+          project
+        );
+      } else {
+        calendarEvent = await GoogleCalendarService.createProjectCalendarEvent(
+          userId,
+          project
+        );
+        
+        // Save event ID to project
+        await prisma.project.update({
+          where: { id: project.id },
+          data: { googleCalendarEventId: calendarEvent.id || null },
+        });
+      }
+      
+      res.status(200).json({ 
+        message: 'Project synced to Google Calendar',
+        event: calendarEvent 
+      });
+    } catch (error: any) {
+      console.error('Sync project error:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to sync project' 
+      });
+    }
+  }
+
+  /**
+   * Remove project from Google Calendar
+   * DELETE /api/v1/calendar/sync/project/:projectId
+   */
+  static async unsyncProject(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+      const { projectId } = req.params;
+      
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      // Get project from database
+      const project = await prisma.project.findUnique({
+        where: { id: parseInt(projectId) },
+      });
+
+      if (!project) {
+        res.status(404).json({ error: 'Project not found' });
+        return;
+      }
+
+      if (!project.googleCalendarEventId) {
+        res.status(400).json({ error: 'Project is not synced to calendar' });
+        return;
+      }
+
+      // Delete calendar event
+      await GoogleCalendarService.deleteCalendarEvent(
+        userId,
+        project.googleCalendarEventId
+      );
+      
+      // Remove event ID from project
+      await prisma.project.update({
+        where: { id: project.id },
+        data: { googleCalendarEventId: null },
+      });
+      
+      res.status(200).json({ 
+        message: 'Project removed from Google Calendar' 
+      });
+    } catch (error: any) {
+      console.error('Unsync project error:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to remove project from calendar' 
+      });
+    }
+  }
+
+  /**
+   * Create a calendar event with Google Meet
+   * POST /api/v1/calendar/events
+   */
+  static async createEvent(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+      
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { summary, description, startDateTime, endDateTime, attendees, includeGoogleMeet } = req.body;
+
+      if (!summary || !startDateTime || !endDateTime) {
+        res.status(400).json({ error: 'Missing required fields' });
+        return;
+      }
+
+      // Create calendar event with Google Meet
+      const event = await GoogleCalendarService.createMeetingEvent(
+        userId,
+        {
+          summary,
+          description,
+          startDateTime: new Date(startDateTime),
+          endDateTime: new Date(endDateTime),
+          attendees: attendees || [],
+          includeGoogleMeet: includeGoogleMeet !== false,
+        }
+      );
+      
+      res.status(201).json({ 
+        message: 'Calendar event created successfully',
+        event 
+      });
+    } catch (error: any) {
+      console.error('Create event error:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to create calendar event' 
+      });
+    }
+  }
+
+  /**
+   * Update a calendar event
+   * PUT /api/v1/calendar/events/:eventId
+   */
+  static async updateEvent(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+      const { eventId } = req.params;
+      
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { summary, description, startDateTime, endDateTime, attendees } = req.body;
+
+      // Update calendar event
+      const event = await GoogleCalendarService.updateMeetingEvent(
+        userId,
+        eventId,
+        {
+          summary,
+          description,
+          startDateTime: startDateTime ? new Date(startDateTime) : undefined,
+          endDateTime: endDateTime ? new Date(endDateTime) : undefined,
+          attendees,
+        }
+      );
+      
+      res.status(200).json({ 
+        message: 'Calendar event updated successfully',
+        event 
+      });
+    } catch (error: any) {
+      console.error('Update event error:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to update calendar event' 
+      });
+    }
+  }
+
+  /**
+   * Delete a calendar event
+   * DELETE /api/v1/calendar/events/:eventId
+   */
+  static async deleteEvent(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+      const { eventId } = req.params;
+      
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      // Delete calendar event
+      await GoogleCalendarService.deleteCalendarEvent(userId, eventId);
+      
+      res.status(200).json({ 
+        message: 'Calendar event deleted successfully' 
+      });
+    } catch (error: any) {
+      console.error('Delete event error:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to delete calendar event' 
+      });
+    }
+  }
 }

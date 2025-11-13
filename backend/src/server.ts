@@ -23,6 +23,7 @@ import conversationRoutes from "./routes/conversationRoutes";
 import activityRoutes from "./routes/activityRoutes";
 import commentRoutes from "./routes/commentRoutes";
 import calendarRoutes from "./routes/calendarRoutes";
+import testRoutes from "./routes/testRoutes";
 
 // Import Socket.IO setup
 import { setupSocketIO } from "./services/socketService";
@@ -102,6 +103,11 @@ app.use("/api/v1", commentRoutes);
 
 // Calendar routes
 app.use("/api/v1", calendarRoutes);
+
+// Test routes (development only)
+if (process.env.NODE_ENV === 'development') {
+	app.use("/api/v1/test", testRoutes);
+}
 
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);

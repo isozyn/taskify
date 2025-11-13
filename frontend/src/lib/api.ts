@@ -523,6 +523,54 @@ class ApiClient {
 		});
 	}
 
+	async syncProjectToCalendar(projectId: number) {
+		return this.request(`/calendar/sync/project/${projectId}`, {
+			method: 'POST',
+		});
+	}
+
+	async unsyncProjectFromCalendar(projectId: number) {
+		return this.request(`/calendar/sync/project/${projectId}`, {
+			method: 'DELETE',
+		});
+	}
+
+	// Create calendar event with Google Meet
+	async createCalendarEvent(data: {
+		summary: string;
+		description?: string;
+		startDateTime: string;
+		endDateTime: string;
+		attendees?: string[];
+		includeGoogleMeet?: boolean;
+	}) {
+		return this.request('/calendar/events', {
+			method: 'POST',
+			body: JSON.stringify(data),
+		});
+	}
+
+	// Update calendar event
+	async updateCalendarEvent(eventId: string, data: {
+		summary?: string;
+		description?: string;
+		startDateTime?: string;
+		endDateTime?: string;
+		attendees?: string[];
+	}) {
+		return this.request(`/calendar/events/${eventId}`, {
+			method: 'PUT',
+			body: JSON.stringify(data),
+		});
+	}
+
+	// Delete calendar event
+	async deleteCalendarEvent(eventId: string) {
+		return this.request(`/calendar/events/${eventId}`, {
+			method: 'DELETE',
+		});
+	}
+
 	async deleteComment(commentId: number) {
 		return this.request(`/comments/${commentId}`, {
 			method: "DELETE",
