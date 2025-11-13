@@ -67,7 +67,7 @@ export const ProfileDropdown = () => {
           <User className="mr-2 h-4 w-4" />
           <span>View Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
+        <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>

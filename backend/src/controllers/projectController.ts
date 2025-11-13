@@ -248,11 +248,75 @@ export class ProjectController {
 			}
 
 			const members = await ProjectService.getProjectMembers(projectId);
-			res.status(200).json({ members });
+			res.status(200).json(members);
 		} catch (error: any) {
 			console.error("Get project members error:", error);
 			res.status(500).json({
 				error: error.message || "Failed to fetch project members",
+			});
+		}
+	}
+
+	/**
+	 * Update project member role
+	 */
+	static async updateMemberRole(req: Request, res: Response): Promise<void> {
+		try {
+			const projectId = parseInt(req.params.projectId);
+			const memberId = parseInt(req.params.memberId);
+			const { role } = req.body;
+
+			if (isNaN(projectId) || isNaN(memberId)) {
+				res.status(400).json({ error: "Invalid project or member ID" });
+				return;
+			}
+
+			if (!role || !["OWNER", "ADMIN", "MEMBER"].includes(role)) {
+				res.status(400).json({
+					error: "Invalid role. Must be OWNER, ADMIN, or MEMBER",
+				});
+				return;
+			}
+
+			const updatedMember = await ProjectService.updateMemberRole(
+				projectId,
+				memberId,
+				role
+			);
+			res.status(200).json(updatedMember);
+		} catch (error: any) {
+			console.error("Update member role error:", error);
+			res.status(400).json({
+				error: error.message || "Failed to update member role",
+			});
+		}
+	}
+
+	/**
+	 * Remove member from project
+	 */
+	static async removeMember(req: Request, res: Response): Promise<void> {
+		try {
+			const userId = (req as any).user?.id;
+			const projectId = parseInt(req.params.projectId);
+			const memberId = parseInt(req.params.memberId);
+
+			if (!userId) {
+				res.status(401).json({ error: "Unauthorized" });
+				return;
+			}
+
+			if (isNaN(projectId) || isNaN(memberId)) {
+				res.status(400).json({ error: "Invalid project or member ID" });
+				return;
+			}
+
+			await ProjectService.removeMember(projectId, memberId, userId);
+			res.status(200).json({ message: "Member removed successfully" });
+		} catch (error: any) {
+			console.error("Remove member error:", error);
+			res.status(400).json({
+				error: error.message || "Failed to remove member",
 			});
 		}
 	}

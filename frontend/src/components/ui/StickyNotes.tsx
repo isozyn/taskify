@@ -1,475 +1,530 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  StickyNote, 
-  Plus, 
-  X, 
-  Minimize2, 
-  Maximize2, 
-  Grip,
-  Palette,
-  Save,
-  Trash2,
-  Copy
+import {
+	StickyNote,
+	Plus,
+	X,
+	ChevronRight,
+	ChevronLeft,
+	Trash2,
+	Copy,
+	Edit3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStickyNotes } from "@/hooks/useStickyNotes";
 
 interface StickyNotesProps {
-  projectId?: string;
-  workflowType?: 'auto-sync' | 'custom';
+	projectId?: string;
+	workflowType?: "auto-sync" | "custom";
 }
 
 const AUTOMATED_COLORS = [
-  { name: 'Professional Blue', value: 'bg-blue-50 border-blue-200', text: 'text-blue-800', accent: 'bg-blue-500' },
-  { name: 'Success Green', value: 'bg-green-50 border-green-200', text: 'text-green-800', accent: 'bg-green-500' },
-  { name: 'Warning Amber', value: 'bg-amber-50 border-amber-200', text: 'text-amber-800', accent: 'bg-amber-500' },
-  { name: 'Info Cyan', value: 'bg-cyan-50 border-cyan-200', text: 'text-cyan-800', accent: 'bg-cyan-500' },
-  { name: 'Neutral Gray', value: 'bg-gray-50 border-gray-200', text: 'text-gray-800', accent: 'bg-gray-500' },
+	{
+		name: "Professional Blue",
+		value: "bg-blue-50 border-blue-200",
+		text: "text-blue-800",
+		accent: "bg-blue-500",
+	},
+	{
+		name: "Success Green",
+		value: "bg-green-50 border-green-200",
+		text: "text-green-800",
+		accent: "bg-green-500",
+	},
+	{
+		name: "Warning Amber",
+		value: "bg-amber-50 border-amber-200",
+		text: "text-amber-800",
+		accent: "bg-amber-500",
+	},
+	{
+		name: "Info Cyan",
+		value: "bg-cyan-50 border-cyan-200",
+		text: "text-cyan-800",
+		accent: "bg-cyan-500",
+	},
+	{
+		name: "Neutral Gray",
+		value: "bg-gray-50 border-gray-200",
+		text: "text-gray-800",
+		accent: "bg-gray-500",
+	},
 ];
 
 const CUSTOM_COLORS = [
-  { name: 'Royal Purple', value: 'bg-purple-50 border-purple-200', text: 'text-purple-800', accent: 'bg-purple-500' },
-  { name: 'Magenta', value: 'bg-fuchsia-50 border-fuchsia-200', text: 'text-fuchsia-800', accent: 'bg-fuchsia-500' },
-  { name: 'Indigo', value: 'bg-indigo-50 border-indigo-200', text: 'text-indigo-800', accent: 'bg-indigo-500' },
-  { name: 'Rose', value: 'bg-rose-50 border-rose-200', text: 'text-rose-800', accent: 'bg-rose-500' },
-  { name: 'Violet', value: 'bg-violet-50 border-violet-200', text: 'text-violet-800', accent: 'bg-violet-500' },
+	{
+		name: "Royal Purple",
+		value: "bg-purple-50 border-purple-200",
+		text: "text-purple-800",
+		accent: "bg-purple-500",
+	},
+	{
+		name: "Magenta",
+		value: "bg-fuchsia-50 border-fuchsia-200",
+		text: "text-fuchsia-800",
+		accent: "bg-fuchsia-500",
+	},
+	{
+		name: "Indigo",
+		value: "bg-indigo-50 border-indigo-200",
+		text: "text-indigo-800",
+		accent: "bg-indigo-500",
+	},
+	{
+		name: "Rose",
+		value: "bg-rose-50 border-rose-200",
+		text: "text-rose-800",
+		accent: "bg-rose-500",
+	},
+	{
+		name: "Violet",
+		value: "bg-violet-50 border-violet-200",
+		text: "text-violet-800",
+		accent: "bg-violet-500",
+	},
 ];
 
-const StickyNotes = ({ projectId = 'default', workflowType = 'auto-sync' }: StickyNotesProps) => {
-  const { notes, createNote, updateNote, deleteNote, duplicateNote } = useStickyNotes(projectId);
-  const [isMainMinimized, setIsMainMinimized] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [draggedNote, setDraggedNote] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+const StickyNotes = ({
+	projectId = "default",
+	workflowType = "auto-sync",
+}: StickyNotesProps) => {
+	const { notes, createNote, updateNote, deleteNote, duplicateNote } =
+		useStickyNotes(projectId);
+	const [isPanelOpen, setIsPanelOpen] = useState(false);
+	const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
 
-  // Get colors based on workflow type
-  const colors = workflowType === 'custom' ? CUSTOM_COLORS : AUTOMATED_COLORS;
-  
-  // Get theme colors
-  const themeColors = {
-    primary: workflowType === 'custom' ? 'purple' : 'blue',
-    bg: workflowType === 'custom' ? 'bg-purple-100' : 'bg-blue-100',
-    border: workflowType === 'custom' ? 'border-purple-300' : 'border-blue-300',
-    text: workflowType === 'custom' ? 'text-purple-900' : 'text-blue-900',
-    button: workflowType === 'custom' ? 'bg-purple-500 hover:bg-purple-600' : 'bg-blue-500 hover:bg-blue-600',
-    accent: workflowType === 'custom' ? 'bg-purple-200 hover:bg-purple-300' : 'bg-blue-200 hover:bg-blue-300',
-  };
+	// Get colors based on workflow type
+	const colors = workflowType === "custom" ? CUSTOM_COLORS : AUTOMATED_COLORS;
 
-  const handleMouseDown = (e: React.MouseEvent, noteId: string) => {
-    if ((e.target as HTMLElement).tagName === 'TEXTAREA') return;
-    
-    const note = notes.find(n => n.id === noteId);
-    if (!note) return;
+	// Get theme colors
+	const themeColors = {
+		primary: workflowType === "custom" ? "purple" : "blue",
+		bg: workflowType === "custom" ? "bg-purple-50" : "bg-blue-50",
+		border:
+			workflowType === "custom" ? "border-purple-300" : "border-blue-300",
+		text: workflowType === "custom" ? "text-purple-900" : "text-blue-900",
+		button:
+			workflowType === "custom"
+				? "bg-purple-500 hover:bg-purple-600"
+				: "bg-blue-500 hover:bg-blue-600",
+		accent: workflowType === "custom" ? "bg-purple-100" : "bg-blue-100",
+		hover:
+			workflowType === "custom"
+				? "hover:bg-purple-50"
+				: "hover:bg-blue-50",
+	};
 
-    setDraggedNote(noteId);
-    setDragOffset({
-      x: e.clientX - note.position.x,
-      y: e.clientY - note.position.y,
-    });
-  };
+	const getColorClasses = (colorValue: string) => {
+		const colorObj = colors.find((c) => c.value === colorValue);
+		return colorObj || colors[0];
+	};
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!draggedNote) return;
+	return (
+		<>
+			{/* Side Panel */}
+			<div
+				className={cn(
+					"fixed bottom-6 right-0 z-40 transition-all duration-300 ease-in-out",
+					isPanelOpen ? "translate-x-0" : "translate-x-full"
+				)}
+			>
+				<Card
+					className={cn(
+						"rounded-l-lg rounded-r-none border-l border-t border-b shadow-lg",
+						themeColors.bg,
+						"w-72 max-h-[calc(100vh-8rem)]"
+					)}
+				>
+					<CardContent className="p-0 h-full flex flex-col max-h-[calc(100vh-8rem)]">
+						{/* Header */}
+						<div
+							className={cn(
+								"p-3 border-b flex-shrink-0",
+								themeColors.border,
+								"bg-white"
+							)}
+						>
+							<div className="flex items-center justify-between mb-2">
+								<div className="flex items-center gap-2">
+									<div
+										className={cn(
+											"w-7 h-7 rounded-md flex items-center justify-center",
+											themeColors.button,
+											"text-white shadow-sm"
+										)}
+									>
+										<StickyNote className="w-4 h-4" />
+									</div>
+									<div>
+										<h3
+											className={cn(
+												"font-semibold text-xs",
+												themeColors.text
+											)}
+										>
+											Notes
+										</h3>
+										<Badge
+											variant="outline"
+											className="text-[10px] px-1.5 py-0 mt-0.5"
+										>
+											{notes.length}
+										</Badge>
+									</div>
+								</div>
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={() => setIsPanelOpen(false)}
+									className="w-6 h-6"
+									title="Close panel"
+								>
+									<ChevronRight className="w-3.5 h-3.5" />
+								</Button>
+							</div>
 
-    updateNote(draggedNote, {
-      position: {
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y,
-      }
-    });
-  };
+							{/* Add Note Button */}
+							<Button
+								onClick={async () => {
+									await createNote(colors[0].value);
+								}}
+								className={cn(
+									"w-full font-medium shadow-sm text-xs h-7",
+									themeColors.button,
+									"text-white"
+								)}
+							>
+								<Plus className="w-3.5 h-3.5 mr-1.5" />
+								Add Note
+							</Button>
+						</div>
 
-  const handleMouseUp = () => {
-    setDraggedNote(null);
-  };
+						{/* Notes List */}
+						<div className="flex-1 overflow-y-auto p-2.5 space-y-2">
+							{notes.length === 0 ? (
+								<div className="text-center py-8 text-muted-foreground">
+									<StickyNote className="w-10 h-10 mx-auto mb-2 opacity-20" />
+									<p className="text-xs">No notes yet</p>
+								</div>
+							) : (
+								notes.map((note) => {
+									const colorClasses = getColorClasses(
+										note.color
+									);
+									const isExpanded =
+										expandedNoteId === note.id;
 
-  useEffect(() => {
-    if (draggedNote) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [draggedNote, dragOffset]);
+									return (
+										<Card
+											key={note.id}
+											className={cn(
+												"border transition-all duration-200",
+												colorClasses.value,
+												!isExpanded &&
+													"cursor-pointer hover:shadow-md"
+											)}
+											onClick={() => {
+												if (!isExpanded) {
+													setExpandedNoteId(note.id);
+												}
+											}}
+										>
+											<CardContent className="p-2">
+												{!isExpanded ? (
+													// Collapsed View - Title Only
+													<div className="flex items-center justify-between">
+														<div className="flex items-center gap-2 flex-1 min-w-0">
+															<div
+																className={cn(
+																	"w-2 h-2 rounded-full flex-shrink-0",
+																	colorClasses.accent
+																)}
+															/>
+															<span
+																className={cn(
+																	"text-xs font-medium truncate",
+																	colorClasses.text
+																)}
+															>
+																{note.title ||
+																	"Untitled Note"}
+															</span>
+														</div>
+														<Edit3
+															className={cn(
+																"w-3 h-3 flex-shrink-0 ml-2",
+																colorClasses.text,
+																"opacity-50"
+															)}
+														/>
+													</div>
+												) : (
+													// Expanded View - Full Edit Mode
+													<div
+														onClick={(e) =>
+															e.stopPropagation()
+														}
+													>
+														{/* Note Header */}
+														<div className="flex items-start justify-between mb-2">
+															<div className="flex items-center gap-1.5 flex-1 min-w-0">
+																<div
+																	className={cn(
+																		"w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5",
+																		colorClasses.accent
+																	)}
+																/>
+																<span
+																	className={cn(
+																		"text-[10px] truncate",
+																		colorClasses.text
+																	)}
+																>
+																	{new Date(
+																		note.createdAt
+																	).toLocaleDateString()}
+																</span>
+															</div>
+															<div className="flex items-center gap-0.5">
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	onClick={() =>
+																		duplicateNote(
+																			note.id
+																		)
+																	}
+																	className="w-5 h-5 hover:bg-white/50"
+																	title="Duplicate"
+																>
+																	<Copy className="w-2.5 h-2.5" />
+																</Button>
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	onClick={() => {
+																		if (
+																			confirm(
+																				"Delete this note?"
+																			)
+																		) {
+																			deleteNote(
+																				note.id
+																			);
+																			setExpandedNoteId(
+																				null
+																			);
+																		}
+																	}}
+																	className="w-5 h-5 hover:bg-red-100 hover:text-red-600"
+																	title="Delete"
+																>
+																	<Trash2 className="w-2.5 h-2.5" />
+																</Button>
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	onClick={() =>
+																		setExpandedNoteId(
+																			null
+																		)
+																	}
+																	className="w-5 h-5 hover:bg-white/50"
+																	title="Close"
+																>
+																	<X className="w-2.5 h-2.5" />
+																</Button>
+															</div>
+														</div>
 
-  const getColorClasses = (colorValue: string) => {
-    const colorObj = colors.find(c => c.value === colorValue);
-    return colorObj || colors[0];
-  };
+														{/* Title Input */}
+														<Input
+															value={note.title}
+															onChange={(e) =>
+																updateNote(
+																	note.id,
+																	{
+																		title: e
+																			.target
+																			.value,
+																	}
+																)
+															}
+															placeholder="Note title..."
+															className={cn(
+																"mb-2 border-0 bg-white/70 focus-visible:ring-1 focus-visible:ring-offset-0 rounded text-xs p-2 h-7 font-medium",
+																colorClasses.text,
+																"placeholder:text-gray-400"
+															)}
+															style={{
+																boxShadow:
+																	"inset 0 1px 2px rgba(0,0,0,0.05)",
+															}}
+														/>
 
-  return (
-    <>
-      {/* Professional Sticky Notes Panel */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <div className={cn(
-          "transition-all duration-500 ease-in-out transform",
-          isMainMinimized ? "translate-x-0" : "translate-x-0"
-        )}>
-          {!isMainMinimized ? (
-            <Card className={cn(
-              "shadow-xl hover:shadow-2xl transition-all duration-300 backdrop-blur-sm",
-              themeColors.bg,
-              themeColors.border,
-              "border-2"
-            )}>
-              <CardContent className={cn(
-                "p-0 overflow-hidden",
-                isExpanded ? "w-80" : "w-64"
-              )}>
-                {/* Header */}
-                <div className={cn(
-                  "p-4 border-b",
-                  themeColors.border,
-                  "bg-white/50"
-                )}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center",
-                        themeColors.button,
-                        "text-white shadow-sm"
-                      )}>
-                        <StickyNote className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <span className={cn("font-bold text-sm", themeColors.text)}>
-                          {workflowType === 'custom' ? 'Custom Notes' : 'Project Notes'}
-                        </span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs px-2 py-0">
-                            {notes.length} notes
-                          </Badge>
-                          <Badge 
-                            variant="outline" 
-                            className={cn(
-                              "text-xs px-2 py-0",
-                              workflowType === 'custom' ? 'border-purple-300 text-purple-700' : 'border-blue-300 text-blue-700'
-                            )}
-                          >
-                            {workflowType === 'custom' ? 'Custom' : 'Auto-Sync'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className="w-7 h-7 hover:bg-white/50"
-                        title={isExpanded ? "Collapse" : "Expand"}
-                      >
-                        {isExpanded ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setIsMainMinimized(true)}
-                        className="w-7 h-7 hover:bg-white/50"
-                        title="Minimize"
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+														{/* Content Textarea */}
+														<Textarea
+															value={note.content}
+															onChange={(e) =>
+																updateNote(
+																	note.id,
+																	{
+																		content:
+																			e
+																				.target
+																				.value,
+																	}
+																)
+															}
+															placeholder="Note description..."
+															className={cn(
+																"resize-none border-0 bg-white/70 focus-visible:ring-1 focus-visible:ring-offset-0 rounded text-xs p-2 min-h-[100px]",
+																colorClasses.text,
+																"placeholder:text-gray-400"
+															)}
+															style={{
+																boxShadow:
+																	"inset 0 1px 2px rgba(0,0,0,0.05)",
+															}}
+														/>
 
-                {/* Content */}
-                <div className="p-4 space-y-3">
-                  <Button
-                    onClick={() => createNote(colors[0].value)}
-                    className={cn(
-                      "w-full font-semibold shadow-sm",
-                      themeColors.button,
-                      "text-white"
-                    )}
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create New Note
-                  </Button>
-                  
-                  {notes.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className={cn("font-semibold text-xs", themeColors.text)}>
-                          Recent Notes
-                        </p>
-                        {notes.length > 3 && (
-                          <span className="text-xs text-gray-500">
-                            +{notes.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                        {notes.slice(-3).map(note => (
-                          <div 
-                            key={note.id} 
-                            className="p-2 bg-white/50 rounded-md border border-gray-200 hover:bg-white/70 transition-colors cursor-pointer"
-                            onClick={() => {
-                              // Focus on the note
-                              const noteElement = document.querySelector(`[data-note-id="${note.id}"]`);
-                              if (noteElement) {
-                                noteElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                              }
-                            }}
-                          >
-                            <div className="text-xs font-medium text-gray-700 truncate">
-                              {note.content || 'Empty note'}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {new Date(note.updatedAt).toLocaleDateString()}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+														{/* Note Footer */}
+														<div className="flex items-center justify-between mt-2 pt-2 border-t border-white/40">
+															<span
+																className={cn(
+																	"text-[10px]",
+																	colorClasses.text,
+																	"opacity-75"
+																)}
+															>
+																{
+																	note.content
+																		.length
+																}{" "}
+																chars
+															</span>
+															<span
+																className={cn(
+																	"text-[10px]",
+																	colorClasses.text,
+																	"opacity-75"
+																)}
+															>
+																{new Date(
+																	note.updatedAt
+																).toLocaleTimeString(
+																	[],
+																	{
+																		hour: "2-digit",
+																		minute: "2-digit",
+																	}
+																)}
+															</span>
+														</div>
+													</div>
+												)}
+											</CardContent>
+										</Card>
+									);
+								})
+							)}
+						</div>
 
-                  {isExpanded && (
-                    <div className="pt-2 border-t border-gray-200">
-                      <p className={cn("font-semibold text-xs mb-2", themeColors.text)}>
-                        Quick Actions
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs"
-                          onClick={() => {
-                            // Clear all notes with confirmation
-                            if (confirm('Clear all notes?')) {
-                              notes.forEach(note => deleteNote(note.id));
-                            }
-                          }}
-                        >
-                          Clear All
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs"
-                          onClick={() => {
-                            // Export notes
-                            const data = JSON.stringify(notes, null, 2);
-                            const blob = new Blob([data], { type: 'application/json' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `notes-${projectId}-${new Date().toISOString().split('T')[0]}.json`;
-                            a.click();
-                          }}
-                        >
-                          Export
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Button
-              onClick={() => setIsMainMinimized(false)}
-              className={cn(
-                "w-14 h-14 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105",
-                themeColors.button,
-                "text-white"
-              )}
-            >
-              <StickyNote className="w-6 h-6" />
-            </Button>
-          )}
-        </div>
-      </div>
+						{/* Footer Actions */}
+						{notes.length > 0 && (
+							<div className="p-2.5 border-t bg-white flex-shrink-0">
+								<div className="grid grid-cols-2 gap-1.5">
+									<Button
+										variant="outline"
+										size="sm"
+										className="text-[10px] h-6"
+										onClick={() => {
+											if (
+												confirm(
+													`Clear all ${notes.length} notes?`
+												)
+											) {
+												notes.forEach((note) =>
+													deleteNote(note.id)
+												);
+												setExpandedNoteId(null);
+											}
+										}}
+									>
+										<Trash2 className="w-2.5 h-2.5 mr-1" />
+										Clear
+									</Button>
+									<Button
+										variant="outline"
+										size="sm"
+										className="text-[10px] h-6"
+										onClick={() => {
+											const data = JSON.stringify(
+												notes,
+												null,
+												2
+											);
+											const blob = new Blob([data], {
+												type: "application/json",
+											});
+											const url =
+												URL.createObjectURL(blob);
+											const a =
+												document.createElement("a");
+											a.href = url;
+											a.download = `notes-${projectId}-${
+												new Date()
+													.toISOString()
+													.split("T")[0]
+											}.json`;
+											a.click();
+											URL.revokeObjectURL(url);
+										}}
+									>
+										Export
+									</Button>
+								</div>
+							</div>
+						)}
+					</CardContent>
+				</Card>
+			</div>
 
-      {/* Individual Sticky Notes */}
-      {notes.map((note) => {
-        const colorClasses = getColorClasses(note.color);
-        
-        return (
-          <div
-            key={note.id}
-            className="fixed z-40 select-none"
-            style={{
-              left: note.position.x,
-              top: note.position.y,
-              transform: draggedNote === note.id ? 'rotate(2deg)' : 'rotate(0deg)',
-            }}
-          >
-            <Card 
-              className={cn(
-                "shadow-lg hover:shadow-xl transition-all duration-300 border-2 backdrop-blur-sm",
-                colorClasses.value,
-                draggedNote === note.id ? "scale-105 shadow-2xl rotate-1" : "",
-                note.isMinimized ? "w-52" : "w-72"
-              )}
-              data-note-id={note.id}
-            >
-              <CardContent className="p-0">
-                {/* Professional Note Header */}
-                <div 
-                  className={cn(
-                    "flex items-center justify-between p-3 border-b cursor-move bg-white/30",
-                    "hover:bg-white/50 transition-colors duration-200",
-                    colorClasses.text
-                  )}
-                  onMouseDown={(e) => handleMouseDown(e, note.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-6 h-6 rounded-md flex items-center justify-center",
-                      colorClasses.accent,
-                      "text-white shadow-sm"
-                    )}>
-                      <Grip className="w-3 h-3" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold">
-                        Note #{note.id.split('-')[1]?.slice(0, 4)}
-                      </span>
-                      <div className="text-xs opacity-75 mt-0.5">
-                        {new Date(note.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-1">
-                    {/* Color Picker */}
-                    <div className="flex items-center gap-1">
-                      {colors.slice(0, 3).map((color) => (
-                        <button
-                          key={color.name}
-                          onClick={() => updateNote(note.id, { color: color.value })}
-                          className={cn(
-                            "w-4 h-4 rounded-full border-2 transition-all duration-200 relative",
-                            color.value,
-                            note.color === color.value ? "ring-2 ring-offset-1 ring-gray-400" : ""
-                          )}
-                          title={color.name}
-                        >
-                          <div className={cn(
-                            "absolute inset-1 rounded-full",
-                            color.accent
-                          )} />
-                        </button>
-                      ))}
-                    </div>
-                    
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => updateNote(note.id, { isMinimized: !note.isMinimized })}
-                      className="w-5 h-5 hover:bg-black/10"
-                    >
-                      {note.isMinimized ? (
-                        <Maximize2 className="w-3 h-3" />
-                      ) : (
-                        <Minimize2 className="w-3 h-3" />
-                      )}
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteNote(note.id)}
-                      className="w-5 h-5 hover:bg-red-200 hover:text-red-700"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Professional Note Content */}
-                {!note.isMinimized && (
-                  <div className="p-4 bg-white/20">
-                    <Textarea
-                      value={note.content}
-                      onChange={(e) => updateNote(note.id, { content: e.target.value })}
-                      placeholder={workflowType === 'custom' ? "Custom workflow notes..." : "Project notes and reminders..."}
-                      className={cn(
-                        "min-h-[140px] resize-none border-0 bg-white/50 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-0 rounded-md p-3",
-                        colorClasses.text,
-                        "placeholder:text-gray-500 font-medium"
-                      )}
-                      style={{ 
-                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                    
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/30">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium opacity-75">
-                          {note.content.length} chars
-                        </span>
-                        <span className="text-xs opacity-50">•</span>
-                        <span className="text-xs opacity-75">
-                          {new Date(note.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => duplicateNote(note.id)}
-                          className="w-7 h-7 hover:bg-white/30 rounded-md"
-                          title="Duplicate note"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => updateNote(note.id, { updatedAt: new Date().toISOString() })}
-                          className="w-7 h-7 hover:bg-white/30 rounded-md"
-                          title="Save note"
-                        >
-                          <Save className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteNote(note.id)}
-                          className="w-7 h-7 hover:bg-red-200 hover:text-red-700 rounded-md"
-                          title="Delete note"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Professional Minimized Preview */}
-                {note.isMinimized && (
-                  <div className={cn("p-3 bg-white/20", colorClasses.text)}>
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        colorClasses.accent
-                      )} />
-                      <p className="text-xs font-medium truncate flex-1">
-                        {note.content || 'Empty note'}
-                      </p>
-                    </div>
-                    <div className="text-xs opacity-60 mt-1">
-                      {note.content.length} characters
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        );
-      })}
-    </>
-  );
+			{/* Toggle Button (when panel is closed) */}
+			{!isPanelOpen && (
+				<Button
+					onClick={() => setIsPanelOpen(true)}
+					className={cn(
+						"fixed bottom-6 right-0 z-40 rounded-l-lg rounded-r-none shadow-lg border-r-0",
+						"h-24 w-12 flex flex-col items-center justify-center gap-2 py-3",
+						themeColors.button,
+						"text-white hover:w-14 transition-all duration-200"
+					)}
+					title="Open notes"
+				>
+					<StickyNote className="w-5 h-5" />
+					<ChevronLeft className="w-4 h-4" />
+					{notes.length > 0 && (
+						<Badge
+							className="h-5 min-w-5 text-[10px] px-1.5 bg-white font-semibold"
+							style={{
+								color:
+									themeColors.primary === "purple"
+										? "#9333ea"
+										: "#2563eb",
+							}}
+						>
+							{notes.length}
+						</Badge>
+					)}
+				</Button>
+			)}
+		</>
+	);
 };
 
 export default StickyNotes;

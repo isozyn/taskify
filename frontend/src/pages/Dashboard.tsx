@@ -713,6 +713,16 @@ const Dashboard = () => {
 			<main className="container mx-auto px-6 py-6 max-w-7xl">
 				{/* Header Section with Jira-inspired design */}
 				<div className="mb-6">
+					{/* Back Button */}
+					<Button
+						variant="ghost"
+						onClick={() => navigate(-1)}
+						className="mb-4 hover:bg-slate-100 transition-colors text-slate-700 hover:text-slate-900"
+					>
+						<ArrowLeft className="w-4 h-4 mr-2" />
+						Back
+					</Button>
+
 					<h1 className="text-2xl font-semibold text-slate-900 mb-6">
 						Your work
 					</h1>
