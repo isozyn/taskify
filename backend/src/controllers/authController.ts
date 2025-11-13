@@ -147,8 +147,8 @@ export const login = async (
 		// Set refresh token as httpOnly cookie
 		res.cookie("refreshToken", refreshToken, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			secure: true,
+			sameSite: "none",
 			path: "/",
 			maxAge: rememberMe
 				? 30 * 24 * 60 * 60 * 1000 // 30 days
@@ -158,8 +158,8 @@ export const login = async (
 		// Set access token as httpOnly cookie
 		res.cookie("accessToken", accessToken, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			secure: true,
+			sameSite: "none",
 			path: "/",
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
@@ -281,8 +281,8 @@ export const refresh = async (
 		// Set new access token as httpOnly cookie
 		res.cookie("accessToken", newAccessToken, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			secure: true,
+			sameSite: "none",
 			path: "/",
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
@@ -316,15 +316,15 @@ export const logout = async (
 		// Clear both cookies
 		res.clearCookie("refreshToken", {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			secure: true,
+			sameSite: "none",
 			path: "/",
 		});
 
 		res.clearCookie("accessToken", {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			secure: true,
+			sameSite: "none",
 			path: "/",
 		});
 
@@ -389,8 +389,8 @@ export const verifyEmail = async (
 			// Set refresh token as HTTP-only cookie
 			res.cookie("refreshToken", refreshToken, {
 				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
-				sameSite: "strict",
+				secure: true,
+				sameSite: "none",
 				path: "/",
 				maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 			});
@@ -398,8 +398,8 @@ export const verifyEmail = async (
 			// Set access token as HTTP-only cookie
 			res.cookie("accessToken", accessToken, {
 				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
-				sameSite: "strict",
+				secure: true,
+				sameSite: "none",
 				path: "/",
 				maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 			});
@@ -439,8 +439,8 @@ export const verifyEmail = async (
 		// Set refresh token as HTTP-only cookie
 		res.cookie("refreshToken", refreshToken, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			secure: true,
+			sameSite: "none",
 			path: "/",
 			maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 		});
@@ -448,8 +448,8 @@ export const verifyEmail = async (
 		// Set access token as HTTP-only cookie
 		res.cookie("accessToken", accessToken, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			secure: true,
+			sameSite: "none",
 			path: "/",
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
@@ -677,15 +677,15 @@ export const googleCallback = async (
 		// Set tokens as httpOnly cookies
 		res.cookie("refreshToken", refreshToken, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			secure: true,
+			sameSite: "none",
 			maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 		});
 
 		res.cookie("accessToken", accessToken, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			secure: true,
+			sameSite: "none",
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
 
