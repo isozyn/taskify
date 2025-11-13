@@ -1,213 +1,298 @@
 // Project CRUD operations
 
-import { Request, Response } from 'express';
-import { ProjectService } from '../services/projectService';
+import { Request, Response } from "express";
+import { ProjectService } from "../services/projectService";
 
 export class ProjectController {
-  /**
-   * Create a new project
-   */
-  static async createProject(req: Request, res: Response): Promise<void> {
-    try {
-      console.log('=== CREATE PROJECT DEBUG ===');
-      console.log('Request body:', req.body);
-      console.log('User from token:', (req as any).user);
-      
-      const userId = (req as any).user?.id;  // Changed from userId to id
-      
-      if (!userId) {
-        console.log('No userId found in request');
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
+	/**
+	 * Create a new project
+	 */
+	static async createProject(req: Request, res: Response): Promise<void> {
+		try {
+			console.log("=== CREATE PROJECT DEBUG ===");
+			console.log("Request body:", req.body);
+			console.log("User from token:", (req as any).user);
 
-      console.log('Creating project with userId:', userId);
+			const userId = (req as any).user?.id; // Changed from userId to id
 
-      const project = await ProjectService.createProject({
-        ...req.body,
-        ownerId: userId,
-      });
+			if (!userId) {
+				console.log("No userId found in request");
+				res.status(401).json({ error: "Unauthorized" });
+				return;
+			}
 
-      console.log('Project created successfully:', project);
-      res.status(201).json(project);
-    } catch (error: any) {
-      console.error('Create project error:', error);
-      res.status(400).json({ error: error.message || 'Failed to create project' });
-    }
-  }
+			console.log("Creating project with userId:", userId);
 
-  /**
-   * Get all projects for the authenticated user
-   */
-  static async getAllProjects(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).user?.id;  // Changed from userId to id
-      
-      if (!userId) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
+			const project = await ProjectService.createProject({
+				...req.body,
+				ownerId: userId,
+			});
 
-      const projects = await ProjectService.getProjectsByUserId(userId);
-      res.status(200).json(projects);
-    } catch (error: any) {
-      console.error('Get projects error:', error);
-      res.status(500).json({ error: error.message || 'Failed to fetch projects' });
-    }
-  }
+			console.log("Project created successfully:", project);
+			res.status(201).json(project);
+		} catch (error: any) {
+			console.error("Create project error:", error);
+			res.status(400).json({
+				error: error.message || "Failed to create project",
+			});
+		}
+	}
 
-  /**
-   * Get a single project by ID
-   */
-  static async getProjectById(req: Request, res: Response): Promise<void> {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      
-      if (isNaN(projectId)) {
-        res.status(400).json({ error: 'Invalid project ID' });
-        return;
-      }
+	/**
+	 * Get all projects for the authenticated user
+	 */
+	static async getAllProjects(req: Request, res: Response): Promise<void> {
+		try {
+			const userId = (req as any).user?.id; // Changed from userId to id
 
-      const project = await ProjectService.getProjectById(projectId);
+			if (!userId) {
+				res.status(401).json({ error: "Unauthorized" });
+				return;
+			}
 
-      if (!project) {
-        res.status(404).json({ error: 'Project not found' });
-        return;
-      }
+			const projects = await ProjectService.getProjectsByUserId(userId);
+			console.log(
+				"Returning projects with isStarred:",
+				projects.map((p) => ({
+					id: p.id,
+					title: p.title,
+					isStarred: p.isStarred,
+				}))
+			);
+			res.status(200).json(projects);
+		} catch (error: any) {
+			console.error("Get projects error:", error);
+			res.status(500).json({
+				error: error.message || "Failed to fetch projects",
+			});
+		}
+	}
 
-      res.status(200).json(project);
-    } catch (error: any) {
-      console.error('Get project error:', error);
-      res.status(500).json({ error: error.message || 'Failed to fetch project' });
-    }
-  }
+	/**
+	 * Get a single project by ID
+	 */
+	static async getProjectById(req: Request, res: Response): Promise<void> {
+		try {
+			const projectId = parseInt(req.params.projectId);
 
-  /**
-   * Update a project
-   */
-  static async updateProject(req: Request, res: Response): Promise<void> {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      
-      if (isNaN(projectId)) {
-        res.status(400).json({ error: 'Invalid project ID' });
-        return;
-      }
+			if (isNaN(projectId)) {
+				res.status(400).json({ error: "Invalid project ID" });
+				return;
+			}
 
-      const project = await ProjectService.updateProject(projectId, req.body);
+			const project = await ProjectService.getProjectById(projectId);
 
-      if (!project) {
-        res.status(404).json({ error: 'Project not found' });
-        return;
-      }
+			if (!project) {
+				res.status(404).json({ error: "Project not found" });
+				return;
+			}
 
-      res.status(200).json(project);
-    } catch (error: any) {
-      console.error('Update project error:', error);
-      res.status(400).json({ error: error.message || 'Failed to update project' });
-    }
-  }
+			res.status(200).json(project);
+		} catch (error: any) {
+			console.error("Get project error:", error);
+			res.status(500).json({
+				error: error.message || "Failed to fetch project",
+			});
+		}
+	}
 
-  /**
-   * Delete a project
-   */
-  static async deleteProject(req: Request, res: Response): Promise<void> {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      
-      if (isNaN(projectId)) {
-        res.status(400).json({ error: 'Invalid project ID' });
-        return;
-      }
+	/**
+	 * Update a project
+	 */
+	static async updateProject(req: Request, res: Response): Promise<void> {
+		try {
+			const projectId = parseInt(req.params.projectId);
 
-      await ProjectService.deleteProject(projectId);
-      res.status(200).json({ message: 'Project deleted successfully' });
-    } catch (error: any) {
-      console.error('Delete project error:', error);
-      res.status(400).json({ error: error.message || 'Failed to delete project' });
-    }
-  }
+			if (isNaN(projectId)) {
+				res.status(400).json({ error: "Invalid project ID" });
+				return;
+			}
 
-  /**
-   * Invite members to a project
-   */
-  static async inviteMembers(req: Request, res: Response): Promise<void> {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      const userId = (req as any).user?.id;
-      const { members } = req.body; // Array of { email, role }
-      
-      if (isNaN(projectId)) {
-        res.status(400).json({ error: 'Invalid project ID' });
-        return;
-      }
+			const project = await ProjectService.updateProject(
+				projectId,
+				req.body
+			);
 
-      if (!userId) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
+			if (!project) {
+				res.status(404).json({ error: "Project not found" });
+				return;
+			}
 
-      if (!members || !Array.isArray(members)) {
-        res.status(400).json({ error: 'Members array is required' });
-        return;
-      }
+			res.status(200).json(project);
+		} catch (error: any) {
+			console.error("Update project error:", error);
+			res.status(400).json({
+				error: error.message || "Failed to update project",
+			});
+		}
+	}
 
-      const result = await ProjectService.inviteMembers(projectId, userId, members);
-      res.status(200).json(result);
-    } catch (error: any) {
-      console.error('Invite members error:', error);
-      res.status(400).json({ error: error.message || 'Failed to invite members' });
-    }
-  }
+	/**
+	 * Delete a project
+	 */
+	static async deleteProject(req: Request, res: Response): Promise<void> {
+		try {
+			const projectId = parseInt(req.params.projectId);
 
-  /**
-   * Get project members
-   */
-  static async getProjectMembers(req: Request, res: Response): Promise<void> {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      
-      if (isNaN(projectId)) {
-        res.status(400).json({ error: 'Invalid project ID' });
-        return;
-      }
+			if (isNaN(projectId)) {
+				res.status(400).json({ error: "Invalid project ID" });
+				return;
+			}
 
-      const members = await ProjectService.getProjectMembers(projectId);
-      res.status(200).json({ members });
-    } catch (error: any) {
-      console.error('Get project members error:', error);
-      res.status(500).json({ error: error.message || 'Failed to fetch project members' });
-    }
-  }
+			await ProjectService.deleteProject(projectId);
+			res.status(200).json({ message: "Project deleted successfully" });
+		} catch (error: any) {
+			console.error("Delete project error:", error);
+			res.status(400).json({
+				error: error.message || "Failed to delete project",
+			});
+		}
+	}
 
-  /**
-   * Accept project invitation
-   */
-  static async acceptInvitation(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).user?.id;
-      const { projectName, role } = req.body;
+	/**
+	 * Toggle project star status
+	 */
+	static async toggleProjectStar(req: Request, res: Response): Promise<void> {
+		try {
+			const projectId = parseInt(req.params.projectId);
+			const { isStarred } = req.body;
 
-      if (!userId) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
+			console.log("Toggle star request:", {
+				projectId,
+				isStarred,
+				body: req.body,
+			});
 
-      if (!projectName || !role) {
-        res.status(400).json({ error: 'Project name and role are required' });
-        return;
-      }
+			if (isNaN(projectId)) {
+				res.status(400).json({ error: "Invalid project ID" });
+				return;
+			}
 
-      const result = await ProjectService.acceptInvitation(userId, projectName, role);
-      
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(400).json(result);
-      }
-    } catch (error: any) {
-      console.error('Accept invitation error:', error);
-      res.status(500).json({ error: error.message || 'Failed to accept invitation' });
-    }
-  }
+			if (typeof isStarred !== "boolean") {
+				res.status(400).json({ error: "isStarred must be a boolean" });
+				return;
+			}
+
+			const project = await ProjectService.toggleProjectStar(
+				projectId,
+				isStarred
+			);
+
+			if (!project) {
+				res.status(404).json({ error: "Project not found" });
+				return;
+			}
+
+			console.log("Star toggled successfully:", {
+				id: project.id,
+				title: project.title,
+				isStarred: project.isStarred,
+			});
+			res.status(200).json(project);
+		} catch (error: any) {
+			console.error("Toggle star error:", error);
+			res.status(400).json({
+				error: error.message || "Failed to toggle star",
+			});
+		}
+	}
+
+	/**
+	 * Invite members to a project
+	 */
+	static async inviteMembers(req: Request, res: Response): Promise<void> {
+		try {
+			const projectId = parseInt(req.params.projectId);
+			const userId = (req as any).user?.id;
+			const { members } = req.body; // Array of { email, role }
+
+			if (isNaN(projectId)) {
+				res.status(400).json({ error: "Invalid project ID" });
+				return;
+			}
+
+			if (!userId) {
+				res.status(401).json({ error: "Unauthorized" });
+				return;
+			}
+
+			if (!members || !Array.isArray(members)) {
+				res.status(400).json({ error: "Members array is required" });
+				return;
+			}
+
+			const result = await ProjectService.inviteMembers(
+				projectId,
+				userId,
+				members
+			);
+			res.status(200).json(result);
+		} catch (error: any) {
+			console.error("Invite members error:", error);
+			res.status(400).json({
+				error: error.message || "Failed to invite members",
+			});
+		}
+	}
+
+	/**
+	 * Get project members
+	 */
+	static async getProjectMembers(req: Request, res: Response): Promise<void> {
+		try {
+			const projectId = parseInt(req.params.projectId);
+
+			if (isNaN(projectId)) {
+				res.status(400).json({ error: "Invalid project ID" });
+				return;
+			}
+
+			const members = await ProjectService.getProjectMembers(projectId);
+			res.status(200).json({ members });
+		} catch (error: any) {
+			console.error("Get project members error:", error);
+			res.status(500).json({
+				error: error.message || "Failed to fetch project members",
+			});
+		}
+	}
+
+	/**
+	 * Accept project invitation
+	 */
+	static async acceptInvitation(req: Request, res: Response): Promise<void> {
+		try {
+			const userId = (req as any).user?.id;
+			const { projectName, role } = req.body;
+
+			if (!userId) {
+				res.status(401).json({ error: "Unauthorized" });
+				return;
+			}
+
+			if (!projectName || !role) {
+				res.status(400).json({
+					error: "Project name and role are required",
+				});
+				return;
+			}
+
+			const result = await ProjectService.acceptInvitation(
+				userId,
+				projectName,
+				role
+			);
+
+			if (result.success) {
+				res.status(200).json(result);
+			} else {
+				res.status(400).json(result);
+			}
+		} catch (error: any) {
+			console.error("Accept invitation error:", error);
+			res.status(500).json({
+				error: error.message || "Failed to accept invitation",
+			});
+		}
+	}
 }

@@ -23,10 +23,14 @@ class ApiClient {
 	): Promise<T> {
 		const url = `${this.baseURL}${endpoint}`;
 
+		// Get token from localStorage for Authorization header
+		const accessToken = localStorage.getItem("accessToken");
+
 		const config: RequestInit = {
 			...options,
 			headers: {
 				"Content-Type": "application/json",
+				...(accessToken && { Authorization: `Bearer ${accessToken}` }),
 				...options.headers,
 			},
 			credentials: "include", // Include cookies for authentication
@@ -63,7 +67,10 @@ class ApiClient {
 
 				// Support different backend error shapes: { message } or { error }
 				throw {
-					message: data.message || (data.error as string) || "An error occurred",
+					message:
+						data.message ||
+						(data.error as string) ||
+						"An error occurred",
 					errors: data.errors || data.errorDetails || [],
 					status: response.status,
 				};
@@ -99,16 +106,32 @@ class ApiClient {
 		password: string;
 		rememberMe?: boolean;
 	}) {
-		return this.request("/auth/login", {
+		const response: any = await this.request("/auth/login", {
 			method: "POST",
 			body: JSON.stringify(data),
 		});
+
+		// Store tokens in localStorage
+		if (response.accessToken) {
+			localStorage.setItem("accessToken", response.accessToken);
+		}
+		if (response.refreshToken) {
+			localStorage.setItem("refreshToken", response.refreshToken);
+		}
+
+		return response;
 	}
 
 	async logout() {
-		return this.request("/auth/logout", {
+		const response = await this.request("/auth/logout", {
 			method: "POST",
 		});
+
+		// Clear tokens from localStorage
+		localStorage.removeItem("accessToken");
+		localStorage.removeItem("refreshToken");
+
+		return response;
 	}
 
 	async getCurrentUser() {
@@ -132,9 +155,22 @@ class ApiClient {
 	}
 
 	async verifyEmail(token: string) {
-		return this.request(`/auth/verify-email?token=${token}`, {
-			method: "GET",
-		});
+		const response: any = await this.request(
+			`/auth/verify-email?token=${token}`,
+			{
+				method: "GET",
+			}
+		);
+
+		// Store tokens in localStorage
+		if (response.accessToken) {
+			localStorage.setItem("accessToken", response.accessToken);
+		}
+		if (response.refreshToken) {
+			localStorage.setItem("refreshToken", response.refreshToken);
+		}
+
+		return response;
 	}
 
 	async refreshToken() {
@@ -195,6 +231,13 @@ class ApiClient {
 	async deleteProject(projectId: number) {
 		return this.request(`/projects/${projectId}`, {
 			method: "DELETE",
+		});
+	}
+
+	async toggleProjectStar(projectId: number, isStarred: boolean) {
+		return this.request(`/projects/${projectId}/star`, {
+			method: "PATCH",
+			body: JSON.stringify({ isStarred }),
 		});
 	}
 
@@ -546,6 +589,7 @@ export interface Project {
 	endDate?: string | null;
 	createdAt: string;
 	updatedAt: string;
+	isStarred?: boolean;
 	owner?: {
 		id: number;
 		name: string;

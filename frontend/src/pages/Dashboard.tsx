@@ -70,7 +70,17 @@ const Dashboard = () => {
 			try {
 				setIsLoadingProjects(true);
 				const response: any = await api.getProjects();
-				setProjects(response || []);
+				console.log("Fetched projects:", response);
+				// Ensure isStarred defaults to false if not present
+				const projectsWithStarred = (response || []).map((p: any) => ({
+					...p,
+					isStarred: p.isStarred ?? false,
+				}));
+				console.log(
+					"Projects with starred field:",
+					projectsWithStarred
+				);
+				setProjects(projectsWithStarred);
 			} catch (error) {
 				console.error("Failed to fetch projects:", error);
 			} finally {
@@ -84,28 +94,34 @@ const Dashboard = () => {
 	// Handle project creation from template selection
 	useEffect(() => {
 		const handleProjectCreation = async () => {
-			const { createProject, selectedTemplate, projectData } = location.state || {};
-			
+			const { createProject, selectedTemplate, projectData } =
+				location.state || {};
+
 			if (createProject && selectedTemplate && projectData) {
 				// Prevent duplicate execution in React Strict Mode
 				if (isCreatingProject) return;
-				
+
 				setIsCreatingProject(true);
-				
+
 				if (!isAuthenticated) {
-					console.error("User not authenticated, redirecting to login");
+					console.error(
+						"User not authenticated, redirecting to login"
+					);
 					navigate("/auth");
 					setIsCreatingProject(false);
 					return;
 				}
-				
+
 				try {
 					// Clear the location state immediately to prevent duplicate creation
 					window.history.replaceState({}, document.title);
-					
+
 					// Map selectedTemplate to workflowType
-					const workflowType = selectedTemplate === "auto-sync" ? "AUTOMATED" : "CUSTOM";
-					
+					const workflowType =
+						selectedTemplate === "auto-sync"
+							? "AUTOMATED"
+							: "CUSTOM";
+
 					const response: any = await api.createProject({
 						title: projectData.name,
 						description: projectData.description || undefined,
@@ -115,22 +131,29 @@ const Dashboard = () => {
 					});
 
 					// Invite team members if any (excluding current user)
-					if (projectData.teamMembers && Array.isArray(projectData.teamMembers)) {
+					if (
+						projectData.teamMembers &&
+						Array.isArray(projectData.teamMembers)
+					) {
 						const membersToInvite = projectData.teamMembers.filter(
-							(member: any) => member.id !== "current-user" && member.email
+							(member: any) =>
+								member.id !== "current-user" && member.email
 						);
-						
+
 						if (membersToInvite.length > 0) {
 							try {
 								await api.inviteProjectMembers(
 									response.id,
 									membersToInvite.map((member: any) => ({
 										email: member.email,
-										role: member.role
+										role: member.role,
 									}))
 								);
 							} catch (inviteError) {
-								console.error('Failed to send some invitations:', inviteError);
+								console.error(
+									"Failed to send some invitations:",
+									inviteError
+								);
 								// Continue anyway, project was created successfully
 							}
 						}
@@ -138,18 +161,22 @@ const Dashboard = () => {
 
 					// Navigate directly to the new project board with project data to avoid refetch
 					if (response.id) {
-						navigate(`/project/${response.id}`, { 
+						navigate(`/project/${response.id}`, {
 							replace: true,
-							state: { 
+							state: {
 								projectData: response,
-								skipLoading: true 
-							}
+								skipLoading: true,
+							},
 						});
 						return;
 					}
 				} catch (error) {
 					console.error("Failed to create project:", error);
-					alert(`Failed to create project: ${error.message || 'Unknown error'}`);
+					alert(
+						`Failed to create project: ${
+							error.message || "Unknown error"
+						}`
+					);
 					setIsCreatingProject(false);
 				}
 			}
@@ -250,6 +277,45 @@ const Dashboard = () => {
 		// For now, just show a success message or navigate
 	};
 
+	const handleToggleStar = async (
+		e: React.MouseEvent,
+		projectId: number,
+		currentIsStarred: boolean
+	) => {
+		e.stopPropagation(); // Prevent navigation to project
+
+		console.log("Toggle star clicked:", {
+			projectId,
+			currentIsStarred,
+			newValue: !currentIsStarred,
+		});
+
+		// Optimistic update
+		setProjects(
+			projects.map((p) =>
+				p.id === projectId ? { ...p, isStarred: !currentIsStarred } : p
+			)
+		);
+
+		try {
+			const response = await api.toggleProjectStar(
+				projectId,
+				!currentIsStarred
+			);
+			console.log("Star toggle response:", response);
+		} catch (error) {
+			console.error("Failed to toggle star:", error);
+			// Revert on error
+			setProjects(
+				projects.map((p) =>
+					p.id === projectId
+						? { ...p, isStarred: currentIsStarred }
+						: p
+				)
+			);
+		}
+	};
+
 	const getPriorityColor = (priority: string) => {
 		switch (priority) {
 			case "high":
@@ -337,8 +403,23 @@ const Dashboard = () => {
 		);
 
 		if (activeTab === "starred") {
-			// For now, show all projects since we don't have starred functionality yet
-			filtered = filtered;
+			filtered = filtered.filter((project) => project.isStarred === true);
+			console.log(
+				"Starred tab - all projects:",
+				projects.map((p) => ({
+					id: p.id,
+					title: p.title,
+					isStarred: p.isStarred,
+				}))
+			);
+			console.log(
+				"Starred tab - filtered:",
+				filtered.map((p) => ({
+					id: p.id,
+					title: p.title,
+					isStarred: p.isStarred,
+				}))
+			);
 		}
 
 		return filtered;
@@ -390,40 +471,75 @@ const Dashboard = () => {
 			return (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 					{filteredProjects.map((project) => {
-						const isCustomWorkflow = project.workflowType === "CUSTOM";
-						const themeColor = isCustomWorkflow ? "#A855F7" : "#3B82F6";
+						const isCustomWorkflow =
+							project.workflowType === "CUSTOM";
+						const themeColor = isCustomWorkflow
+							? "#A855F7"
+							: "#3B82F6";
 						const themeName = isCustomWorkflow ? "purple" : "blue";
-						
+
 						return (
 							<Card
 								key={project.id}
 								className="group cursor-pointer border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all bg-white"
-								onClick={() => navigate(`/project/${project.id}`)}
+								onClick={() =>
+									navigate(`/project/${project.id}`)
+								}
 							>
 								<CardHeader className="pb-3">
 									<div className="flex items-start justify-between mb-2">
-										<div
-											className="w-10 h-10 rounded flex items-center justify-center"
-											style={{
-												backgroundColor: themeColor,
-											}}
-										>
-											<Layers className="w-5 h-5 text-white" />
+										<div className="flex items-center gap-2">
+											<div
+												className="w-10 h-10 rounded flex items-center justify-center"
+												style={{
+													backgroundColor: themeColor,
+												}}
+											>
+												<Layers className="w-5 h-5 text-white" />
+											</div>
+											<button
+												onClick={(e) =>
+													handleToggleStar(
+														e,
+														project.id,
+														project.isStarred ||
+															false
+													)
+												}
+												className="p-1.5 hover:bg-slate-100 rounded-md transition-colors"
+												title={
+													project.isStarred
+														? "Remove from starred"
+														: "Add to starred"
+												}
+											>
+												<Star
+													className={`w-4 h-4 transition-all ${
+														project.isStarred
+															? "fill-yellow-400 text-yellow-400"
+															: "text-slate-300 hover:text-yellow-400"
+													}`}
+												/>
+											</button>
 										</div>
 										<Badge
 											variant="outline"
 											className="text-xs"
 										>
-											{project.workflowType === "AUTOMATED"
+											{project.workflowType ===
+											"AUTOMATED"
 												? "Auto-Sync"
 												: "Custom"}
 										</Badge>
 									</div>
-									<CardTitle className={`text-base font-semibold text-slate-900 group-hover:text-${themeName}-600 transition-colors`}>
+									<CardTitle
+										className={`text-base font-semibold text-slate-900 group-hover:text-${themeName}-600 transition-colors`}
+									>
 										{project.title}
 									</CardTitle>
 									<CardDescription className="text-sm text-slate-500 line-clamp-2">
-										{project.description || "No description"}
+										{project.description ||
+											"No description"}
 									</CardDescription>
 								</CardHeader>
 								<CardContent className="space-y-3">
@@ -433,7 +549,8 @@ const Dashboard = () => {
 											className={`text-xs ${
 												project.status === "ACTIVE"
 													? "bg-green-50 text-green-700 border-green-200"
-													: project.status === "COMPLETED"
+													: project.status ===
+													  "COMPLETED"
 													? "bg-blue-50 text-blue-700 border-blue-200"
 													: "bg-gray-50 text-gray-700 border-gray-200"
 											}`}
@@ -467,7 +584,7 @@ const Dashboard = () => {
 					const isCustomWorkflow = project.workflowType === "CUSTOM";
 					const themeColor = isCustomWorkflow ? "#A855F7" : "#3B82F6";
 					const themeName = isCustomWorkflow ? "purple" : "blue";
-					
+
 					return (
 						<Card
 							key={project.id}
@@ -477,17 +594,45 @@ const Dashboard = () => {
 							<CardContent className="p-4">
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-4 flex-1">
-										<div
-											className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
-											style={{
-												backgroundColor: themeColor,
-											}}
-										>
-											<Layers className="w-5 h-5 text-white" />
+										<div className="flex items-center gap-2">
+											<div
+												className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+												style={{
+													backgroundColor: themeColor,
+												}}
+											>
+												<Layers className="w-5 h-5 text-white" />
+											</div>
+											<button
+												onClick={(e) =>
+													handleToggleStar(
+														e,
+														project.id,
+														project.isStarred ||
+															false
+													)
+												}
+												className="p-1.5 hover:bg-slate-100 rounded-md transition-colors"
+												title={
+													project.isStarred
+														? "Remove from starred"
+														: "Add to starred"
+												}
+											>
+												<Star
+													className={`w-4 h-4 transition-all ${
+														project.isStarred
+															? "fill-yellow-400 text-yellow-400"
+															: "text-slate-300 hover:text-yellow-400"
+													}`}
+												/>
+											</button>
 										</div>
 										<div className="flex-1 min-w-0">
 											<div className="flex items-center gap-2 mb-1">
-												<h3 className={`font-semibold text-slate-900 group-hover:text-${themeName}-600 transition-colors truncate`}>
+												<h3
+													className={`font-semibold text-slate-900 group-hover:text-${themeName}-600 transition-colors truncate`}
+												>
 													{project.title}
 												</h3>
 												<Badge
@@ -512,7 +657,8 @@ const Dashboard = () => {
 											className={`text-xs w-24 justify-center ${
 												project.status === "ACTIVE"
 													? "bg-green-50 text-green-700 border-green-200"
-													: project.status === "COMPLETED"
+													: project.status ===
+													  "COMPLETED"
 													? "bg-blue-50 text-blue-700 border-blue-200"
 													: "bg-gray-50 text-gray-700 border-gray-200"
 											}`}
@@ -549,7 +695,9 @@ const Dashboard = () => {
 				<div className="h-[calc(100vh-64px)] flex items-center justify-center">
 					<div className="text-center">
 						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-						<p className="text-slate-600 font-medium">Creating your project...</p>
+						<p className="text-slate-600 font-medium">
+							Creating your project...
+						</p>
 					</div>
 				</div>
 			</div>
@@ -669,16 +817,7 @@ const Dashboard = () => {
 						</TabsContent>
 
 						<TabsContent value="starred" className="mt-6">
-							{/* Starred functionality coming soon */}
-							<div className="text-center py-12">
-								<Star className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-								<h3 className="text-lg font-medium text-slate-900 mb-1">
-									Starred projects
-								</h3>
-								<p className="text-sm text-slate-500">
-									Star projects feature coming soon
-								</p>
-							</div>
+							{renderProjectsView()}
 						</TabsContent>
 
 						<TabsContent value="all" className="mt-6">
