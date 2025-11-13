@@ -250,6 +250,23 @@ const Dashboard = () => {
 		// For now, just show a success message or navigate
 	};
 
+	const handleToggleFavorite = async (e: React.MouseEvent, projectId: number, currentIsFavorite: boolean) => {
+		e.stopPropagation(); // Prevent navigation to project
+		
+		try {
+			await api.toggleProjectFavorite(projectId, !currentIsFavorite);
+			
+			// Update local state
+			setProjects(projects.map(p => 
+				p.id === projectId 
+					? { ...p, isFavorite: !currentIsFavorite }
+					: p
+			));
+		} catch (error) {
+			console.error("Failed to toggle favorite:", error);
+		}
+	};
+
 	const getPriorityColor = (priority: string) => {
 		switch (priority) {
 			case "high":
@@ -337,8 +354,7 @@ const Dashboard = () => {
 		);
 
 		if (activeTab === "starred") {
-			// For now, show all projects since we don't have starred functionality yet
-			filtered = filtered;
+			filtered = filtered.filter((project) => project.isFavorite);
 		}
 
 		return filtered;
@@ -402,13 +418,28 @@ const Dashboard = () => {
 							>
 								<CardHeader className="pb-3">
 									<div className="flex items-start justify-between mb-2">
-										<div
-											className="w-10 h-10 rounded flex items-center justify-center"
-											style={{
-												backgroundColor: themeColor,
-											}}
-										>
-											<Layers className="w-5 h-5 text-white" />
+										<div className="flex items-center gap-2">
+											<div
+												className="w-10 h-10 rounded flex items-center justify-center"
+												style={{
+													backgroundColor: themeColor,
+												}}
+											>
+												<Layers className="w-5 h-5 text-white" />
+											</div>
+											<button
+												onClick={(e) => handleToggleFavorite(e, project.id, project.isFavorite || false)}
+												className="p-1 hover:bg-slate-100 rounded transition-colors"
+												title={project.isFavorite ? "Remove from favorites" : "Add to favorites"}
+											>
+												<Star
+													className={`w-5 h-5 transition-colors ${
+														project.isFavorite
+															? "fill-yellow-400 text-yellow-400"
+															: "text-slate-300 hover:text-yellow-400"
+													}`}
+												/>
+											</button>
 										</div>
 										<Badge
 											variant="outline"
@@ -477,13 +508,28 @@ const Dashboard = () => {
 							<CardContent className="p-4">
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-4 flex-1">
-										<div
-											className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
-											style={{
-												backgroundColor: themeColor,
-											}}
-										>
-											<Layers className="w-5 h-5 text-white" />
+										<div className="flex items-center gap-2">
+											<div
+												className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+												style={{
+													backgroundColor: themeColor,
+												}}
+											>
+												<Layers className="w-5 h-5 text-white" />
+											</div>
+											<button
+												onClick={(e) => handleToggleFavorite(e, project.id, project.isFavorite || false)}
+												className="p-1 hover:bg-slate-100 rounded transition-colors flex-shrink-0"
+												title={project.isFavorite ? "Remove from favorites" : "Add to favorites"}
+											>
+												<Star
+													className={`w-5 h-5 transition-colors ${
+														project.isFavorite
+															? "fill-yellow-400 text-yellow-400"
+															: "text-slate-300 hover:text-yellow-400"
+													}`}
+												/>
+											</button>
 										</div>
 										<div className="flex-1 min-w-0">
 											<div className="flex items-center gap-2 mb-1">

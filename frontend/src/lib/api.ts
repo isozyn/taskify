@@ -234,6 +234,13 @@ class ApiClient {
 		});
 	}
 
+	async toggleProjectFavorite(projectId: number, isFavorite: boolean) {
+		return this.request(`/projects/${projectId}/favorite`, {
+			method: "PATCH",
+			body: JSON.stringify({ isFavorite }),
+		});
+	}
+
 	async inviteProjectMembers(
 		projectId: number,
 		members: Array<{ email: string; role: string }>
@@ -582,6 +589,7 @@ export interface Project {
 	endDate?: string | null;
 	createdAt: string;
 	updatedAt: string;
+	isFavorite?: boolean;
 	owner?: {
 		id: number;
 		name: string;
