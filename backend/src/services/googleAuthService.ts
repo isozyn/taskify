@@ -14,10 +14,12 @@ const client = new OAuth2Client(
  * This creates the URL that users will be redirected to for Google login
  */
 export const getGoogleAuthUrl = (): string => {
-  // Using only non-sensitive scopes - no verification required
+  // Include Calendar scopes for Google Meet integration
   const scopes = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
+    'https://www.googleapis.com/auth/calendar',
+    'https://www.googleapis.com/auth/calendar.events',
   ];
 
   const authUrl = client.generateAuthUrl({
