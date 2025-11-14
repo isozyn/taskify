@@ -17,7 +17,6 @@ export interface Project {
 	createdAt: Date;
 	updatedAt: Date;
 	googleCalendarEventId?: string | null;
-	isStarred: boolean;
 }
 
 export interface ProjectCreateInput {
@@ -56,5 +55,4 @@ export interface ProjectResponse {
 	createdAt: Date;
 	updatedAt: Date;
 	googleCalendarEventId?: string | null;
-	isStarred: boolean;
 }
