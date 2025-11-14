@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { useUser } from "@/contexts/UserContext";
+import InteractiveDemo from "@/components/InteractiveDemo";
 import { 
   CheckCircle2,
   Users,
@@ -40,29 +41,29 @@ const Index = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       <Navbar />
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0052CC]/5 via-background to-background pointer-events-none"></div>
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#0052CC]/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute top-20 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
+        {/* Subtle Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/50 via-transparent to-transparent pointer-events-none"></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-100/30 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute top-20 right-1/4 w-96 h-96 bg-purple-100/30 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="max-w-[1400px] mx-auto relative">
+        <div className="max-w-[1400px] mx-auto relative z-10">
           <div className="text-center max-w-4xl mx-auto mb-16">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-[#0052CC]/10 border border-[#0052CC]/20 rounded-full px-4 py-1.5 mb-6">
-              <Sparkles className="w-4 h-4 text-[#0052CC]" />
-              <span className="text-sm font-medium text-[#0052CC]">The #1 software development tool used by agile teams</span>
+            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 mb-6 shadow-sm">
+              <Sparkles className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-700">The #1 software development tool used by agile teams</span>
             </div>
             
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1] tracking-tight">
-              Move fast, stay aligned, and <span className="bg-gradient-to-r from-[#0052CC] to-[#0065FF] bg-clip-text text-transparent">build better</span> — together
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1] tracking-tight text-slate-900">
+              Move fast, stay aligned, and <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">build better</span> — together
             </h1>
             
-            <p className="text-xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-slate-600 mb-10 max-w-3xl mx-auto leading-relaxed">
               The only project management tool you need to plan, track, and release world-class software. Trusted by over 250,000 teams worldwide.
             </p>
 
@@ -70,7 +71,7 @@ const Index = () => {
               <Button 
                 size="lg" 
                 onClick={() => navigate("/auth")} 
-                className="bg-[#0052CC] hover:bg-[#0065FF] text-white h-12 px-8 text-base font-semibold rounded-md shadow-lg hover:shadow-xl transition-all w-full sm:w-auto"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white h-12 px-8 text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all w-full sm:w-auto"
               >
                 Get started free
                 <ArrowRight className="ml-2 w-5 h-5" />
@@ -79,14 +80,14 @@ const Index = () => {
                 size="lg" 
                 variant="outline" 
                 onClick={() => navigate("/dashboard")}
-                className="h-12 px-8 text-base font-semibold border-2 hover:bg-accent/50 transition-all w-full sm:w-auto group"
+                className="h-12 px-8 text-base font-semibold border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all w-full sm:w-auto group"
               >
-                <PlayCircle className="mr-2 w-5 h-5 group-hover:text-[#0052CC] transition-colors" />
+                <PlayCircle className="mr-2 w-5 h-5 group-hover:text-blue-600 transition-colors" />
                 Watch demo
               </Button>
             </div>
 
-            <p className="text-sm text-muted-foreground mt-6">
+            <p className="text-sm text-slate-500 mt-6">
               Free for up to 10 users • No credit card required
             </p>
           </div>
@@ -94,42 +95,27 @@ const Index = () => {
           {/* Product Showcase */}
           <div className="relative mt-16">
             {/* Main Dashboard Preview */}
-            <div className="relative rounded-lg border border-border/50 bg-card shadow-2xl overflow-hidden">
-              <div className="bg-gradient-to-br from-muted/50 to-muted/30 p-8 aspect-video flex items-center justify-center">
-                <div className="w-full h-full bg-gradient-to-br from-[#0052CC]/5 to-accent/5 rounded-md border-2 border-dashed border-border/30 flex flex-col items-center justify-center gap-4">
-                  <div className="flex gap-2">
-                    <div className="w-16 h-16 bg-[#0052CC]/10 rounded-lg flex items-center justify-center">
-                      <Layers className="w-8 h-8 text-[#0052CC]" />
-                    </div>
-                    <div className="w-16 h-16 bg-accent/10 rounded-lg flex items-center justify-center">
-                      <GitBranch className="w-8 h-8 text-accent" />
-                    </div>
-                    <div className="w-16 h-16 bg-[#0052CC]/10 rounded-lg flex items-center justify-center">
-                      <Workflow className="w-8 h-8 text-[#0052CC]" />
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground font-medium">Interactive Workspace Demo</p>
-                </div>
-              </div>
+            <div className="relative rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden aspect-video">
+              <InteractiveDemo />
             </div>
 
             {/* Floating Feature Cards */}
-            <div className="hidden lg:block absolute -left-8 top-1/4 w-64 bg-card border border-border/50 rounded-lg shadow-xl p-4 transform -rotate-2">
+            <div className="hidden lg:block absolute -left-8 top-1/4 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-4 transform -rotate-2 hover:scale-105 transition-transform">
               <div className="flex items-center gap-2 mb-2">
-                <Activity className="w-4 h-4 text-[#0052CC]" />
-                <span className="text-xs font-semibold text-muted-foreground">LIVE ACTIVITY</span>
+                <Activity className="w-4 h-4 text-blue-600" />
+                <span className="text-xs font-semibold text-slate-600">LIVE ACTIVITY</span>
               </div>
-              <p className="text-sm font-medium mb-1">Sprint velocity increased</p>
-              <p className="text-xs text-muted-foreground">+24% this week</p>
+              <p className="text-sm font-medium mb-1 text-slate-900">Sprint velocity increased</p>
+              <p className="text-xs text-slate-500">+24% this week</p>
             </div>
 
-            <div className="hidden lg:block absolute -right-8 top-1/3 w-64 bg-card border border-border/50 rounded-lg shadow-xl p-4 transform rotate-2">
+            <div className="hidden lg:block absolute -right-8 top-1/3 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-4 transform rotate-2 hover:scale-105 transition-transform">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="w-4 h-4 text-accent" />
-                <span className="text-xs font-semibold text-muted-foreground">TASK COMPLETED</span>
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <span className="text-xs font-semibold text-slate-600">TASK COMPLETED</span>
               </div>
-              <p className="text-sm font-medium mb-1">Deploy to production</p>
-              <p className="text-xs text-muted-foreground">Completed by Sarah J.</p>
+              <p className="text-sm font-medium mb-1 text-slate-900">Deploy to production</p>
+              <p className="text-xs text-slate-500">Completed by Sarah J.</p>
             </div>
           </div>
         </div>
@@ -400,12 +386,31 @@ const Index = () => {
           </div>
 
           {/* Company Logos */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 items-center justify-items-center mb-20 opacity-50">
-            <div className="text-2xl font-bold">Spotify</div>
-            <div className="text-2xl font-bold">Tesla</div>
-            <div className="text-2xl font-bold">Adobe</div>
-            <div className="text-2xl font-bold">Airbnb</div>
-            <div className="text-2xl font-bold">Slack</div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 items-center justify-items-center mb-20">
+            {/* Spotify */}
+            <div className="flex items-center justify-center w-32 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105">
+              <span className="text-white font-bold text-xl tracking-tight">Spotify</span>
+            </div>
+            
+            {/* Tesla */}
+            <div className="flex items-center justify-center w-32 h-16 bg-gradient-to-br from-red-600 to-red-700 rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105">
+              <span className="text-white font-bold text-xl tracking-tight">TESLA</span>
+            </div>
+            
+            {/* Adobe */}
+            <div className="flex items-center justify-center w-32 h-16 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105">
+              <span className="text-white font-bold text-xl tracking-tight">Adobe</span>
+            </div>
+            
+            {/* Airbnb */}
+            <div className="flex items-center justify-center w-32 h-16 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105">
+              <span className="text-white font-bold text-xl tracking-tight">airbnb</span>
+            </div>
+            
+            {/* Slack */}
+            <div className="flex items-center justify-center w-32 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105">
+              <span className="text-white font-bold text-xl tracking-tight">Slack</span>
+            </div>
           </div>
 
           {/* Testimonial Card */}
