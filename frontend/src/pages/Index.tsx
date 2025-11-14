@@ -74,23 +74,10 @@ const Index = () => {
                 onClick={() => navigate("/auth")} 
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white h-12 px-8 text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all w-full sm:w-auto"
               >
-                Get started free
+                Get started
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={() => navigate("/dashboard")}
-                className="h-12 px-8 text-base font-semibold border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all w-full sm:w-auto group"
-              >
-                <PlayCircle className="mr-2 w-5 h-5 group-hover:text-blue-600 transition-colors" />
-                Watch demo
-              </Button>
             </div>
-
-            <p className="text-sm text-slate-500 mt-6">
-              Free for up to 10 users • No credit card required
-            </p>
           </div>
 
           {/* Product Showcase */}
@@ -98,25 +85,6 @@ const Index = () => {
             {/* Main Dashboard Preview */}
             <div className="relative rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden aspect-video">
               <InteractiveDemo />
-            </div>
-
-            {/* Floating Feature Cards */}
-            <div className="hidden lg:block absolute -left-8 top-1/4 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-4 transform -rotate-2 hover:scale-105 transition-transform">
-              <div className="flex items-center gap-2 mb-2">
-                <Activity className="w-4 h-4 text-blue-600" />
-                <span className="text-xs font-semibold text-slate-600">LIVE ACTIVITY</span>
-              </div>
-              <p className="text-sm font-medium mb-1 text-slate-900">Sprint velocity increased</p>
-              <p className="text-xs text-slate-500">+24% this week</p>
-            </div>
-
-            <div className="hidden lg:block absolute -right-8 top-1/3 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-4 transform rotate-2 hover:scale-105 transition-transform">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span className="text-xs font-semibold text-slate-600">TASK COMPLETED</span>
-              </div>
-              <p className="text-sm font-medium mb-1 text-slate-900">Deploy to production</p>
-              <p className="text-xs text-slate-500">Completed by Sarah J.</p>
             </div>
           </div>
         </div>
@@ -587,107 +555,26 @@ const Index = () => {
               onClick={() => navigate("/auth")} 
               className="bg-[#0052CC] hover:bg-[#0065FF] text-white h-14 px-10 text-lg font-semibold rounded-md shadow-lg hover:shadow-xl transition-all w-full sm:w-auto"
             >
-              Start for free
+              Get started
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="h-14 px-10 text-lg font-semibold border-2 hover:bg-accent/50 transition-all w-full sm:w-auto"
-            >
-              Contact sales
-            </Button>
-          </div>
-          <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-accent" />
-              <span>Free for 10 users</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-accent" />
-              <span>No credit card</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-accent" />
-              <span>Cancel anytime</span>
-            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 bg-muted/30 py-16 px-4 sm:px-6 lg:px-8">
+      <footer className="border-t border-border/40 bg-muted/30 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1400px] mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-            <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
-                  <CheckSquare className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-lg font-bold">Taskify</span>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
+                <CheckSquare className="w-5 h-5 text-white" />
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                The project management tool teams love. Plan, track, and ship with confidence.
-              </p>
+              <span className="text-lg font-bold">Taskify</span>
             </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Product</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Integrations</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Changelog</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Roadmap</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Solutions</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Software teams</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Product teams</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Marketing</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Operations</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Enterprise</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Resources</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Documentation</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">API Reference</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Community</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Templates</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Company</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Press Kit</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-border/40">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground">
-                © 2025 Taskify, Inc. All rights reserved.
-              </p>
-              <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-                <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-                <a href="#" className="hover:text-foreground transition-colors">Security</a>
-                <a href="#" className="hover:text-foreground transition-colors">Sitemap</a>
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              © 2025 Taskify. Project management made simple.
+            </p>
           </div>
         </div>
       </footer>
