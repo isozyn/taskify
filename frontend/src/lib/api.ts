@@ -107,14 +107,8 @@ class ApiClient {
 			body: JSON.stringify(data),
 		});
 
-		// Store tokens in localStorage
-		if (response.accessToken) {
-			localStorage.setItem("accessToken", response.accessToken);
-		}
-		if (response.refreshToken) {
-			localStorage.setItem("refreshToken", response.refreshToken);
-		}
-
+		// Tokens are stored in HTTP-only cookies by the backend
+		// No need to store them in localStorage
 		return response;
 	}
 
@@ -123,10 +117,7 @@ class ApiClient {
 			method: "POST",
 		});
 
-		// Clear tokens from localStorage
-		localStorage.removeItem("accessToken");
-		localStorage.removeItem("refreshToken");
-
+		// Cookies are cleared by the backend
 		return response;
 	}
 
@@ -158,14 +149,7 @@ class ApiClient {
 			}
 		);
 
-		// Store tokens in localStorage
-		if (response.accessToken) {
-			localStorage.setItem("accessToken", response.accessToken);
-		}
-		if (response.refreshToken) {
-			localStorage.setItem("refreshToken", response.refreshToken);
-		}
-
+		// Tokens are stored in HTTP-only cookies by the backend
 		return response;
 	}
 

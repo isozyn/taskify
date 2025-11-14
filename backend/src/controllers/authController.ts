@@ -145,10 +145,11 @@ export const login = async (
 		);
 
 		// Set refresh token as httpOnly cookie
+		const isProduction = process.env.NODE_ENV === "production";
 		const cookieOptions = {
 			httpOnly: true,
-			secure: true,
-			sameSite: "none" as const,
+			secure: isProduction,
+			sameSite: isProduction ? ("none" as const) : ("lax" as const),
 			path: "/",
 		};
 
@@ -171,15 +172,12 @@ export const login = async (
 
 		console.log("[Login] ✅ Cookies set successfully");
 
-		// Return user info only (no tokens in response)
+		// Return user info only (tokens are in HTTP-only cookies)
 		const userResponse = userService.toUserResponse(user);
 
-		// Also return tokens in response body for cross-domain deployments
 		res.status(200).json({
 			message: "Login successful",
 			user: userResponse,
-			accessToken,
-			refreshToken,
 		});
 	} catch (error) {
 		next(error);
@@ -401,29 +399,29 @@ export const verifyEmail = async (
 				refreshExpiresAt
 			);
 
+			const isProduction = process.env.NODE_ENV === "production";
+			const cookieOptions = {
+				httpOnly: true,
+				secure: isProduction,
+				sameSite: isProduction ? ("none" as const) : ("lax" as const),
+				path: "/",
+			};
+
 			// Set refresh token as HTTP-only cookie
 			res.cookie("refreshToken", refreshToken, {
-				httpOnly: true,
-				secure: true,
-				sameSite: "none",
-				path: "/",
+				...cookieOptions,
 				maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 			});
 
 			// Set access token as HTTP-only cookie
 			res.cookie("accessToken", accessToken, {
-				httpOnly: true,
-				secure: true,
-				sameSite: "none",
-				path: "/",
+				...cookieOptions,
 				maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 			});
 
 			res.status(200).json({
 				message: "Email already verified",
 				user: userService.toUserResponse(user),
-				accessToken,
-				refreshToken,
 			});
 			return;
 		}
@@ -453,29 +451,29 @@ export const verifyEmail = async (
 			refreshExpiresAt
 		);
 
+		const isProduction = process.env.NODE_ENV === "production";
+		const cookieOptions = {
+			httpOnly: true,
+			secure: isProduction,
+			sameSite: isProduction ? ("none" as const) : ("lax" as const),
+			path: "/",
+		};
+
 		// Set refresh token as HTTP-only cookie
 		res.cookie("refreshToken", refreshToken, {
-			httpOnly: true,
-			secure: true,
-			sameSite: "none",
-			path: "/",
+			...cookieOptions,
 			maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 		});
 
 		// Set access token as HTTP-only cookie
 		res.cookie("accessToken", accessToken, {
-			httpOnly: true,
-			secure: true,
-			sameSite: "none",
-			path: "/",
+			...cookieOptions,
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
 
 		res.status(200).json({
 			message: "Email verified successfully",
 			user: userService.toUserResponse(updatedUser),
-			accessToken,
-			refreshToken,
 		});
 	} catch (error) {
 		if (
@@ -707,17 +705,20 @@ export const googleCallback = async (
 		);
 
 		// Set tokens as httpOnly cookies
-		res.cookie("refreshToken", refreshToken, {
+		const isProduction = process.env.NODE_ENV === "production";
+		const cookieOptions = {
 			httpOnly: true,
-			secure: true,
-			sameSite: "none",
+			secure: isProduction,
+			sameSite: isProduction ? ("none" as const) : ("lax" as const),
+		};
+
+		res.cookie("refreshToken", refreshToken, {
+			...cookieOptions,
 			maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 		});
 
 		res.cookie("accessToken", accessToken, {
-			httpOnly: true,
-			secure: true,
-			sameSite: "none",
+			...cookieOptions,
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
 
