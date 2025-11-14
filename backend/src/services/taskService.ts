@@ -659,16 +659,39 @@ export class TaskService {
 	 */
 	static async deleteTask(
 		taskId: number,
-		_userId?: number
+		userId?: number
 	): Promise<boolean> {
 		try {
 			// Get task info before deleting for activity log
 			const task = await prisma.task.findUnique({
 				where: { id: taskId },
+				include: {
+					project: {
+						include: {
+							members: {
+								select: { userId: true },
+							},
+						},
+					},
+				},
 			});
 
 			if (!task) {
 				return false;
+			}
+
+			// Verify user has permission to delete (must be project owner or member)
+			if (userId) {
+				const hasAccess =
+					task.project.ownerId === userId ||
+					task.project.members.some((m) => m.userId === userId);
+
+				if (!hasAccess) {
+					console.log(
+						`User ${userId} does not have permission to delete task ${taskId}`
+					);
+					return false;
+				}
 			}
 
 			// Delete from Google Calendar if synced
@@ -699,7 +722,7 @@ export class TaskService {
 			await activityService.logTaskDeleted(
 				task.projectId,
 				task.title,
-				_userId
+				userId
 			);
 
 			return true;
