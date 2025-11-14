@@ -186,8 +186,6 @@ export class TaskController {
       const userId = (req as any).user?.id;
       const taskId = parseInt(req.params.taskId);
       
-      console.log(`[DELETE TASK] User ${userId} attempting to delete task ${taskId}`);
-      
       if (!userId) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
@@ -201,12 +199,10 @@ export class TaskController {
       const success = await TaskService.deleteTask(taskId, userId);
       
       if (!success) {
-        console.log(`[DELETE TASK] Failed - Task ${taskId} not found or access denied`);
         res.status(404).json({ error: 'Task not found or access denied' });
         return;
       }
 
-      console.log(`[DELETE TASK] Success - Task ${taskId} deleted by user ${userId}`);
       res.status(200).json({ message: 'Task deleted successfully' });
     } catch (error: any) {
       console.error('Delete task error:', error);

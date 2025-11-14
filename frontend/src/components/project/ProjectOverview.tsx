@@ -163,9 +163,15 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
     totalTasks: tasks.length,
     completed: tasks.filter(t => t.status === "COMPLETED").length,
     inProgress: tasks.filter(t => t.status === "IN_PROGRESS").length,
-    overdue: tasks.filter(t => {
-      if (!t.endDate) return false;
-      return new Date(t.endDate) < new Date() && t.status !== "COMPLETED";
+    overdue: project.status === "COMPLETED" ? 0 : tasks.filter(t => {
+      // Don't count completed or in-review tasks as overdue
+      if (!t.endDate || t.status === "COMPLETED" || t.status === "IN_REVIEW") return false;
+      const endDate = new Date(t.endDate);
+      const today = new Date();
+      // Set both dates to start of day for fair comparison
+      endDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      return endDate < today;
     }).length,
   };
 
