@@ -75,10 +75,10 @@ const TemplateSelection = () => {
 				</div>
 
 				{/* Templates Grid - Compact, side by side */}
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
-					{/* Calendar-Synced Template */}
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0 overflow-y-auto pb-4">
+					{/* Automated Workflow Template */}
 					<div
-						className={`relative rounded-xl overflow-hidden transition-all duration-200 cursor-pointer bg-white flex flex-col ${
+						className={`relative rounded-xl overflow-hidden transition-all duration-200 cursor-pointer bg-white flex flex-col h-fit ${
 							selectedTemplate === "auto-sync"
 								? "ring-2 ring-blue-500 shadow-lg"
 								: "ring-1 ring-slate-200 hover:ring-blue-300 hover:shadow-md"
@@ -93,7 +93,7 @@ const TemplateSelection = () => {
 								</div>
 								<div>
 									<h3 className="text-base font-bold text-slate-900">
-										Calendar-Synced
+										Automated Workflow
 									</h3>
 									<p className="text-xs text-slate-500">
 										Time-based automation
@@ -113,23 +113,19 @@ const TemplateSelection = () => {
 							</div>
 						</div>
 
-						{/* Visual Preview - Compact */}
+						{/* Visual Preview - Image */}
 						<div className="p-3 bg-gradient-to-br from-blue-50/60 to-white border-b border-slate-100">
-							<div className="bg-white rounded-md border border-slate-200 p-2">
-								<div className="grid grid-cols-5 gap-1 h-32">
-									{[
-										{ h: "h-16", color: "slate" },
-										{ h: "h-14", color: "yellow" },
-										{ h: "h-20", color: "blue" },
-										{ h: "h-12", color: "purple" },
-										{ h: "h-18", color: "green" },
-									].map((col, idx) => (
-										<div
-											key={idx}
-											className={`${col.h} bg-${col.color}-100 rounded`}
-										></div>
-									))}
-								</div>
+							<div className="bg-white rounded-md border border-slate-200 overflow-hidden h-48 flex items-center justify-center">
+							<img 
+								src="/Auto Workflow pic.png" 
+								alt="Automated Workflow Preview" 
+								className="w-full h-full object-cover"
+									onError={(e) => {
+										// Fallback to placeholder if image fails to load
+										e.currentTarget.style.display = 'none';
+										e.currentTarget.parentElement!.innerHTML = '<div class="grid grid-cols-5 gap-1 h-full p-2"><div class="h-16 bg-slate-100 rounded"></div><div class="h-14 bg-yellow-100 rounded"></div><div class="h-20 bg-blue-100 rounded"></div><div class="h-12 bg-purple-100 rounded"></div><div class="h-18 bg-green-100 rounded"></div></div>';
+									}}
+								/>
 							</div>
 						</div>
 
@@ -180,7 +176,7 @@ const TemplateSelection = () => {
 
 					{/* Custom Workflow Template */}
 					<div
-						className={`relative rounded-xl overflow-hidden transition-all duration-200 cursor-pointer bg-white flex flex-col ${
+						className={`relative rounded-xl overflow-hidden transition-all duration-200 cursor-pointer bg-white flex flex-col h-fit ${
 							selectedTemplate === "custom"
 								? "ring-2 ring-purple-500 shadow-lg"
 								: "ring-1 ring-slate-200 hover:ring-purple-300 hover:shadow-md"
@@ -215,22 +211,19 @@ const TemplateSelection = () => {
 							</div>
 						</div>
 
-						{/* Visual Preview - Compact */}
+						{/* Visual Preview - Image */}
 						<div className="p-3 bg-gradient-to-br from-purple-50/60 to-white border-b border-slate-100">
-							<div className="bg-white rounded-md border border-slate-200 p-2">
-								<div className="grid grid-cols-4 gap-1.5 h-32">
-									{[
-										{ h: "h-20", color: "purple" },
-										{ h: "h-16", color: "blue" },
-										{ h: "h-24", color: "yellow" },
-										{ h: "h-18", color: "green" },
-									].map((col, idx) => (
-										<div
-											key={idx}
-											className={`${col.h} bg-${col.color}-100 rounded`}
-										></div>
-									))}
-								</div>
+							<div className="bg-white rounded-md border border-slate-200 overflow-hidden h-48 flex items-center justify-center">
+							<img 
+								src="/Custom Kanban.png" 
+								alt="Custom Workflow Preview" 
+								className="w-full h-full object-cover"
+									onError={(e) => {
+										// Fallback to placeholder if image fails to load
+										e.currentTarget.style.display = 'none';
+										e.currentTarget.parentElement!.innerHTML = '<div class="grid grid-cols-4 gap-1.5 h-full p-2"><div class="h-20 bg-purple-100 rounded"></div><div class="h-16 bg-blue-100 rounded"></div><div class="h-24 bg-yellow-100 rounded"></div><div class="h-18 bg-green-100 rounded"></div></div>';
+									}}
+								/>
 							</div>
 						</div>
 
@@ -295,7 +288,7 @@ const TemplateSelection = () => {
 											}
 										>
 											{selectedTemplate === "auto-sync"
-												? "Calendar-Synced"
+												? "Automated Workflow"
 												: "Custom Workflow"}
 										</span>{" "}
 										selected
