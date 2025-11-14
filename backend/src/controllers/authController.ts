@@ -175,9 +175,12 @@ export const login = async (
 		// Return user info only (tokens are in HTTP-only cookies)
 		const userResponse = userService.toUserResponse(user);
 
+		// Also return tokens in response body as fallback for cross-domain issues
 		res.status(200).json({
 			message: "Login successful",
 			user: userResponse,
+			accessToken,
+			refreshToken,
 		});
 	} catch (error) {
 		next(error);
@@ -422,6 +425,8 @@ export const verifyEmail = async (
 			res.status(200).json({
 				message: "Email already verified",
 				user: userService.toUserResponse(user),
+				accessToken,
+				refreshToken,
 			});
 			return;
 		}
@@ -474,6 +479,8 @@ export const verifyEmail = async (
 		res.status(200).json({
 			message: "Email verified successfully",
 			user: userService.toUserResponse(updatedUser),
+			accessToken,
+			refreshToken,
 		});
 	} catch (error) {
 		if (

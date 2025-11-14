@@ -23,12 +23,21 @@ class ApiClient {
 	): Promise<T> {
 		const url = `${this.baseURL}${endpoint}`;
 
+		// Get token from localStorage for Authorization header (fallback for cross-domain)
+		const accessToken = localStorage.getItem("accessToken");
+		const headers: HeadersInit = {
+			"Content-Type": "application/json",
+			...options.headers,
+		};
+
+		// Add Authorization header if token exists
+		if (accessToken) {
+			headers["Authorization"] = `Bearer ${accessToken}`;
+		}
+
 		const config: RequestInit = {
 			...options,
-			headers: {
-				"Content-Type": "application/json",
-				...options.headers,
-			},
+			headers,
 			credentials: "include", // Include cookies for authentication
 		};
 
@@ -107,8 +116,14 @@ class ApiClient {
 			body: JSON.stringify(data),
 		});
 
-		// Tokens are stored in HTTP-only cookies by the backend
-		// No need to store them in localStorage
+		// Store tokens in localStorage as fallback for cross-domain deployments
+		if (response.accessToken) {
+			localStorage.setItem("accessToken", response.accessToken);
+		}
+		if (response.refreshToken) {
+			localStorage.setItem("refreshToken", response.refreshToken);
+		}
+
 		return response;
 	}
 
@@ -117,7 +132,10 @@ class ApiClient {
 			method: "POST",
 		});
 
-		// Cookies are cleared by the backend
+		// Clear tokens from localStorage
+		localStorage.removeItem("accessToken");
+		localStorage.removeItem("refreshToken");
+
 		return response;
 	}
 
@@ -149,7 +167,14 @@ class ApiClient {
 			}
 		);
 
-		// Tokens are stored in HTTP-only cookies by the backend
+		// Store tokens in localStorage as fallback
+		if (response.accessToken) {
+			localStorage.setItem("accessToken", response.accessToken);
+		}
+		if (response.refreshToken) {
+			localStorage.setItem("refreshToken", response.refreshToken);
+		}
+
 		return response;
 	}
 
