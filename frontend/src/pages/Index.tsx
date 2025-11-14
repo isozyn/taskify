@@ -27,7 +27,8 @@ import {
   Workflow,
   Sparkles,
   Menu,
-  X
+  X,
+  GripVertical
 } from "lucide-react";
 const Index = () => {
   const navigate = useNavigate();
