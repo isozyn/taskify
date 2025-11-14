@@ -48,6 +48,10 @@ class ApiClient {
 			if (!response.ok) {
 				// Handle 401 Unauthorized - token expired or invalid
 				if (response.status === 401) {
+					// Clear tokens on 401
+					localStorage.removeItem("accessToken");
+					localStorage.removeItem("refreshToken");
+					
 					// Only redirect to auth if not already on auth/public pages
 					const currentPath = window.location.pathname;
 					const authPaths = [

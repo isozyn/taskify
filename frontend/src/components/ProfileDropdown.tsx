@@ -19,9 +19,20 @@ export const ProfileDropdown = () => {
 
   const handleLogout = async () => {
     try {
-      // Navigate first to prevent any protected route redirects
+      // Clear tokens first to prevent any 401 redirects during logout
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      
+      // Call logout endpoint (will fail but that's ok)
+      try {
+        await logout();
+      } catch (error) {
+        // Ignore errors during logout API call
+      }
+      
+      // Navigate to landing page
       navigate("/", { replace: true });
-      await logout();
+      
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
