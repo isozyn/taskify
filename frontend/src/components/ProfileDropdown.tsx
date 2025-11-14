@@ -19,15 +19,16 @@ export const ProfileDropdown = () => {
 
   const handleLogout = async () => {
     try {
+      // Navigate first to prevent any protected route redirects
+      navigate("/", { replace: true });
       await logout();
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
       });
-      navigate("/");
     } catch (error: any) {
       console.error("Logout error:", error);
-      navigate("/");
+      navigate("/", { replace: true });
     }
   };
 

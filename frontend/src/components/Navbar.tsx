@@ -1,7 +1,6 @@
 
-import { CheckSquare, Menu, X } from "lucide-react";
+import { CheckSquare } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/UserContext";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
@@ -9,11 +8,7 @@ import { ProfileDropdown } from "@/components/ProfileDropdown";
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated } = useUser();
-  
-  // Only show nav links on the landing page
-  const isLandingPage = location.pathname === "/";
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-b border-slate-200">
@@ -27,26 +22,10 @@ const Navbar = () => {
             <span className="text-xl font-bold text-slate-900">Taskify</span>
           </div>
 
-          {/* Desktop Navigation - Only on landing page */}
-          {isLandingPage && !isAuthenticated && (
-            <div className="hidden lg:flex items-center gap-1">
-              <button className="px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-                Products
-              </button>
-              <button className="px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-                Solutions
-              </button>
-              <button className="px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-                Teams
-              </button>
-              <button className="px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-                Resources
-              </button>
-              <button className="px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-                Pricing
-              </button>
-            </div>
-          )}
+          {/* Spacer for centering */}
+          <div className="flex-1"></div>
+
+
 
           {/* Right Side - Authenticated or Guest */}
           <div className="flex items-center gap-3">
@@ -62,7 +41,7 @@ const Navbar = () => {
                 <Button 
                   variant="ghost" 
                   onClick={() => navigate("/auth")}
-                  className="text-sm font-medium hidden sm:inline-flex hover:bg-slate-100"
+                  className="text-sm font-medium hidden sm:inline-flex text-slate-700 hover:text-slate-900 hover:bg-slate-100/80"
                 >
                   Sign in
                 </Button>
@@ -70,44 +49,15 @@ const Navbar = () => {
                   onClick={() => navigate("/auth")} 
                   className="bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-medium px-4 h-9 rounded-md shadow-sm"
                 >
-                  Get it free
+                  Get started
                 </Button>
               </>
-            )}
-            {isLandingPage && !isAuthenticated && (
-              <button 
-                className="lg:hidden p-2"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu - Only on landing page and not authenticated */}
-      {isLandingPage && !isAuthenticated && mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white/95 backdrop-blur-lg">
-          <div className="px-4 py-4 space-y-2">
-            <button className="w-full text-left px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-              Products
-            </button>
-            <button className="w-full text-left px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-              Solutions
-            </button>
-            <button className="w-full text-left px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-              Teams
-            </button>
-            <button className="w-full text-left px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-              Resources
-            </button>
-            <button className="w-full text-left px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-              Pricing
-            </button>
-          </div>
-        </div>
-      )}
+
     </nav>
   );
 };

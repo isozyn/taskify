@@ -318,23 +318,28 @@ export const logout = async (
 	try {
 		const { refreshToken } = req.cookies;
 
+		// Revoke refresh token from database if it exists
 		if (refreshToken) {
-			// Revoke refresh token from database
-			await userService.revokeRefreshToken(refreshToken);
+			try {
+				await userService.revokeRefreshToken(refreshToken);
+			} catch (error) {
+				// Token might not exist, continue with logout
+				console.log('Failed to revoke refresh token:', error);
+			}
 		}
 
-		// Clear both cookies
+		// Clear both cookies regardless of token existence
 		res.clearCookie("refreshToken", {
 			httpOnly: true,
-			secure: true,
-			sameSite: "none",
+			secure: process.env.NODE_ENV === "production",
+			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 			path: "/",
 		});
 
 		res.clearCookie("accessToken", {
 			httpOnly: true,
-			secure: true,
-			sameSite: "none",
+			secure: process.env.NODE_ENV === "production",
+			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 			path: "/",
 		});
 
