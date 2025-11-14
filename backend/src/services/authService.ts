@@ -36,7 +36,13 @@ export const generateAccessToken = (payload: TokenPayload): string => {
   const options: SignOptions = {
     expiresIn: JWT_EXPIRES_IN as any,
   };
-  const token = jwt.sign(payload, JWT_SECRET, options);
+  // Add issued-at timestamp to ensure token uniqueness per session
+  const uniquePayload = {
+    ...payload,
+    iat: Math.floor(Date.now() / 1000), // Issued at timestamp
+    jti: `${payload.id}-${Date.now()}-${Math.random()}`, // Unique JWT ID
+  };
+  const token = jwt.sign(uniquePayload, JWT_SECRET, options);
   return token;
 };
 
@@ -47,7 +53,13 @@ export const generateRefreshToken = (payload: TokenPayload): string => {
   const options: SignOptions = {
     expiresIn: JWT_REFRESH_EXPIRES_IN as any,
   };
-  const token = jwt.sign(payload, JWT_REFRESH_SECRET, options);
+  // Add issued-at timestamp to ensure token uniqueness per session
+  const uniquePayload = {
+    ...payload,
+    iat: Math.floor(Date.now() / 1000), // Issued at timestamp
+    jti: `${payload.id}-${Date.now()}-${Math.random()}`, // Unique JWT ID
+  };
+  const token = jwt.sign(uniquePayload, JWT_REFRESH_SECRET, options);
   return token;
 };
 
