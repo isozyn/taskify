@@ -148,8 +148,18 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 const startServer = async () => {
 	try {
 		httpServer.listen(PORT, () => {
+			console.log(`
+        ╔════════════════════════════════════════╗
+        ║   Taskify Backend Server Started       ║
+        ║   Port: ${PORT}                            ║
+        ║   Environment: ${process.env.NODE_ENV}            ║
+        ║   Frontend URL: ${process.env.FRONTEND_URL}   ║
+        ║   Socket.IO: Enabled                   ║
+        ╚════════════════════════════════════════╝
+      `);
 		});
 	} catch (error) {
+		console.error("Failed to start server:", error);
 		process.exit(1);
 	}
 };
