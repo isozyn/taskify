@@ -700,6 +700,7 @@ export const googleCallback = async (
 			httpOnly: true,
 			secure: isProduction,
 			sameSite: isProduction ? ("none" as const) : ("lax" as const),
+			path: "/",
 		};
 
 		res.cookie("refreshToken", refreshToken, {
@@ -710,9 +711,7 @@ export const googleCallback = async (
 		res.cookie("accessToken", accessToken, {
 			...cookieOptions,
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-		});
-
-		// In development with debug flag, show token for testing
+		}); // In development with debug flag, show token for testing
 		// Set OAUTH_DEBUG=true in .env to enable this page
 		if (
 			process.env.NODE_ENV === "development" &&
@@ -845,8 +844,12 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \\
 			return;
 		}
 
-		// In production, redirect to frontend dashboard
-		res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+		// In production, redirect to frontend with tokens in URL for localStorage storage
+		const redirectUrl =
+			`${process.env.FRONTEND_URL}/auth/callback?` +
+			`accessToken=${encodeURIComponent(accessToken)}&` +
+			`refreshToken=${encodeURIComponent(refreshToken)}`;
+		res.redirect(redirectUrl);
 	} catch (error) {
 		res.redirect(
 			`${process.env.FRONTEND_URL}/auth?error=google_auth_failed`
