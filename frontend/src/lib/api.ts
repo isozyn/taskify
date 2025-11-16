@@ -51,7 +51,7 @@ class ApiClient {
 					// Clear tokens on 401
 					localStorage.removeItem("accessToken");
 					localStorage.removeItem("refreshToken");
-					
+
 					// Only redirect to auth if not already on auth/public pages
 					const currentPath = window.location.pathname;
 					const authPaths = [
@@ -713,6 +713,8 @@ export interface AuthResponse {
 		role: string;
 		isEmailVerified: boolean;
 	};
+	accessToken?: string;
+	refreshToken?: string;
 }
 
 export interface MessageResponse {

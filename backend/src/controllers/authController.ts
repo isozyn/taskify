@@ -181,7 +181,16 @@ export const getCurrentUser = async (
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const { accessToken } = req.cookies;
+		// Try to get token from cookies first, then Authorization header
+		let accessToken = req.cookies.accessToken;
+
+		if (!accessToken) {
+			// Fall back to Authorization header for cross-origin requests
+			const authHeader = req.headers["authorization"];
+			if (authHeader && authHeader.startsWith("Bearer ")) {
+				accessToken = authHeader.substring(7); // Remove "Bearer " prefix
+			}
+		}
 
 		if (!accessToken) {
 			res.status(401).json({ message: "Not authenticated" });
@@ -191,7 +200,6 @@ export const getCurrentUser = async (
 		// Verify access token
 		const decoded = authService.verifyAccessToken(accessToken);
 
-		// Log for debugging
 		// Find user by ID
 		const user = await userService.findUserById(decoded.id);
 		if (!user) {
