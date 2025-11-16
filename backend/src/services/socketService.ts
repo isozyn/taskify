@@ -35,19 +35,25 @@ export const setupSocketIO = (httpServer: HTTPServer): SocketIOServer => {
 	// Authentication middleware
 	io.use(async (socket: AuthenticatedSocket, next) => {
 		try {
-			// Get token from cookies
-			const cookies = socket.handshake.headers.cookie;
-			if (!cookies) {
-				return next(new Error("No authentication cookie provided"));
+			let token: string | undefined;
+
+			// Try to get token from auth object (localStorage)
+			if (socket.handshake.auth?.token) {
+				token = socket.handshake.auth.token;
+			} else {
+				// Fallback to cookies
+				const cookies = socket.handshake.headers.cookie;
+				if (cookies) {
+					const tokenMatch = cookies.match(/accessToken=([^;]+)/);
+					if (tokenMatch) {
+						token = tokenMatch[1];
+					}
+				}
 			}
 
-			// Parse accessToken from cookie string
-			const tokenMatch = cookies.match(/accessToken=([^;]+)/);
-			if (!tokenMatch) {
-				return next(new Error("Access token not found in cookies"));
+			if (!token) {
+				return next(new Error("No authentication token provided"));
 			}
-
-			const token = tokenMatch[1];
 
 			// Verify token
 			const decoded = authService.verifyAccessToken(token);
