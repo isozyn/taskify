@@ -67,7 +67,6 @@ const AcceptInvitation = () => {
           navigate('/projects');
         }
       } catch (error: any) {
-        console.error('Failed to accept invitation:', error);
         // Still redirect to projects page on error
         navigate('/projects');
       } finally {

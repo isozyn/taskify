@@ -67,9 +67,6 @@ class ApiClient {
 					];
 
 					if (!authPaths.includes(currentPath)) {
-						console.log(
-							"[API] 401 Unauthorized - redirecting to login"
-						);
 						window.location.href = "/auth";
 					}
 				}
@@ -316,8 +313,6 @@ class ApiClient {
 			labelColor?: string;
 		}
 	) {
-		console.log("Creating task with data:", data);
-		console.log("Project ID:", projectId);
 		return this.request(`/projects/${projectId}/tasks`, {
 			method: "POST",
 			body: JSON.stringify(data),

@@ -13,7 +13,6 @@ export const getProjectActivities = async (req: Request, res: Response) => {
 
     res.json({ activities });
   } catch (error) {
-    console.error('Error fetching project activities:', error);
     res.status(500).json({ error: 'Failed to fetch activities' });
   }
 };

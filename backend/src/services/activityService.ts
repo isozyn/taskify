@@ -16,7 +16,6 @@ export const activityService = {
       });
       return activity;
     } catch (error) {
-      console.error('Error logging activity:', error);
       throw error;
     }
   },
@@ -35,7 +34,6 @@ export const activityService = {
       });
       return activities;
     } catch (error) {
-      console.error('Error fetching activities:', error);
       throw error;
     }
   },

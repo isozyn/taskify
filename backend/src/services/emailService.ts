@@ -9,13 +9,7 @@ const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "noreply@taskify.com";
 const FROM_NAME = process.env.SENDGRID_FROM_NAME || "Taskify";
 
 // Log configuration on startup (for debugging)
-console.log("📧 SendGrid Email Service Initialized");
-console.log(`   FROM_EMAIL: ${FROM_EMAIL}`);
-console.log(`   FROM_NAME: ${FROM_NAME}`);
-console.log(`   API_KEY configured: ${SENDGRID_API_KEY ? "Yes" : "No"}`);
-
 if (!SENDGRID_API_KEY) {
-	console.error("❌ CRITICAL: SENDGRID_API_KEY is not set!");
 }
 
 // Initialize SendGrid with API key
@@ -30,10 +24,6 @@ export const sendVerificationEmail = async (
 	userName: string
 ): Promise<void> => {
 	try {
-		console.log(
-			`📧 [SendGrid] Attempting to send verification email to: ${email}`
-		);
-
 		// Validate configuration
 		if (!SENDGRID_API_KEY) {
 			throw new Error("SendGrid API key is not configured");
@@ -52,11 +42,6 @@ export const sendVerificationEmail = async (
 
 		// Build verification link
 		const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-
-		console.log(
-			`📧 [SendGrid] Verification link generated: ${verificationLink}`
-		);
-
 		// Email HTML content - optimized for email clients
 		const htmlContent = `
       <!DOCTYPE html>
@@ -100,14 +85,8 @@ export const sendVerificationEmail = async (
         </body>
       </html>
     `;
-
-		console.log(`📧 [SendGrid] Preparing to send email...`);
-		console.log(`   From: ${FROM_NAME} <${FROM_EMAIL}>`);
-		console.log(`   To: ${email}`);
-		console.log(`   Subject: Verify your Taskify email`);
-
 		// Send email via SendGrid
-		const result = await sgMail.send({
+		await sgMail.send({
 			to: email,
 			from: {
 				email: FROM_EMAIL,
@@ -117,29 +96,7 @@ export const sendVerificationEmail = async (
 			html: htmlContent,
 			text: `Hi ${userName},\n\nPlease verify your email by clicking this link:\n${verificationLink}\n\nThis link will expire in 7 days.\n\nIf you didn't create this account, you can safely ignore this email.`,
 		});
-
-		console.log(
-			`✅ [SendGrid] Verification email sent successfully to ${email}`
-		);
-		console.log(`   SendGrid Response Status: ${result[0]?.statusCode}`);
 	} catch (error: any) {
-		console.error("❌ [SendGrid] Failed to send verification email");
-		console.error("   Recipient:", email);
-		console.error("   Error type:", error.constructor.name);
-		console.error("   Error message:", error.message);
-
-		// Log detailed SendGrid error
-		if (error.response) {
-			console.error(
-				"   SendGrid Response Status:",
-				error.response.statusCode
-			);
-			console.error(
-				"   SendGrid Response Body:",
-				JSON.stringify(error.response.body, null, 2)
-			);
-		}
-
 		// Throw a more descriptive error
 		const errorMessage =
 			error.response?.body?.errors?.[0]?.message ||
@@ -259,14 +216,6 @@ export const sendProjectInvitationEmail = async (
     `;
 
 		// Debug email sending
-		console.log(`📧 Sending project invitation email:`);
-		console.log(`   To: ${email}`);
-		console.log(`   From: ${FROM_NAME} <${FROM_EMAIL}>`);
-		console.log(
-			`   Subject: You're invited to join "${projectName}" on Taskify`
-		);
-		console.log(`   Inviter: ${inviterName}`);
-
 		// Build plain text timeline
 		const textTimeline =
 			formattedStartDate || formattedEndDate
@@ -288,13 +237,7 @@ export const sendProjectInvitationEmail = async (
 			html: htmlContent,
 			text: `Hi there,\n\n${inviterName} has invited you to join the project "${projectName}" on Taskify.\n\nYou've been assigned the role: ${role}${textTimeline}\n\nClick this link to accept the invitation:\n${invitationLink}\n\nIf you don't have a Taskify account yet, you'll be able to create one during the invitation process.`,
 		});
-
-		console.log(`✅ Project invitation email sent to ${email}`);
 	} catch (error: any) {
-		console.error(
-			"❌ Failed to send project invitation email:",
-			error.response?.body || error
-		);
 		throw new Error("Failed to send project invitation email");
 	}
 };
@@ -365,13 +308,7 @@ export const sendPasswordResetEmail = async (
 			html: htmlContent,
 			text: `Hi ${userName},\n\nClick this link to reset your password:\n${resetLink}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this, you can safely ignore this email.`,
 		});
-
-		console.log(`✅ Password reset email sent to ${email}`);
 	} catch (error: any) {
-		console.error(
-			"❌ Failed to send password reset email:",
-			error.response?.body || error
-		);
 		throw new Error("Failed to send password reset email");
 	}
 };

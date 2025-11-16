@@ -31,7 +31,6 @@ const CalendarSyncTest = () => {
 				description: "Task synced to Google Calendar!",
 			});
 		} catch (error: any) {
-			console.error("Sync error:", error);
 			toast({
 				title: "Sync Failed",
 				description: error.message || "Failed to sync task",
@@ -60,7 +59,6 @@ const CalendarSyncTest = () => {
 				description: "Task removed from Google Calendar!",
 			});
 		} catch (error: any) {
-			console.error("Unsync error:", error);
 			toast({
 				title: "Unsync Failed",
 				description: error.message || "Failed to remove task",

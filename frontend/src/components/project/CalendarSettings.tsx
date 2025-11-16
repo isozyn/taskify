@@ -30,7 +30,6 @@ const CalendarSettings = () => {
 			const response: any = await api.getCalendarSyncStatus();
 			setSyncStatus(response);
 		} catch (error: any) {
-			console.error("Failed to fetch sync status:", error);
 			toast({
 				title: "Error",
 				description: "Failed to fetch calendar sync status",
@@ -68,7 +67,6 @@ const CalendarSettings = () => {
 			}
 			setSyncStatus({ ...syncStatus, calendarSyncEnabled: enabled });
 		} catch (error: any) {
-			console.error("Failed to toggle sync:", error);
 			toast({
 				title: "Error",
 				description: error.message || "Failed to toggle calendar sync",
@@ -90,7 +88,6 @@ const CalendarSettings = () => {
 				throw new Error('No OAuth URL received');
 			}
 		} catch (error: any) {
-			console.error('Failed to initiate Google OAuth:', error);
 			toast({
 				title: "Error",
 				description: "Failed to connect to Google Calendar. Please try again.",

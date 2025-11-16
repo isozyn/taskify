@@ -26,9 +26,6 @@ export const authenticateToken = (
 ): void => {
 	try {
 		// Debug logging
-		console.log("[Auth] Cookies received:", req.cookies);
-		console.log("[Auth] Headers:", req.headers);
-
 		// Get token from cookies first, then fall back to Authorization header
 		let token = req.cookies?.accessToken;
 
@@ -39,12 +36,9 @@ export const authenticateToken = (
 		}
 
 		if (!token) {
-			console.log("[Auth] ❌ No token found in cookies or headers");
 			res.status(401).json({ message: "Access token not provided" });
 			return;
 		}
-
-		console.log("[Auth] ✅ Token found:", token.substring(0, 20) + "...");
 
 		// Verify token
 		const decoded = authService.verifyAccessToken(token);

@@ -256,7 +256,6 @@ export class ConversationService {
     });
 
     if (existingConversation) {
-      console.log(`✅ Found existing conversation ${existingConversation.id} between users ${userId1} and ${userId2}`);
       // Transform members to match frontend expectations
       const transformedConversation = {
         ...existingConversation,
@@ -272,7 +271,6 @@ export class ConversationService {
     }
 
     // Create new conversation
-    console.log(`🆕 Creating new conversation between users ${userId1} and ${userId2}`);
     return this.createConversation({
       type: 'DIRECT',
       projectId,
@@ -380,9 +378,6 @@ export class ConversationService {
     if (!allMemberIds.includes(project.ownerId)) {
       allMemberIds.push(project.ownerId);
     }
-
-    console.log(`👥 Creating group chat with ${allMemberIds.length} members for project ${projectId}`);
-
     // Create group conversation with all project members
     const conversation = await this.createConversation({
       name,

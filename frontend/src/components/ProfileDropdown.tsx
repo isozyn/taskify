@@ -38,7 +38,6 @@ export const ProfileDropdown = () => {
         description: "You have been logged out of your account.",
       });
     } catch (error: any) {
-      console.error("Logout error:", error);
       navigate("/", { replace: true });
     }
   };

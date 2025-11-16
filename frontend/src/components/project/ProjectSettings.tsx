@@ -189,40 +189,22 @@ const ProjectSettings = ({
 		try {
 			setIsLoadingMembers(true);
 			const response = await api.getProjectMembers(project.id);
-			console.log("Members response:", response);
 			// Ensure response is always an array
 			if (Array.isArray(response)) {
 				setMembers(response);
 				// Find current user's role
 				if (user?.id) {
-					console.log("Current user from context:", user);
 					const currentMember = response.find((m: any) => {
-						console.log(
-							"Checking member:",
-							m,
-							"against user ID:",
-							user.id
-						);
 						return m.userId === user.id;
 					});
-					console.log("Found current member:", currentMember);
 					if (currentMember) {
 						setCurrentUserRole(currentMember.role);
-						console.log(
-							"Set current user role to:",
-							currentMember.role
-						);
 					}
 				}
 			} else {
 				setMembers([]);
-				console.warn(
-					"API returned non-array response for members:",
-					response
-				);
 			}
 		} catch (err: any) {
-			console.error("Failed to fetch members:", err);
 			setMembers([]); // Set empty array on error
 		} finally {
 			setIsLoadingMembers(false);
@@ -248,7 +230,6 @@ const ProjectSettings = ({
 				onProjectUpdate();
 			}
 		} catch (err: any) {
-			console.error("Failed to update project:", err);
 			toast({
 				title: "Error",
 				description: err.message || "Failed to update project",
@@ -317,7 +298,6 @@ const ProjectSettings = ({
 			setNewMemberEmail("");
 			setNewMemberRole("MEMBER");
 		} catch (err: any) {
-			console.error("Failed to add member:", err);
 			toast({
 				title: "Error",
 				description: err.message || "Failed to invite member",
@@ -343,7 +323,6 @@ const ProjectSettings = ({
 				description: "Member role updated successfully!",
 			});
 		} catch (err: any) {
-			console.error("Failed to update member role:", err);
 			toast({
 				title: "Error",
 				description: err.message || "Failed to update member role",
@@ -374,7 +353,6 @@ const ProjectSettings = ({
 			setIsRemoveMemberDialogOpen(false);
 			setMemberToRemove(null);
 		} catch (err: any) {
-			console.error("Failed to remove member:", err);
 			toast({
 				title: "Error",
 				description: err.message || "Failed to remove member",
@@ -392,7 +370,6 @@ const ProjectSettings = ({
 			// Navigate to dashboard after successful deletion
 			navigate("/dashboard");
 		} catch (err: any) {
-			console.error("Failed to delete project:", err);
 			toast({
 				title: "Error",
 				description: err.message || "Failed to delete project",
@@ -955,7 +932,6 @@ const ProjectSettings = ({
 						isOpen={isMemberModalOpen}
 						onOpenChange={setIsMemberModalOpen}
 						onNavigateToTask={(taskId) => {
-							console.log("Navigating to task:", taskId);
 							if (onNavigateToBoard) {
 								onNavigateToBoard();
 							}

@@ -67,7 +67,6 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
     try {
       localStorage.setItem(getStorageKey(), JSON.stringify(Array.from(columnIds)));
     } catch (error) {
-      console.error("Failed to save column preferences:", error);
     }
   };
 
@@ -79,7 +78,6 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
         return new Set(ids);
       }
     } catch (error) {
-      console.error("Failed to load column preferences:", error);
     }
     return null;
   };
@@ -88,10 +86,8 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
   const fetchActivities = async () => {
     try {
       const activitiesResponse: any = await api.getProjectActivities(project.id, 10);
-      console.log("ProjectOverview - Fetched activities:", activitiesResponse);
       setActivities(activitiesResponse?.activities || []);
     } catch (error) {
-      console.error("Failed to fetch activities:", error);
       setActivities([]);
     }
   };
@@ -104,14 +100,12 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
         
         // Fetch tasks
         const tasksResponse: any = await api.getTasksByProject(project.id);
-        console.log("ProjectOverview - Fetched tasks:", tasksResponse);
         setTasks(Array.isArray(tasksResponse) ? tasksResponse : []);
         
         // Fetch custom columns if it's a custom workflow
         if (workflowType === "custom") {
           try {
             const columnsResponse: any = await api.getCustomColumns(project.id);
-            console.log("ProjectOverview - Fetched columns:", columnsResponse);
             const columnsArray = Array.isArray(columnsResponse) ? columnsResponse : columnsResponse?.columns || [];
             setCustomColumns(columnsArray);
             
@@ -132,7 +126,6 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
               saveColumnPreferences(allColumnIds);
             }
           } catch (error) {
-            console.error("Failed to fetch custom columns:", error);
             setCustomColumns([]);
           }
         }
@@ -140,7 +133,6 @@ const ProjectOverview = ({ project, workflowType = "auto-sync", onNavigateToBoar
         // Fetch recent activities
         await fetchActivities();
       } catch (error) {
-        console.error("Failed to fetch tasks:", error);
       } finally {
         setLoading(false);
       }

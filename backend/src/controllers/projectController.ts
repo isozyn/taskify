@@ -9,29 +9,18 @@ export class ProjectController {
 	 */
 	static async createProject(req: Request, res: Response): Promise<void> {
 		try {
-			console.log("=== CREATE PROJECT DEBUG ===");
-			console.log("Request body:", req.body);
-			console.log("User from token:", (req as any).user);
-
 			const userId = (req as any).user?.id; // Changed from userId to id
 
 			if (!userId) {
-				console.log("No userId found in request");
 				res.status(401).json({ error: "Unauthorized" });
 				return;
 			}
-
-			console.log("Creating project with userId:", userId);
-
 			const project = await ProjectService.createProject({
 				...req.body,
 				ownerId: userId,
 			});
-
-			console.log("Project created successfully:", project);
 			res.status(201).json(project);
 		} catch (error: any) {
-			console.error("Create project error:", error);
 			res.status(400).json({
 				error: error.message || "Failed to create project",
 			});
@@ -51,17 +40,8 @@ export class ProjectController {
 			}
 
 			const projects = await ProjectService.getProjectsByUserId(userId);
-			console.log(
-				"Returning projects with isStarred:",
-				projects.map((p) => ({
-					id: p.id,
-					title: p.title,
-					isStarred: p.isStarred,
-				}))
-			);
 			res.status(200).json(projects);
 		} catch (error: any) {
-			console.error("Get projects error:", error);
 			res.status(500).json({
 				error: error.message || "Failed to fetch projects",
 			});
@@ -89,7 +69,6 @@ export class ProjectController {
 
 			res.status(200).json(project);
 		} catch (error: any) {
-			console.error("Get project error:", error);
 			res.status(500).json({
 				error: error.message || "Failed to fetch project",
 			});
@@ -120,7 +99,6 @@ export class ProjectController {
 
 			res.status(200).json(project);
 		} catch (error: any) {
-			console.error("Update project error:", error);
 			res.status(400).json({
 				error: error.message || "Failed to update project",
 			});
@@ -142,7 +120,6 @@ export class ProjectController {
 			await ProjectService.deleteProject(projectId);
 			res.status(200).json({ message: "Project deleted successfully" });
 		} catch (error: any) {
-			console.error("Delete project error:", error);
 			res.status(400).json({
 				error: error.message || "Failed to delete project",
 			});
@@ -156,13 +133,6 @@ export class ProjectController {
 		try {
 			const projectId = parseInt(req.params.projectId);
 			const { isStarred } = req.body;
-
-			console.log("Toggle star request:", {
-				projectId,
-				isStarred,
-				body: req.body,
-			});
-
 			if (isNaN(projectId)) {
 				res.status(400).json({ error: "Invalid project ID" });
 				return;
@@ -182,15 +152,8 @@ export class ProjectController {
 				res.status(404).json({ error: "Project not found" });
 				return;
 			}
-
-			console.log("Star toggled successfully:", {
-				id: project.id,
-				title: project.title,
-				isStarred: project.isStarred,
-			});
 			res.status(200).json(project);
 		} catch (error: any) {
-			console.error("Toggle star error:", error);
 			res.status(400).json({
 				error: error.message || "Failed to toggle star",
 			});
@@ -228,7 +191,6 @@ export class ProjectController {
 			);
 			res.status(200).json(result);
 		} catch (error: any) {
-			console.error("Invite members error:", error);
 			res.status(400).json({
 				error: error.message || "Failed to invite members",
 			});
@@ -250,7 +212,6 @@ export class ProjectController {
 			const members = await ProjectService.getProjectMembers(projectId);
 			res.status(200).json(members);
 		} catch (error: any) {
-			console.error("Get project members error:", error);
 			res.status(500).json({
 				error: error.message || "Failed to fetch project members",
 			});
@@ -285,7 +246,6 @@ export class ProjectController {
 			);
 			res.status(200).json(updatedMember);
 		} catch (error: any) {
-			console.error("Update member role error:", error);
 			res.status(400).json({
 				error: error.message || "Failed to update member role",
 			});
@@ -314,7 +274,6 @@ export class ProjectController {
 			await ProjectService.removeMember(projectId, memberId, userId);
 			res.status(200).json({ message: "Member removed successfully" });
 		} catch (error: any) {
-			console.error("Remove member error:", error);
 			res.status(400).json({
 				error: error.message || "Failed to remove member",
 			});
@@ -353,7 +312,6 @@ export class ProjectController {
 				res.status(400).json(result);
 			}
 		} catch (error: any) {
-			console.error("Accept invitation error:", error);
 			res.status(500).json({
 				error: error.message || "Failed to accept invitation",
 			});

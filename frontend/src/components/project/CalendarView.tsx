@@ -38,7 +38,6 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
                 const response: any = await api.getCalendarSyncStatus();
                 setSyncStatus(response);
             } catch (error) {
-                console.error("Failed to fetch sync status:", error);
             }
         };
         fetchSyncStatus();
@@ -127,9 +126,7 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
         if (event?.googleCalendarEventId && syncStatus.calendarSyncEnabled) {
             try {
                 await api.deleteCalendarEvent(event.googleCalendarEventId);
-                console.log('Google Calendar event deleted successfully');
             } catch (error) {
-                console.error('Failed to delete Google Calendar event:', error);
             }
         }
     };
@@ -153,8 +150,6 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
         
         // Add to local state immediately for instant feedback
         setCustomEvents(prev => [...prev, newEvent]);
-        console.log('Event created and added to calendar:', newEvent);
-
         // If it's a meeting and calendar sync is enabled, create in Google Calendar
         if (eventData.type === 'meeting' && syncStatus.calendarSyncEnabled && syncStatus.calendarConnected) {
             try {
@@ -171,8 +166,6 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
                     attendees: attendeeEmails,
                     includeGoogleMeet: true,
                 };
-
-                console.log('Creating Google Calendar event:', calendarEventData);
                 const response: any = await api.createCalendarEvent(calendarEventData);
                 
                 if (response.event) {
@@ -187,16 +180,12 @@ const CalendarView = ({ projectMembers, project }: CalendarViewProps) => {
                     setCustomEvents(prev => 
                         prev.map(e => e.id === newEvent.id ? updatedEvent : e)
                     );
-                    
-                    console.log('Google Calendar event created successfully:', response.event);
                 }
             } catch (error) {
-                console.error('Failed to create Google Calendar event:', error);
                 // Event is still in local calendar even if Google sync fails
             }
         }
     };
-
 
 
     // Get event statistics

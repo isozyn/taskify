@@ -35,7 +35,6 @@ export class CalendarController {
         calendarSyncEnabled: true,
       });
     } catch (error: any) {
-      console.error('Enable sync error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to enable calendar sync' 
       });
@@ -62,7 +61,6 @@ export class CalendarController {
         calendarSyncEnabled: false,
       });
     } catch (error: any) {
-      console.error('Disable sync error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to disable calendar sync' 
       });
@@ -90,7 +88,6 @@ export class CalendarController {
         calendarConnected: isConnected,
       });
     } catch (error: any) {
-      console.error('Get sync status error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to get sync status' 
       });
@@ -120,7 +117,6 @@ export class CalendarController {
       
       res.status(200).json({ events });
     } catch (error: any) {
-      console.error('Get events error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to fetch calendar events' 
       });
@@ -177,7 +173,6 @@ export class CalendarController {
         event: calendarEvent 
       });
     } catch (error: any) {
-      console.error('Sync task error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to sync task' 
       });
@@ -229,7 +224,6 @@ export class CalendarController {
         message: 'Task removed from Google Calendar' 
       });
     } catch (error: any) {
-      console.error('Unsync task error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to remove task from calendar' 
       });
@@ -299,7 +293,6 @@ export class CalendarController {
         event: calendarEvent 
       });
     } catch (error: any) {
-      console.error('Sync project error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to sync project' 
       });
@@ -351,7 +344,6 @@ export class CalendarController {
         message: 'Project removed from Google Calendar' 
       });
     } catch (error: any) {
-      console.error('Unsync project error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to remove project from calendar' 
       });
@@ -396,7 +388,6 @@ export class CalendarController {
         event 
       });
     } catch (error: any) {
-      console.error('Create event error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to create calendar event' 
       });
@@ -437,7 +428,6 @@ export class CalendarController {
         event 
       });
     } catch (error: any) {
-      console.error('Update event error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to update calendar event' 
       });
@@ -465,7 +455,6 @@ export class CalendarController {
         message: 'Calendar event deleted successfully' 
       });
     } catch (error: any) {
-      console.error('Delete event error:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to delete calendar event' 
       });

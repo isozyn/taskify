@@ -65,7 +65,6 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
               order: i,
             });
           } catch (subtaskError) {
-            console.error(`Failed to create subtask ${i + 1}:`, subtaskError);
           }
         }
       }
@@ -75,12 +74,10 @@ const KanbanBoardAutoSync = ({ projectMembers, projectId: propProjectId, onTasks
       
       setIsCreateTaskModalOpen(false);
     } catch (error: any) {
-      console.error('Failed to create task:', error);
       const errorMessage = error?.message || 'Unknown error occurred';
       alert(`Failed to create task: ${errorMessage}`);
     }
   };
-
 
 
   // Fixed columns for auto-sync mode

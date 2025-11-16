@@ -65,7 +65,6 @@ export const verifyGoogleToken = async (code: string) => {
       tokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
     };
   } catch (error) {
-    console.error('Error verifying Google token:', error);
     throw new Error('Failed to verify Google token');
   }
 };
@@ -93,7 +92,6 @@ export const getUserInfoFromToken = async (accessToken: string) => {
       googleId: (data as any).sub,
     };
   } catch (error) {
-    console.error('Error getting user info from Google:', error);
     throw new Error('Failed to get user info from Google');
   }
 };

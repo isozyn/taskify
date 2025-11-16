@@ -74,7 +74,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
   };
 
 
-
   const handleCreateTask = async (taskData: any) => {
     if (!projectId) return;
     
@@ -99,7 +98,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
       // Notify parent to refresh
       onTasksChange?.();
     } catch (error) {
-      console.error('Failed to create task:', error);
     }
   };
 
@@ -125,7 +123,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         setNewCardTitle("");
         setAddingCardInColumn(null);
       } catch (error) {
-        console.error('Failed to quick add task:', error);
       }
     }
   };
@@ -145,8 +142,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         };
         
         const newColumn = await api.createCustomColumn(projectId, newColumnData);
-        console.log("Stage created:", newColumn);
-        
         // Refresh columns list
         queryClient.invalidateQueries({ queryKey: projectKeys.columns(projectId) });
         
@@ -156,7 +151,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         // Notify parent that columns have changed
         onColumnsChange?.();
       } catch (error) {
-        console.error('Failed to create column:', error);
       }
     }
   };
@@ -172,8 +166,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         await api.updateCustomColumn(typeof columnId === 'number' ? columnId : parseInt(columnId), {
           title: editingColumnTitle,
         });
-        console.log("Column updated:", editingColumnId);
-        
         // Refresh columns list
         queryClient.invalidateQueries({ queryKey: projectKeys.columns(projectId) });
         
@@ -183,7 +175,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
         // Notify parent that columns have changed
         onColumnsChange?.();
       } catch (error) {
-        console.error('Failed to update column:', error);
       }
     }
   };
@@ -206,7 +197,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
           try {
             await api.updateTask(task.id, { status: firstColumnStatus });
           } catch (error) {
-            console.error('Failed to move task:', error);
           }
         }
         
@@ -216,15 +206,12 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
       
       // Delete the column from backend
       await api.deleteCustomColumn(typeof columnId === 'number' ? columnId : parseInt(columnId));
-      console.log("Stage deleted:", columnId);
-      
       // Refresh columns list
       queryClient.invalidateQueries({ queryKey: projectKeys.columns(projectId) });
       
       // Notify parent that columns have changed
       onColumnsChange?.();
     } catch (error) {
-      console.error('Failed to delete column:', error);
     }
   };
 
@@ -254,10 +241,7 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
       
       // Notify parent to refresh (lightweight)
       onTasksChange?.();
-      
-      console.log(`Moved task ${taskId} to stage ${columnId}`);
     } catch (error) {
-      console.error('Failed to move task:', error);
     }
   };
 
@@ -286,7 +270,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
       onTasksChange?.();
       setSelectedTask(null);
     } catch (error) {
-      console.error('Failed to refresh tasks:', error);
     }
   };
 
@@ -298,10 +281,8 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
       onTasksChange?.();
       setSelectedTask(null);
     } catch (error) {
-      console.error('Failed to refresh tasks:', error);
     }
   };
-
 
 
   // Helper function to calculate progress based on subtasks
@@ -312,7 +293,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
     const completedSubtasks = task.subtasks.filter((subtask: any) => subtask.completed).length;
     return Math.round((completedSubtasks / task.subtasks.length) * 100);
   };
-
 
 
   return (
@@ -689,8 +669,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
           onTaskUpdate={async () => {
             try {
               queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
-              console.log("KanbanBoardCustom - Refreshed tasks after update");
-              
               // Update the selectedTask with fresh data to reflect changes in modal
               if (selectedTask && projectId) {
                 // Get updated task data
@@ -702,7 +680,6 @@ const KanbanBoardCustom = ({ projectMembers, projectId, onTasksChange, onColumns
               
               onTasksChange?.();
             } catch (error) {
-              console.error('Failed to refetch tasks:', error);
             }
           }}
           projectMembers={projectMembers}

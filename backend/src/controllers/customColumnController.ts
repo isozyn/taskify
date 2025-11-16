@@ -19,7 +19,6 @@ export class CustomColumnController {
       const columns = await CustomColumnService.getColumnsByProjectId(projectId);
       return res.status(200).json(columns);
     } catch (error: any) {
-      console.error('Error fetching custom columns:', error);
       return res.status(500).json({ error: 'Failed to fetch custom columns' });
     }
   }
@@ -44,7 +43,6 @@ export class CustomColumnController {
 
       return res.status(200).json(column);
     } catch (error: any) {
-      console.error('Error fetching column:', error);
       return res.status(500).json({ error: 'Failed to fetch column' });
     }
   }
@@ -76,8 +74,6 @@ export class CustomColumnController {
 
       return res.status(201).json(column);
     } catch (error: any) {
-      console.error('Error creating column:', error);
-      
       if (error.message === 'Project not found') {
         return res.status(404).json({ error: error.message });
       }
@@ -112,8 +108,6 @@ export class CustomColumnController {
 
       return res.status(200).json(column);
     } catch (error: any) {
-      console.error('Error updating column:', error);
-      
       if (error.code === 'P2025') {
         return res.status(404).json({ error: 'Column not found' });
       }
@@ -138,8 +132,6 @@ export class CustomColumnController {
 
       return res.status(200).json({ message: 'Column deleted successfully' });
     } catch (error: any) {
-      console.error('Error deleting column:', error);
-      
       if (error.message === 'Column not found') {
         return res.status(404).json({ error: error.message });
       }
@@ -170,7 +162,6 @@ export class CustomColumnController {
 
       return res.status(200).json({ message: 'Columns reordered successfully' });
     } catch (error: any) {
-      console.error('Error reordering columns:', error);
       return res.status(500).json({ error: 'Failed to reorder columns' });
     }
   }

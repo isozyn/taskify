@@ -54,7 +54,6 @@ export class TaskCalendarSync {
         }
       }
     } catch (error) {
-      console.error('Auto-sync error:', error);
       // Don't throw - we don't want sync failures to break task operations
     }
   }
@@ -77,7 +76,6 @@ export class TaskCalendarSync {
         task.googleCalendarEventId
       );
     } catch (error) {
-      console.error('Auto-unsync error:', error);
       // Don't throw - we don't want sync failures to break task operations
     }
   }

@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, GripVertical } from "lucide-react";
 import KanbanBoardAutoSync from "./KanbanBoardAutoSync";
@@ -27,9 +27,7 @@ const KanbanBoard = ({ projectMembers, onWorkflowChange, workflowType: initialWo
         await api.updateProject(projectId, {
           workflowType: template === "auto-sync" ? "AUTOMATED" : "CUSTOM"
         });
-        console.log(`Updated project workflow type to ${template}`);
       } catch (error) {
-        console.error('Failed to update project workflow type:', error);
       }
     }
   };

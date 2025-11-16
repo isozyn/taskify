@@ -23,7 +23,6 @@ export class NoteController {
 			const notes = await NoteService.getNotesByProject(projectId, userId);
 			res.status(200).json(notes);
 		} catch (error: any) {
-			console.error("Get notes error:", error);
 			res.status(500).json({
 				error: error.message || "Failed to fetch notes",
 			});
@@ -56,7 +55,6 @@ export class NoteController {
 
 			res.status(201).json(note);
 		} catch (error: any) {
-			console.error("Create note error:", error);
 			res.status(400).json({
 				error: error.message || "Failed to create note",
 			});
@@ -90,7 +88,6 @@ export class NoteController {
 
 			res.status(200).json(note);
 		} catch (error: any) {
-			console.error("Update note error:", error);
 			res.status(400).json({
 				error: error.message || "Failed to update note",
 			});
@@ -118,7 +115,6 @@ export class NoteController {
 			await NoteService.deleteNote(noteId, userId);
 			res.status(200).json({ message: "Note deleted successfully" });
 		} catch (error: any) {
-			console.error("Delete note error:", error);
 			res.status(400).json({
 				error: error.message || "Failed to delete note",
 			});

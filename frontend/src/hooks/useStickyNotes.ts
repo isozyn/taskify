@@ -38,7 +38,6 @@ export const useStickyNotes = (projectId: string = 'default') => {
         }));
         setNotes(apiNotes);
       } catch (error) {
-        console.error('Error loading notes:', error);
       } finally {
         setIsLoading(false);
       }
@@ -73,7 +72,6 @@ export const useStickyNotes = (projectId: string = 'default') => {
       setNotes(prev => [...prev, newNote]);
       return newNote.id;
     } catch (error) {
-      console.error('Error creating note:', error);
       return '';
     }
   }, [projectId]);
@@ -101,7 +99,6 @@ export const useStickyNotes = (projectId: string = 'default') => {
         await api.updateNote(parseInt(id), apiUpdates);
       }
     } catch (error) {
-      console.error('Error updating note:', error);
       // Revert on error - reload notes
       const response = await api.getNotesByProject(parseInt(projectId));
       const apiNotes = response.map((note: any) => ({
@@ -129,7 +126,6 @@ export const useStickyNotes = (projectId: string = 'default') => {
 
       await api.deleteNote(parseInt(id));
     } catch (error) {
-      console.error('Error deleting note:', error);
       // Revert on error - reload notes
       const response = await api.getNotesByProject(parseInt(projectId));
       const apiNotes = response.map((note: any) => ({
@@ -158,7 +154,6 @@ export const useStickyNotes = (projectId: string = 'default') => {
       // Delete all notes
       await Promise.all(notesToDelete.map(note => api.deleteNote(parseInt(note.id))));
     } catch (error) {
-      console.error('Error clearing notes:', error);
     }
   }, [notes, projectId]);
 
@@ -190,7 +185,6 @@ export const useStickyNotes = (projectId: string = 'default') => {
       setNotes(prev => [...prev, duplicatedNote]);
       return duplicatedNote.id;
     } catch (error) {
-      console.error('Error duplicating note:', error);
       return '';
     }
   }, [notes, projectId]);

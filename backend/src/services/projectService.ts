@@ -39,13 +39,7 @@ export class ProjectService {
 			},
 		});
 
-		console.log(
-			`[Project] Creator (userId: ${data.ownerId}) added as OWNER to project ${project.id}`
-		);
-
-		// Custom workflow starts empty - users add columns as needed
-
-		// Fetch and return the complete project with members and owner
+		// Custom workflow starts empty - users add columns as needed		// Fetch and return the complete project with members and owner
 		const completeProject = await prisma.project.findUnique({
 			where: { id: project.id },
 			include: {
@@ -101,7 +95,6 @@ export class ProjectService {
 					});
 				}
 			} catch (error) {
-				console.error("Failed to sync project to calendar:", error);
 				// Don't fail project creation if calendar sync fails
 			}
 		}
@@ -208,7 +201,6 @@ export class ProjectService {
 					}
 				}
 			} catch (error) {
-				console.error("Failed to sync project to calendar:", error);
 				// Don't fail project update if calendar sync fails
 			}
 		}
@@ -363,15 +355,7 @@ export class ProjectService {
 				} else {
 					// For non-existing users, send invitation
 					// They can create account when they accept invitation
-					console.log(
-						`User ${member.email} doesn't exist yet, sending invitation anyway`
-					);
 				} // Send invitation email (for both existing and new users)
-				console.log(`Sending invitation email to: ${member.email}`);
-				console.log(`Project: ${project.title}`);
-				console.log(`Inviter: ${inviter.name}`);
-				console.log(`Role: ${member.role}`);
-
 				await sendProjectInvitationEmail(
 					member.email,
 					project.title,
@@ -383,7 +367,6 @@ export class ProjectService {
 
 				success.push(`Invitation sent to ${member.email}`);
 			} catch (error) {
-				console.error(`Failed to invite ${member.email}:`, error);
 				errors.push(
 					`Failed to invite ${member.email}: ${
 						error instanceof Error ? error.message : "Unknown error"
@@ -510,7 +493,6 @@ export class ProjectService {
 				projectId: project.id,
 			};
 		} catch (error) {
-			console.error("Accept invitation error:", error);
 			return {
 				success: false,
 				message: "Failed to accept invitation",

@@ -70,19 +70,13 @@ const Dashboard = () => {
 			try {
 				setIsLoadingProjects(true);
 				const response: any = await api.getProjects();
-				console.log("Fetched projects:", response);
 				// Ensure isStarred defaults to false if not present
 				const projectsWithStarred = (response || []).map((p: any) => ({
 					...p,
 					isStarred: p.isStarred ?? false,
 				}));
-				console.log(
-					"Projects with starred field:",
-					projectsWithStarred
-				);
 				setProjects(projectsWithStarred);
 			} catch (error) {
-				console.error("Failed to fetch projects:", error);
 			} finally {
 				setIsLoadingProjects(false);
 			}
@@ -104,9 +98,6 @@ const Dashboard = () => {
 				setIsCreatingProject(true);
 
 				if (!isAuthenticated) {
-					console.error(
-						"User not authenticated, redirecting to login"
-					);
 					navigate("/auth");
 					setIsCreatingProject(false);
 					return;
@@ -150,10 +141,6 @@ const Dashboard = () => {
 									}))
 								);
 							} catch (inviteError) {
-								console.error(
-									"Failed to send some invitations:",
-									inviteError
-								);
 								// Continue anyway, project was created successfully
 							}
 						}
@@ -171,7 +158,6 @@ const Dashboard = () => {
 						return;
 					}
 				} catch (error) {
-					console.error("Failed to create project:", error);
 					alert(
 						`Failed to create project: ${
 							error.message || "Unknown error"
@@ -271,7 +257,6 @@ const Dashboard = () => {
 
 	const handleJoinProject = () => {
 		// TODO: Implement join project logic with backend
-		console.log("Joining project with code:", joinProjectCode);
 		setIsJoinDialogOpen(false);
 		setJoinProjectCode("");
 		// For now, just show a success message or navigate
@@ -283,13 +268,6 @@ const Dashboard = () => {
 		currentIsStarred: boolean
 	) => {
 		e.stopPropagation(); // Prevent navigation to project
-
-		console.log("Toggle star clicked:", {
-			projectId,
-			currentIsStarred,
-			newValue: !currentIsStarred,
-		});
-
 		// Optimistic update
 		setProjects(
 			projects.map((p) =>
@@ -302,9 +280,7 @@ const Dashboard = () => {
 				projectId,
 				!currentIsStarred
 			);
-			console.log("Star toggle response:", response);
 		} catch (error) {
-			console.error("Failed to toggle star:", error);
 			// Revert on error
 			setProjects(
 				projects.map((p) =>
@@ -404,22 +380,6 @@ const Dashboard = () => {
 
 		if (activeTab === "starred") {
 			filtered = filtered.filter((project) => project.isStarred === true);
-			console.log(
-				"Starred tab - all projects:",
-				projects.map((p) => ({
-					id: p.id,
-					title: p.title,
-					isStarred: p.isStarred,
-				}))
-			);
-			console.log(
-				"Starred tab - filtered:",
-				filtered.map((p) => ({
-					id: p.id,
-					title: p.title,
-					isStarred: p.isStarred,
-				}))
-			);
 		}
 
 		return filtered;

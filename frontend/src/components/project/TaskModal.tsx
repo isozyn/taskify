@@ -1,21 +1,21 @@
 import { useState, useEffect } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -24,864 +24,985 @@ import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 interface TaskModalProps {
-  task: {
-    id: number;
-    title: string;
-    description?: string | null;
-    status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "COMPLETED" | "BLOCKED";
-    priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-    startDate?: string | null;
-    endDate?: string | null;
-    projectId: number;
-    assigneeId?: number | null;
-    tags: string[];
-    columnId?: string | null;
-    labelText?: string | null;
-    labelColor?: string | null;
-    order: number;
-    createdAt: string;
-    updatedAt: string;
-    assignee?: {
-      id: number;
-      name: string;
-      email: string;
-      avatar?: string | null;
-    } | null;
-    assignees?: Array<{
-      id: number;
-      name: string;
-      email: string;
-      avatar?: string | null;
-    }>;
-    subtasks?: Array<{
-      id: number;
-      title: string;
-      completed: boolean;
-    }>;
-    comments?: Array<{
-      id: number;
-      content: string;
-      createdAt: string;
-      author: {
-        id: number;
-        name: string;
-        email: string;
-      };
-    }>;
-    progress?: number;
-  };
-  open: boolean;
-  onClose: () => void;
-  onDelete?: (taskId: number) => void;
-  onTaskUpdate?: () => void;
-  projectMembers: Array<{
-    id: number;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  }>;
+	task: {
+		id: number;
+		title: string;
+		description?: string | null;
+		status: "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "COMPLETED" | "BLOCKED";
+		priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+		startDate?: string | null;
+		endDate?: string | null;
+		projectId: number;
+		assigneeId?: number | null;
+		tags: string[];
+		columnId?: string | null;
+		labelText?: string | null;
+		labelColor?: string | null;
+		order: number;
+		createdAt: string;
+		updatedAt: string;
+		assignee?: {
+			id: number;
+			name: string;
+			email: string;
+			avatar?: string | null;
+		} | null;
+		assignees?: Array<{
+			id: number;
+			name: string;
+			email: string;
+			avatar?: string | null;
+		}>;
+		subtasks?: Array<{
+			id: number;
+			title: string;
+			completed: boolean;
+		}>;
+		comments?: Array<{
+			id: number;
+			content: string;
+			createdAt: string;
+			author: {
+				id: number;
+				name: string;
+				email: string;
+			};
+		}>;
+		progress?: number;
+	};
+	open: boolean;
+	onClose: () => void;
+	onDelete?: (taskId: number) => void;
+	onTaskUpdate?: () => void;
+	projectMembers: Array<{
+		id: number;
+		name: string;
+		email: string;
+		avatar?: string | null;
+	}>;
 }
 
 // Helper function to format date for input[type="date"]
 const formatDateForInput = (dateString: string | null | undefined): string => {
-  if (!dateString) return "";
-  try {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  } catch (error) {
-    return "";
-  }
+	if (!dateString) return "";
+	try {
+		const date = new Date(dateString);
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, "0");
+		const day = String(date.getDate()).padStart(2, "0");
+		return `${year}-${month}-${day}`;
+	} catch (error) {
+		return "";
+	}
 };
 
-const TaskModal = ({ task, open, onClose, onDelete, onTaskUpdate, projectMembers }: TaskModalProps) => {
-  const { toast } = useToast();
-  const [selectedAssignees, setSelectedAssignees] = useState<string[]>(
-    task.assignees ? task.assignees.map(a => a.name) : 
-    task.assignee ? [task.assignee.name] : []
-  );
-  const [subtasks, setSubtasks] = useState(task.subtasks || []);
-  const [isLoadingSubtasks, setIsLoadingSubtasks] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
+const TaskModal = ({
+	task,
+	open,
+	onClose,
+	onDelete,
+	onTaskUpdate,
+	projectMembers,
+}: TaskModalProps) => {
+	const { toast } = useToast();
+	const [selectedAssignees, setSelectedAssignees] = useState<string[]>(
+		task.assignees
+			? task.assignees.map((a) => a.name)
+			: task.assignee
+			? [task.assignee.name]
+			: []
+	);
+	const [subtasks, setSubtasks] = useState(task.subtasks || []);
+	const [isLoadingSubtasks, setIsLoadingSubtasks] = useState(false);
+	const [comments, setComments] = useState<any[]>([]);
+	const [isLoadingComments, setIsLoadingComments] = useState(false);
 
-  const [newSubtask, setNewSubtask] = useState("");
-  const [comment, setComment] = useState("");
+	const [newSubtask, setNewSubtask] = useState("");
+	const [comment, setComment] = useState("");
 
-  // Editable field states - always editable, no edit mode
-  const [editableTitle, setEditableTitle] = useState(task.title || "");
-  const [editableStatus, setEditableStatus] = useState(task.status || "TODO");
-  const [editableStartDate, setEditableStartDate] = useState(formatDateForInput(task.startDate));
-  const [editableEndDate, setEditableEndDate] = useState(formatDateForInput(task.endDate));
-  const [editableDescription, setEditableDescription] = useState(task.description || "");
-  const [editableTags, setEditableTags] = useState<string[]>(task.tags || []);
-  const [newTag, setNewTag] = useState("");
-  const [editableLabelText, setEditableLabelText] = useState(task.labelText || "");
-  const [editableLabelColor, setEditableLabelColor] = useState(task.labelColor || "#64748b");
+	// Editable field states - always editable, no edit mode
+	const [editableTitle, setEditableTitle] = useState(task.title || "");
+	const [editableStatus, setEditableStatus] = useState(task.status || "TODO");
+	const [editableStartDate, setEditableStartDate] = useState(
+		formatDateForInput(task.startDate)
+	);
+	const [editableEndDate, setEditableEndDate] = useState(
+		formatDateForInput(task.endDate)
+	);
+	const [editableDescription, setEditableDescription] = useState(
+		task.description || ""
+	);
+	const [editableTags, setEditableTags] = useState<string[]>(task.tags || []);
+	const [newTag, setNewTag] = useState("");
+	const [editableLabelText, setEditableLabelText] = useState(
+		task.labelText || ""
+	);
+	const [editableLabelColor, setEditableLabelColor] = useState(
+		task.labelColor || "#64748b"
+	);
 
-  // Update local state when task prop changes
-  useEffect(() => {
-    setSelectedAssignees(
-      task.assignees ? task.assignees.map(a => a.name) : 
-      task.assignee ? [task.assignee.name] : []
-    );
-    setEditableTitle(task.title || "");
-    setEditableStatus(task.status || "TODO");
-    setEditableStartDate(formatDateForInput(task.startDate));
-    setEditableEndDate(formatDateForInput(task.endDate));
-    setEditableDescription(task.description || "");
-    setEditableTags(task.tags || []);
-    setEditableLabelText(task.labelText || "");
-    setEditableLabelColor(task.labelColor || "#64748b");
-  }, [task]);
+	// Update local state when task prop changes
+	useEffect(() => {
+		setSelectedAssignees(
+			task.assignees
+				? task.assignees.map((a) => a.name)
+				: task.assignee
+				? [task.assignee.name]
+				: []
+		);
+		setEditableTitle(task.title || "");
+		setEditableStatus(task.status || "TODO");
+		setEditableStartDate(formatDateForInput(task.startDate));
+		setEditableEndDate(formatDateForInput(task.endDate));
+		setEditableDescription(task.description || "");
+		setEditableTags(task.tags || []);
+		setEditableLabelText(task.labelText || "");
+		setEditableLabelColor(task.labelColor || "#64748b");
+	}, [task]);
 
-  // Fetch subtasks when task changes
-  useEffect(() => {
-    const fetchSubtasks = async () => {
-      if (task.id && open) {
-        try {
-          setIsLoadingSubtasks(true);
-          const response: any = await api.getSubtasks(task.id);
-          if (response.subtasks) {
-            setSubtasks(response.subtasks);
-          }
-        } catch (error) {
-          console.error('Failed to fetch subtasks:', error);
-        } finally {
-          setIsLoadingSubtasks(false);
-        }
-      }
-    };
+	// Fetch subtasks when task changes
+	useEffect(() => {
+		const fetchSubtasks = async () => {
+			if (task.id && open) {
+				try {
+					setIsLoadingSubtasks(true);
+					const response: any = await api.getSubtasks(task.id);
+					if (response.subtasks) {
+						setSubtasks(response.subtasks);
+					}
+				} catch (error) {
+				} finally {
+					setIsLoadingSubtasks(false);
+				}
+			}
+		};
 
-    fetchSubtasks();
-  }, [task.id, open]);
+		fetchSubtasks();
+	}, [task.id, open]);
 
-  // Fetch comments when task changes
-  useEffect(() => {
-    const fetchComments = async () => {
-      if (task.id && open) {
-        try {
-          setIsLoadingComments(true);
-          const response: any = await api.getTaskComments(task.id);
-          if (response.comments) {
-            setComments(response.comments);
-          }
-        } catch (error) {
-          console.error('Failed to fetch comments:', error);
-        } finally {
-          setIsLoadingComments(false);
-        }
-      }
-    };
+	// Fetch comments when task changes
+	useEffect(() => {
+		const fetchComments = async () => {
+			if (task.id && open) {
+				try {
+					setIsLoadingComments(true);
+					const response: any = await api.getTaskComments(task.id);
+					if (response.comments) {
+						setComments(response.comments);
+					}
+				} catch (error) {
+				} finally {
+					setIsLoadingComments(false);
+				}
+			}
+		};
 
-    fetchComments();
-  }, [task.id, open]);
+		fetchComments();
+	}, [task.id, open]);
 
-  const completedSubtasks = subtasks.filter((st) => st.completed).length;
-  const progress = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0;
+	const completedSubtasks = subtasks.filter((st) => st.completed).length;
+	const progress =
+		subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0;
 
-  // Auto-save functions
-  const handleSaveTitle = async () => {
-    if (editableTitle !== task.title) {
-      try {
-        await api.updateTask(task.id, { title: editableTitle });
-      } catch (error) {
-        console.error('Failed to update title:', error);
-      }
-    }
-  };
+	// Auto-save functions
+	const handleSaveTitle = async () => {
+		if (editableTitle !== task.title) {
+			try {
+				await api.updateTask(task.id, { title: editableTitle });
+			} catch (error) {}
+		}
+	};
 
-  const handleSaveStatus = async (newStatus: string) => {
-    try {
-      await api.updateTask(task.id, { status: newStatus as any });
-      setEditableStatus(newStatus as any);
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    }
-  };
+	const handleSaveStatus = async (newStatus: string) => {
+		try {
+			await api.updateTask(task.id, { status: newStatus as any });
+			setEditableStatus(newStatus as any);
+		} catch (error) {}
+	};
 
-  const handleSaveDate = async (field: 'startDate' | 'endDate', value: string) => {
-    try {
-      await api.updateTask(task.id, { [field]: value || null });
-    } catch (error) {
-      console.error(`Failed to update ${field}:`, error);
-    }
-  };
+	const handleSaveDate = async (
+		field: "startDate" | "endDate",
+		value: string
+	) => {
+		try {
+			await api.updateTask(task.id, { [field]: value || null });
+		} catch (error) {}
+	};
 
-  const handleSaveDescription = async () => {
-    if (editableDescription !== task.description) {
-      try {
-        await api.updateTask(task.id, { description: editableDescription });
-      } catch (error) {
-        console.error('Failed to update description:', error);
-      }
-    }
-  };
+	const handleSaveDescription = async () => {
+		if (editableDescription !== task.description) {
+			try {
+				await api.updateTask(task.id, {
+					description: editableDescription,
+				});
+			} catch (error) {}
+		}
+	};
 
-  const handleSaveTags = async (newTags: string[]) => {
-    try {
-      await api.updateTask(task.id, { tags: newTags });
-    } catch (error) {
-      console.error('Failed to update tags:', error);
-    }
-  };
+	const handleSaveTags = async (newTags: string[]) => {
+		try {
+			await api.updateTask(task.id, { tags: newTags });
+		} catch (error) {}
+	};
 
-  const handleSaveLabel = async () => {
-    try {
-      await api.updateTask(task.id, { 
-        labelText: editableLabelText || null,
-        labelColor: editableLabelColor || null
-      });
-      onTaskUpdate?.();
-    } catch (error) {
-      console.error('Failed to update label:', error);
-    }
-  };
+	const handleSaveLabel = async () => {
+		try {
+			await api.updateTask(task.id, {
+				labelText: editableLabelText || null,
+				labelColor: editableLabelColor || null,
+			});
+			onTaskUpdate?.();
+		} catch (error) {}
+	};
 
-  const handleRemoveLabel = async () => {
-    try {
-      await api.updateTask(task.id, { 
-        labelText: null,
-        labelColor: null
-      });
-      setEditableLabelText("");
-      setEditableLabelColor("#64748b");
-      onTaskUpdate?.();
-    } catch (error) {
-      console.error('Failed to remove label:', error);
-    }
-  };
+	const handleRemoveLabel = async () => {
+		try {
+			await api.updateTask(task.id, {
+				labelText: null,
+				labelColor: null,
+			});
+			setEditableLabelText("");
+			setEditableLabelColor("#64748b");
+			onTaskUpdate?.();
+		} catch (error) {}
+	};
 
-  const addSubtask = async () => {
-    if (newSubtask.trim()) {
-      try {
-        const response: any = await api.createSubtask(task.id, {
-          title: newSubtask,
-          order: subtasks.length,
-        });
-        if (response.subtask) {
-          setSubtasks([...subtasks, response.subtask]);
-          setNewSubtask("");
-        }
-      } catch (error) {
-        console.error('Failed to create subtask:', error);
-      }
-    }
-  };
+	const addSubtask = async () => {
+		if (newSubtask.trim()) {
+			try {
+				const response: any = await api.createSubtask(task.id, {
+					title: newSubtask,
+					order: subtasks.length,
+				});
+				if (response.subtask) {
+					setSubtasks([...subtasks, response.subtask]);
+					setNewSubtask("");
+				}
+			} catch (error) {}
+		}
+	};
 
-  const toggleSubtask = async (id: number) => {
-    const subtask = subtasks.find((st) => st.id === id);
-    if (!subtask) return;
+	const toggleSubtask = async (id: number) => {
+		const subtask = subtasks.find((st) => st.id === id);
+		if (!subtask) return;
 
-    try {
-      await api.updateSubtask(id, {
-        completed: !subtask.completed,
-      });
-      
-      const updatedSubtasks = subtasks.map((st) =>
-        st.id === id ? { ...st, completed: !st.completed } : st
-      );
-      
-      setSubtasks(updatedSubtasks);
+		try {
+			await api.updateSubtask(id, {
+				completed: !subtask.completed,
+			});
 
-      // Check if all subtasks are now complete
-      const allComplete = updatedSubtasks.length > 0 && updatedSubtasks.every(st => st.completed);
-      
-      // If all subtasks are complete and this is an automated workflow, 
-      // the backend will move it to IN_REVIEW, so close modal and refresh
-      if (allComplete) {
-        toast({
-          title: "All subtasks completed!",
-          description: "The task status will be updated automatically.",
-        });
-        
-        // Close modal after a brief delay to show the toast
-        setTimeout(() => {
-          onTaskUpdate?.();
-          onClose();
-        }, 1500);
-      } else {
-        // For unchecking or checking individual subtasks, update task list without closing modal
-        onTaskUpdate?.();
-      }
-    } catch (error) {
-      console.error('Failed to update subtask:', error);
-    }
-  };
+			const updatedSubtasks = subtasks.map((st) =>
+				st.id === id ? { ...st, completed: !st.completed } : st
+			);
 
-  const deleteSubtask = async (id: number) => {
-    try {
-      console.log('Attempting to delete subtask with ID:', id);
-      const result = await api.deleteSubtask(id);
-      console.log('Delete subtask result:', result);
-      setSubtasks(subtasks.filter((st) => st.id !== id));
-      console.log('Subtasks after delete:', subtasks.filter((st) => st.id !== id));
-      toast({
-        title: "Subtask deleted",
-        description: "The subtask has been successfully deleted.",
-      });
-    } catch (error) {
-      console.error('Failed to delete subtask:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete subtask. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+			setSubtasks(updatedSubtasks);
 
-  const handleSaveAssignees = async (assigneeIds: number[]) => {
-    try {
-      await api.updateTask(task.id, { assigneeIds });
-      if (onTaskUpdate) {
-        onTaskUpdate();
-      }
-      toast({
-        title: "Success",
-        description: "Assignees updated successfully.",
-      });
-    } catch (error) {
-      console.error('Failed to update assignees:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update assignees. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+			// Check if all subtasks are now complete
+			const allComplete =
+				updatedSubtasks.length > 0 &&
+				updatedSubtasks.every((st) => st.completed);
 
-  const addAssignee = (memberName: string) => {
-    const member = projectMembers.find(m => m.name === memberName);
-    if (member && !selectedAssignees.includes(memberName)) {
-      const newAssignees = [...selectedAssignees, memberName];
-      setSelectedAssignees(newAssignees);
-      
-      const assigneeIds = newAssignees.map(name => {
-        const m = projectMembers.find(p => p.name === name);
-        return m?.id;
-      }).filter(Boolean) as number[];
-      
-      handleSaveAssignees(assigneeIds);
-    }
-  };
+			// If all subtasks are complete and this is an automated workflow,
+			// the backend will move it to IN_REVIEW, so close modal and refresh
+			if (allComplete) {
+				toast({
+					title: "All subtasks completed!",
+					description:
+						"The task status will be updated automatically.",
+				});
 
-  const removeAssignee = (memberName: string) => {
-    const newAssignees = selectedAssignees.filter(name => name !== memberName);
-    setSelectedAssignees(newAssignees);
-    
-    const assigneeIds = newAssignees.map(name => {
-      const m = projectMembers.find(p => p.name === name);
-      return m?.id;
-    }).filter(Boolean) as number[];
-    
-    handleSaveAssignees(assigneeIds);
-  };
+				// Close modal after a brief delay to show the toast
+				setTimeout(() => {
+					onTaskUpdate?.();
+					onClose();
+				}, 1500);
+			} else {
+				// For unchecking or checking individual subtasks, update task list without closing modal
+				onTaskUpdate?.();
+			}
+		} catch (error) {}
+	};
 
-  const handleDeleteTask = async () => {
-    if (window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
-      try {
-        await api.deleteTask(task.id);
-        toast({
-          title: "Task deleted",
-          description: "The task has been successfully deleted.",
-        });
-        if (onDelete) {
-          onDelete(task.id);
-        }
-        onClose();
-      } catch (error) {
-        console.error('Failed to delete task:', error);
-        toast({
-          title: "Error",
-          description: "Failed to delete task. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
+	const deleteSubtask = async (id: number) => {
+		try {
+			const result = await api.deleteSubtask(id);
+			setSubtasks(subtasks.filter((st) => st.id !== id));
+			toast({
+				title: "Subtask deleted",
+				description: "The subtask has been successfully deleted.",
+			});
+		} catch (error) {
+			toast({
+				title: "Error",
+				description: "Failed to delete subtask. Please try again.",
+				variant: "destructive",
+			});
+		}
+	};
 
-  const handleMarkComplete = async () => {
-    try {
-      await api.updateTask(task.id, { status: 'COMPLETED' });
-      toast({
-        title: "Task completed",
-        description: "The task has been marked as complete.",
-      });
-      onTaskUpdate?.();
-      onClose();
-    } catch (error) {
-      console.error('Failed to mark task complete:', error);
-      toast({
-        title: "Error",
-        description: "Failed to mark task as complete. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+	const handleSaveAssignees = async (assigneeIds: number[]) => {
+		try {
+			await api.updateTask(task.id, { assigneeIds });
+			if (onTaskUpdate) {
+				onTaskUpdate();
+			}
+			toast({
+				title: "Success",
+				description: "Assignees updated successfully.",
+			});
+		} catch (error) {
+			toast({
+				title: "Error",
+				description: "Failed to update assignees. Please try again.",
+				variant: "destructive",
+			});
+		}
+	};
 
-  const handleMarkIncomplete = async () => {
-    try {
-      const response: any = await api.markTaskIncomplete(task.id);
-      const statusLabels: Record<string, string> = {
-        'TODO': 'To Do',
-        'IN_PROGRESS': 'In Progress',
-        'IN_REVIEW': 'In Review',
-      };
-      const newStatusLabel = statusLabels[response.status] || response.status;
-      
-      toast({
-        title: "Task marked as incomplete",
-        description: `Task has been moved to ${newStatusLabel} based on subtask completion.`,
-      });
-      onTaskUpdate?.();
-      onClose();
-    } catch (error: any) {
-      console.error('Failed to mark task incomplete:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to mark task as incomplete. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+	const addAssignee = (memberName: string) => {
+		const member = projectMembers.find((m) => m.name === memberName);
+		if (member && !selectedAssignees.includes(memberName)) {
+			const newAssignees = [...selectedAssignees, memberName];
+			setSelectedAssignees(newAssignees);
 
-  const handleAddComment = async () => {
-    if (!comment.trim()) return;
+			const assigneeIds = newAssignees
+				.map((name) => {
+					const m = projectMembers.find((p) => p.name === name);
+					return m?.id;
+				})
+				.filter(Boolean) as number[];
 
-    try {
-      const response: any = await api.createComment(task.id, comment.trim());
-      if (response.comment) {
-        setComments([response.comment, ...comments]);
-        setComment("");
-        toast({
-          title: "Comment added",
-          description: "Your comment has been posted.",
-        });
-      }
-    } catch (error) {
-      console.error('Failed to add comment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add comment. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+			handleSaveAssignees(assigneeIds);
+		}
+	};
 
-  const addTag = () => {
-    if (newTag.trim() && !editableTags.includes(newTag.trim())) {
-      const newTags = [...editableTags, newTag.trim()];
-      setEditableTags(newTags);
-      handleSaveTags(newTags);
-      setNewTag("");
-    }
-  };
+	const removeAssignee = (memberName: string) => {
+		const newAssignees = selectedAssignees.filter(
+			(name) => name !== memberName
+		);
+		setSelectedAssignees(newAssignees);
 
-  const removeTag = (tagToRemove: string) => {
-    const newTags = editableTags.filter((tag) => tag !== tagToRemove);
-    setEditableTags(newTags);
-    handleSaveTags(newTags);
-  };
+		const assigneeIds = newAssignees
+			.map((name) => {
+				const m = projectMembers.find((p) => p.name === name);
+				return m?.id;
+			})
+			.filter(Boolean) as number[];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "COMPLETED":
-        return "bg-green-100 text-green-700 border-green-200";
-      case "IN_PROGRESS":
-        return "bg-blue-100 text-blue-700 border-blue-200";
-      case "IN_REVIEW":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      case "TODO":
-        return "bg-gray-100 text-gray-700 border-gray-200";
-      case "BLOCKED":
-        return "bg-red-100 text-red-700 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
-    }
-  };
+		handleSaveAssignees(assigneeIds);
+	};
 
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden bg-white border border-slate-200 shadow-2xl">
-        {/* Progress Bar at Top */}
-        <div className="relative h-1 bg-slate-100 -mx-6 -mt-6 mb-4">
-          <div
-            className="absolute top-0 left-0 h-1 bg-blue-500 transition-all duration-500"
-            style={{ width: `${Math.round(task.progress || progress)}%` }}
-          />
-        </div>
+	const handleDeleteTask = async () => {
+		if (
+			window.confirm(
+				"Are you sure you want to delete this task? This action cannot be undone."
+			)
+		) {
+			try {
+				await api.deleteTask(task.id);
+				toast({
+					title: "Task deleted",
+					description: "The task has been successfully deleted.",
+				});
+				if (onDelete) {
+					onDelete(task.id);
+				}
+				onClose();
+			} catch (error) {
+				toast({
+					title: "Error",
+					description: "Failed to delete task. Please try again.",
+					variant: "destructive",
+				});
+			}
+		}
+	};
 
-        <div className="overflow-y-auto max-h-[80vh] px-1">
-          <DialogHeader className="mb-5">
-            <DialogTitle className="sr-only">Task Details</DialogTitle>
-            <DialogDescription className="sr-only">
-              Edit task information, add subtasks, and manage assignees
-            </DialogDescription>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <Input
-                  value={editableTitle}
-                  onChange={(e) => setEditableTitle(e.target.value)}
-                  onBlur={handleSaveTitle}
-                  className="text-lg font-semibold border-slate-200 focus:border-blue-500"
-                  placeholder="Task title..."
-                />
-                {/* Tags next to title */}
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {editableTags.map((tag) => (
-                    <Badge 
-                      key={tag} 
-                      variant="secondary" 
-                      className="gap-1.5 px-2 py-0.5 bg-purple-100 text-purple-700 border border-purple-200 text-[10px]"
-                    >
-                      {tag}
-                      <button
-                        onClick={() => removeTag(tag)}
-                        className="ml-1 hover:text-red-500 transition-colors"
-                      >
-                        <X className="w-2 h-2" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                {/* Add tag input */}
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    placeholder="Add tag..."
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addTag();
-                      }
-                    }}
-                    className="h-8 text-xs border-slate-200 focus:border-blue-500"
-                  />
-                  <Button onClick={addTag} className="bg-purple-500 hover:bg-purple-600 text-white h-8 px-3">
-                    <Plus className="w-3 h-3" />
-                  </Button>
-                </div>
+	const handleMarkComplete = async () => {
+		try {
+			await api.updateTask(task.id, { status: "COMPLETED" });
+			toast({
+				title: "Task completed",
+				description: "The task has been marked as complete.",
+			});
+			onTaskUpdate?.();
+			onClose();
+		} catch (error) {
+			toast({
+				title: "Error",
+				description:
+					"Failed to mark task as complete. Please try again.",
+				variant: "destructive",
+			});
+		}
+	};
 
-                {/* Custom Label Section */}
-                <div className="mt-4 space-y-2">
-                  <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Label</Label>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      placeholder="Label text..."
-                      value={editableLabelText}
-                      onChange={(e) => setEditableLabelText(e.target.value)}
-                      className="h-8 text-xs border-slate-200 focus:border-blue-500 flex-1"
-                    />
-                    <input
-                      type="color"
-                      value={editableLabelColor}
-                      onChange={(e) => setEditableLabelColor(e.target.value)}
-                      className="w-8 h-8 rounded border border-slate-200 cursor-pointer"
-                      title="Choose label color"
-                    />
-                    <Button 
-                      onClick={handleSaveLabel}
-                      className="bg-blue-500 hover:bg-blue-600 text-white h-8 px-3"
-                      size="sm"
-                    >
-                      Save
-                    </Button>
-                    {(task.labelText || editableLabelText) && (
-                      <Button 
-                        onClick={handleRemoveLabel}
-                        variant="outline"
-                        className="h-8 px-3"
-                        size="sm"
-                      >
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-                  {/* Preview of current label */}
-                  {editableLabelText && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500">Preview:</span>
-                      <Badge
-                        className="text-xs px-2 py-1 rounded-full text-white"
-                        style={{ backgroundColor: editableLabelColor }}
-                      >
-                        {editableLabelText}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <div className="text-base font-semibold text-blue-600">{Math.round(task.progress || progress)}%</div>
-                <div className="text-[10px] text-slate-500 font-medium tracking-wide">COMPLETE</div>
-              </div>
-            </div>
-          </DialogHeader>
+	const handleMarkIncomplete = async () => {
+		try {
+			const response: any = await api.markTaskIncomplete(task.id);
+			const statusLabels: Record<string, string> = {
+				TODO: "To Do",
+				IN_PROGRESS: "In Progress",
+				IN_REVIEW: "In Review",
+			};
+			const newStatusLabel =
+				statusLabels[response.status] || response.status;
 
-          <div className="space-y-5">{/* Subtasks */}
-            {/* Subtasks */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Subtasks</Label>
-                <span className="text-xs text-slate-500 font-medium">{completedSubtasks}/{subtasks.length}</span>
-              </div>
+			toast({
+				title: "Task marked as incomplete",
+				description: `Task has been moved to ${newStatusLabel} based on subtask completion.`,
+			});
+			onTaskUpdate?.();
+			onClose();
+		} catch (error: any) {
+			toast({
+				title: "Error",
+				description:
+					error.message ||
+					"Failed to mark task as incomplete. Please try again.",
+				variant: "destructive",
+			});
+		}
+	};
 
-              <div className="space-y-2">
-                {subtasks.map((subtask) => (
-                  <div
-                    key={subtask.id}
-                    className="flex items-center gap-2 p-2.5 border border-slate-200 rounded-md bg-white hover:bg-slate-50 transition-colors"
-                  >
-                    <Checkbox
-                      checked={subtask.completed}
-                      onCheckedChange={() => toggleSubtask(subtask.id)}
-                      className="border-slate-300 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                    />
-                    <span
-                      className={`flex-1 text-xs ${subtask.completed
-                        ? "line-through text-slate-400"
-                        : "text-slate-700"
-                        }`}
-                    >
-                      {subtask.title}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('Delete button clicked for subtask:', subtask.id);
-                        deleteSubtask(subtask.id);
-                      }}
-                      className="h-7 w-7 hover:bg-red-50 hover:text-red-500"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+	const handleAddComment = async () => {
+		if (!comment.trim()) return;
 
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add new subtask..."
-                  value={newSubtask}
-                  onChange={(e) => setNewSubtask(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addSubtask();
-                    }
-                  }}
-                  className="h-9 text-xs border-slate-200 focus:border-blue-500"
-                />
-                <Button 
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    addSubtask();
-                  }} 
-                  className="bg-blue-500 hover:bg-blue-600 text-white h-9 px-3"
-                >
-                  <Plus className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
+		try {
+			const response: any = await api.createComment(
+				task.id,
+				comment.trim()
+			);
+			if (response.comment) {
+				setComments([response.comment, ...comments]);
+				setComment("");
+				toast({
+					title: "Comment added",
+					description: "Your comment has been posted.",
+				});
+			}
+		} catch (error) {
+			toast({
+				title: "Error",
+				description: "Failed to add comment. Please try again.",
+				variant: "destructive",
+			});
+		}
+	};
 
+	const addTag = () => {
+		if (newTag.trim() && !editableTags.includes(newTag.trim())) {
+			const newTags = [...editableTags, newTag.trim()];
+			setEditableTags(newTags);
+			handleSaveTags(newTags);
+			setNewTag("");
+		}
+	};
 
-            {/* Assignees */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Assigned To</Label>
-              {selectedAssignees.length > 0 ? (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {selectedAssignees.map((assigneeName) => (
-                    <Badge key={assigneeName} variant="secondary" className="gap-1.5 px-2 py-1 bg-slate-100 text-slate-700 border border-slate-200 text-xs">
-                      <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
-                        {assigneeName.split(" ").map((n: string) => n[0]).join("")}
-                      </div>
-                      {assigneeName}
-                      <button
-                        onClick={() => removeAssignee(assigneeName)}
-                        className="ml-1 hover:text-red-500 transition-colors"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <div className="mb-2 text-xs text-slate-500">No assignees selected</div>
-              )}
-              <Select onValueChange={addAssignee} value="">
-                <SelectTrigger className="h-9 text-xs border-slate-200 focus:border-blue-500">
-                  <SelectValue placeholder="Add team member..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {projectMembers.filter(member => !selectedAssignees.includes(member.name)).map((member) => (
-                    <SelectItem key={member.id} value={member.name}>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
-                          {member.name.split(" ").map((n: string) => n[0]).join("")}
-                        </div>
-                        <span className="text-xs">{member.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+	const removeTag = (tagToRemove: string) => {
+		const newTags = editableTags.filter((tag) => tag !== tagToRemove);
+		setEditableTags(newTags);
+		handleSaveTags(newTags);
+	};
 
-            {/* Dates */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Start Date</Label>
-                <Input
-                  type="date"
-                  value={editableStartDate}
-                  onChange={(e) => {
-                    const newValue = e.target.value;
-                    setEditableStartDate(newValue);
-                    handleSaveDate('startDate', newValue);
-                  }}
-                  className="h-9 text-xs border-slate-200 focus:border-blue-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">End Date</Label>
-                <Input
-                  type="date"
-                  value={editableEndDate}
-                  onChange={(e) => {
-                    const newValue = e.target.value;
-                    setEditableEndDate(newValue);
-                    handleSaveDate('endDate', newValue);
-                  }}
-                  className="h-9 text-xs border-slate-200 focus:border-blue-500"
-                />
-              </div>
-            </div>
+	const getStatusColor = (status: string) => {
+		switch (status) {
+			case "COMPLETED":
+				return "bg-green-100 text-green-700 border-green-200";
+			case "IN_PROGRESS":
+				return "bg-blue-100 text-blue-700 border-blue-200";
+			case "IN_REVIEW":
+				return "bg-yellow-100 text-yellow-700 border-yellow-200";
+			case "TODO":
+				return "bg-gray-100 text-gray-700 border-gray-200";
+			case "BLOCKED":
+				return "bg-red-100 text-red-700 border-red-200";
+			default:
+				return "bg-gray-100 text-gray-700 border-gray-200";
+		}
+	};
 
-            {/* Description */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Description</Label>
-              <Textarea
-                value={editableDescription}
-                onChange={(e) => setEditableDescription(e.target.value)}
-                onBlur={handleSaveDescription}
-                placeholder="Add task description..."
-                rows={4}
-                className="text-xs border-slate-200 focus:border-blue-500 resize-none"
-              />
-            </div>
+	return (
+		<Dialog open={open} onOpenChange={onClose}>
+			<DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden bg-white border border-slate-200 shadow-2xl">
+				{/* Progress Bar at Top */}
+				<div className="relative h-1 bg-slate-100 -mx-6 -mt-6 mb-4">
+					<div
+						className="absolute top-0 left-0 h-1 bg-blue-500 transition-all duration-500"
+						style={{
+							width: `${Math.round(task.progress || progress)}%`,
+						}}
+					/>
+				</div>
 
-            {/* Comments */}
-            <div className="space-y-3">
-              <Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Comments</Label>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {isLoadingComments ? (
-                  <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50 text-center">
-                    <p className="text-xs text-slate-400">Loading comments...</p>
-                  </div>
-                ) : comments.length > 0 ? (
-                  comments.map((comment: any) => (
-                    <div key={comment.id} className="p-2.5 border border-slate-200 rounded-md bg-slate-50">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
-                            {comment.author?.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
-                          </div>
-                          <span className="font-semibold text-xs text-slate-700">{comment.author?.name || "Unknown"}</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ""}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        {comment.content}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50 text-center">
-                    <p className="text-xs text-slate-400">No comments yet</p>
-                  </div>
-                )}
-              </div>
+				<div className="overflow-y-auto max-h-[80vh] px-1">
+					<DialogHeader className="mb-5">
+						<DialogTitle className="sr-only">
+							Task Details
+						</DialogTitle>
+						<DialogDescription className="sr-only">
+							Edit task information, add subtasks, and manage
+							assignees
+						</DialogDescription>
+						<div className="flex items-start justify-between gap-4">
+							<div className="flex-1">
+								<Input
+									value={editableTitle}
+									onChange={(e) =>
+										setEditableTitle(e.target.value)
+									}
+									onBlur={handleSaveTitle}
+									className="text-lg font-semibold border-slate-200 focus:border-blue-500"
+									placeholder="Task title..."
+								/>
+								{/* Tags next to title */}
+								<div className="flex flex-wrap gap-1.5 mt-2">
+									{editableTags.map((tag) => (
+										<Badge
+											key={tag}
+											variant="secondary"
+											className="gap-1.5 px-2 py-0.5 bg-purple-100 text-purple-700 border border-purple-200 text-[10px]"
+										>
+											{tag}
+											<button
+												onClick={() => removeTag(tag)}
+												className="ml-1 hover:text-red-500 transition-colors"
+											>
+												<X className="w-2 h-2" />
+											</button>
+										</Badge>
+									))}
+								</div>
+								{/* Add tag input */}
+								<div className="flex gap-2 mt-2">
+									<Input
+										placeholder="Add tag..."
+										value={newTag}
+										onChange={(e) =>
+											setNewTag(e.target.value)
+										}
+										onKeyDown={(e) => {
+											if (e.key === "Enter") {
+												e.preventDefault();
+												addTag();
+											}
+										}}
+										className="h-8 text-xs border-slate-200 focus:border-blue-500"
+									/>
+									<Button
+										onClick={addTag}
+										className="bg-purple-500 hover:bg-purple-600 text-white h-8 px-3"
+									>
+										<Plus className="w-3 h-3" />
+									</Button>
+								</div>
 
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a comment..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAddComment();
-                    }
-                  }}
-                  className="h-9 text-xs border-slate-200 focus:border-blue-500"
-                />
-                <Button 
-                  type="button"
-                  onClick={handleAddComment}
-                  className="bg-blue-500 hover:bg-blue-600 text-white h-9 px-3"
-                >
-                  <Send className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
+								{/* Custom Label Section */}
+								<div className="mt-4 space-y-2">
+									<Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+										Label
+									</Label>
+									<div className="flex gap-2 items-center">
+										<Input
+											placeholder="Label text..."
+											value={editableLabelText}
+											onChange={(e) =>
+												setEditableLabelText(
+													e.target.value
+												)
+											}
+											className="h-8 text-xs border-slate-200 focus:border-blue-500 flex-1"
+										/>
+										<input
+											type="color"
+											value={editableLabelColor}
+											onChange={(e) =>
+												setEditableLabelColor(
+													e.target.value
+												)
+											}
+											className="w-8 h-8 rounded border border-slate-200 cursor-pointer"
+											title="Choose label color"
+										/>
+										<Button
+											onClick={handleSaveLabel}
+											className="bg-blue-500 hover:bg-blue-600 text-white h-8 px-3"
+											size="sm"
+										>
+											Save
+										</Button>
+										{(task.labelText ||
+											editableLabelText) && (
+											<Button
+												onClick={handleRemoveLabel}
+												variant="outline"
+												className="h-8 px-3"
+												size="sm"
+											>
+												Remove
+											</Button>
+										)}
+									</div>
+									{/* Preview of current label */}
+									{editableLabelText && (
+										<div className="flex items-center gap-2">
+											<span className="text-xs text-slate-500">
+												Preview:
+											</span>
+											<Badge
+												className="text-xs px-2 py-1 rounded-full text-white"
+												style={{
+													backgroundColor:
+														editableLabelColor,
+												}}
+											>
+												{editableLabelText}
+											</Badge>
+										</div>
+									)}
+								</div>
+							</div>
+							<div className="text-right flex-shrink-0">
+								<div className="text-base font-semibold text-blue-600">
+									{Math.round(task.progress || progress)}%
+								</div>
+								<div className="text-[10px] text-slate-500 font-medium tracking-wide">
+									COMPLETE
+								</div>
+							</div>
+						</div>
+					</DialogHeader>
 
-            {/* Actions */}
-            <div className="flex justify-between pt-4 border-t border-slate-200">
-              <Button 
-                type="button"
-                variant="destructive" 
-                onClick={handleDeleteTask} 
-                className="text-xs font-semibold h-9 px-4"
-              >
-                Delete Task
-              </Button>
-              <div className="flex gap-2">
-                {task.status === 'IN_REVIEW' && (
-                  <Button
-                    type="button"
-                    onClick={handleMarkComplete}
-                    className="text-xs font-semibold bg-green-600 hover:bg-green-700 text-white h-9 px-4"
-                  >
-                    <Check className="w-3 h-3 mr-1" />
-                    Mark as Complete
-                  </Button>
-                )}
-                {task.status === 'COMPLETED' && (
-                  <Button
-                    type="button"
-                    onClick={handleMarkIncomplete}
-                    className="text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white h-9 px-4"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Mark as Incomplete
-                  </Button>
-                )}
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={onClose} 
-                  className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4"
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+					<div className="space-y-5">
+						{/* Subtasks */}
+						{/* Subtasks */}
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+									Subtasks
+								</Label>
+								<span className="text-xs text-slate-500 font-medium">
+									{completedSubtasks}/{subtasks.length}
+								</span>
+							</div>
+
+							<div className="space-y-2">
+								{subtasks.map((subtask) => (
+									<div
+										key={subtask.id}
+										className="flex items-center gap-2 p-2.5 border border-slate-200 rounded-md bg-white hover:bg-slate-50 transition-colors"
+									>
+										<Checkbox
+											checked={subtask.completed}
+											onCheckedChange={() =>
+												toggleSubtask(subtask.id)
+											}
+											className="border-slate-300 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+										/>
+										<span
+											className={`flex-1 text-xs ${
+												subtask.completed
+													? "line-through text-slate-400"
+													: "text-slate-700"
+											}`}
+										>
+											{subtask.title}
+										</span>
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											onClick={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												deleteSubtask(subtask.id);
+											}}
+											className="h-7 w-7 hover:bg-red-50 hover:text-red-500"
+										>
+											<Trash2 className="w-3 h-3" />
+										</Button>
+									</div>
+								))}
+							</div>
+
+							<div className="flex gap-2">
+								<Input
+									placeholder="Add new subtask..."
+									value={newSubtask}
+									onChange={(e) =>
+										setNewSubtask(e.target.value)
+									}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") {
+											e.preventDefault();
+											addSubtask();
+										}
+									}}
+									className="h-9 text-xs border-slate-200 focus:border-blue-500"
+								/>
+								<Button
+									type="button"
+									onClick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										addSubtask();
+									}}
+									className="bg-blue-500 hover:bg-blue-600 text-white h-9 px-3"
+								>
+									<Plus className="w-3 h-3" />
+								</Button>
+							</div>
+						</div>
+
+						{/* Assignees */}
+						<div className="space-y-2">
+							<Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+								Assigned To
+							</Label>
+							{selectedAssignees.length > 0 ? (
+								<div className="flex flex-wrap gap-2 mb-2">
+									{selectedAssignees.map((assigneeName) => (
+										<Badge
+											key={assigneeName}
+											variant="secondary"
+											className="gap-1.5 px-2 py-1 bg-slate-100 text-slate-700 border border-slate-200 text-xs"
+										>
+											<div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
+												{assigneeName
+													.split(" ")
+													.map((n: string) => n[0])
+													.join("")}
+											</div>
+											{assigneeName}
+											<button
+												onClick={() =>
+													removeAssignee(assigneeName)
+												}
+												className="ml-1 hover:text-red-500 transition-colors"
+											>
+												<X className="w-2.5 h-2.5" />
+											</button>
+										</Badge>
+									))}
+								</div>
+							) : (
+								<div className="mb-2 text-xs text-slate-500">
+									No assignees selected
+								</div>
+							)}
+							<Select onValueChange={addAssignee} value="">
+								<SelectTrigger className="h-9 text-xs border-slate-200 focus:border-blue-500">
+									<SelectValue placeholder="Add team member..." />
+								</SelectTrigger>
+								<SelectContent>
+									{projectMembers
+										.filter(
+											(member) =>
+												!selectedAssignees.includes(
+													member.name
+												)
+										)
+										.map((member) => (
+											<SelectItem
+												key={member.id}
+												value={member.name}
+											>
+												<div className="flex items-center gap-2">
+													<div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
+														{member.name
+															.split(" ")
+															.map(
+																(n: string) =>
+																	n[0]
+															)
+															.join("")}
+													</div>
+													<span className="text-xs">
+														{member.name}
+													</span>
+												</div>
+											</SelectItem>
+										))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						{/* Dates */}
+						<div className="grid grid-cols-2 gap-4">
+							<div className="space-y-2">
+								<Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+									Start Date
+								</Label>
+								<Input
+									type="date"
+									value={editableStartDate}
+									onChange={(e) => {
+										const newValue = e.target.value;
+										setEditableStartDate(newValue);
+										handleSaveDate("startDate", newValue);
+									}}
+									className="h-9 text-xs border-slate-200 focus:border-blue-500"
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+									End Date
+								</Label>
+								<Input
+									type="date"
+									value={editableEndDate}
+									onChange={(e) => {
+										const newValue = e.target.value;
+										setEditableEndDate(newValue);
+										handleSaveDate("endDate", newValue);
+									}}
+									className="h-9 text-xs border-slate-200 focus:border-blue-500"
+								/>
+							</div>
+						</div>
+
+						{/* Description */}
+						<div className="space-y-2">
+							<Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+								Description
+							</Label>
+							<Textarea
+								value={editableDescription}
+								onChange={(e) =>
+									setEditableDescription(e.target.value)
+								}
+								onBlur={handleSaveDescription}
+								placeholder="Add task description..."
+								rows={4}
+								className="text-xs border-slate-200 focus:border-blue-500 resize-none"
+							/>
+						</div>
+
+						{/* Comments */}
+						<div className="space-y-3">
+							<Label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+								Comments
+							</Label>
+							<div className="space-y-2 max-h-48 overflow-y-auto">
+								{isLoadingComments ? (
+									<div className="p-2.5 border border-slate-200 rounded-md bg-slate-50 text-center">
+										<p className="text-xs text-slate-400">
+											Loading comments...
+										</p>
+									</div>
+								) : comments.length > 0 ? (
+									comments.map((comment: any) => (
+										<div
+											key={comment.id}
+											className="p-2.5 border border-slate-200 rounded-md bg-slate-50"
+										>
+											<div className="flex items-start justify-between mb-2">
+												<div className="flex items-center gap-2">
+													<div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px] font-bold">
+														{comment.author?.name
+															?.split(" ")
+															.map(
+																(n: string) =>
+																	n[0]
+															)
+															.join("") || "?"}
+													</div>
+													<span className="font-semibold text-xs text-slate-700">
+														{comment.author?.name ||
+															"Unknown"}
+													</span>
+												</div>
+												<span className="text-[10px] text-slate-400 font-medium">
+													{comment.createdAt
+														? new Date(
+																comment.createdAt
+														  ).toLocaleString()
+														: ""}
+												</span>
+											</div>
+											<p className="text-xs text-slate-600 leading-relaxed">
+												{comment.content}
+											</p>
+										</div>
+									))
+								) : (
+									<div className="p-2.5 border border-slate-200 rounded-md bg-slate-50 text-center">
+										<p className="text-xs text-slate-400">
+											No comments yet
+										</p>
+									</div>
+								)}
+							</div>
+
+							<div className="flex gap-2">
+								<Input
+									placeholder="Add a comment..."
+									value={comment}
+									onChange={(e) => setComment(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter" && !e.shiftKey) {
+											e.preventDefault();
+											handleAddComment();
+										}
+									}}
+									className="h-9 text-xs border-slate-200 focus:border-blue-500"
+								/>
+								<Button
+									type="button"
+									onClick={handleAddComment}
+									className="bg-blue-500 hover:bg-blue-600 text-white h-9 px-3"
+								>
+									<Send className="w-3 h-3" />
+								</Button>
+							</div>
+						</div>
+
+						{/* Actions */}
+						<div className="flex justify-between pt-4 border-t border-slate-200">
+							<Button
+								type="button"
+								variant="destructive"
+								onClick={handleDeleteTask}
+								className="text-xs font-semibold h-9 px-4"
+							>
+								Delete Task
+							</Button>
+							<div className="flex gap-2">
+								{task.status === "IN_REVIEW" && (
+									<Button
+										type="button"
+										onClick={handleMarkComplete}
+										className="text-xs font-semibold bg-green-600 hover:bg-green-700 text-white h-9 px-4"
+									>
+										<Check className="w-3 h-3 mr-1" />
+										Mark as Complete
+									</Button>
+								)}
+								{task.status === "COMPLETED" && (
+									<Button
+										type="button"
+										onClick={handleMarkIncomplete}
+										className="text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white h-9 px-4"
+									>
+										<X className="w-3 h-3 mr-1" />
+										Mark as Incomplete
+									</Button>
+								)}
+								<Button
+									type="button"
+									variant="outline"
+									onClick={onClose}
+									className="text-xs font-semibold border-slate-200 hover:bg-slate-50 h-9 px-4"
+								>
+									Close
+								</Button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</DialogContent>
+		</Dialog>
+	);
 };
 
 export default TaskModal;

@@ -54,7 +54,6 @@ export const register = async (
 				user.name
 			);
 		} catch (emailError) {
-			console.error("Failed to send verification email:", emailError);
 			// Don't fail registration if email fails, but log the error
 		}
 
@@ -120,13 +119,6 @@ export const login = async (
 			email: user.email,
 			role: user.role,
 		};
-
-		console.log("[Auth Debug] Generating tokens for user:", {
-			userId: user.id,
-			email: user.email,
-			username: user.username,
-		});
-
 		// Security: Revoke all existing refresh tokens for this user (prevent session fixation)
 		// This ensures only one active session per user at a time
 		await userService.revokeAllRefreshTokens(user.id);
@@ -152,11 +144,6 @@ export const login = async (
 			sameSite: isProduction ? ("none" as const) : ("lax" as const),
 			path: "/",
 		};
-
-		console.log("[Login] Setting cookies with options:", cookieOptions);
-		console.log("[Login] Request origin:", req.headers.origin);
-		console.log("[Login] CORS allowed origin:", process.env.FRONTEND_URL);
-
 		res.cookie("refreshToken", refreshToken, {
 			...cookieOptions,
 			maxAge: rememberMe
@@ -169,9 +156,6 @@ export const login = async (
 			...cookieOptions,
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
-
-		console.log("[Login] ✅ Cookies set successfully");
-
 		// Return user info only (tokens are in HTTP-only cookies)
 		const userResponse = userService.toUserResponse(user);
 
@@ -208,26 +192,12 @@ export const getCurrentUser = async (
 		const decoded = authService.verifyAccessToken(accessToken);
 
 		// Log for debugging
-		console.log("[Auth Debug] Token decoded for user:", {
-			userId: decoded.id,
-			email: decoded.email,
-			role: decoded.role,
-		});
-
 		// Find user by ID
 		const user = await userService.findUserById(decoded.id);
 		if (!user) {
-			console.log("[Auth Debug] User not found in database:", decoded.id);
 			res.status(404).json({ message: "User not found" });
 			return;
 		}
-
-		console.log("[Auth Debug] User found:", {
-			userId: user.id,
-			email: user.email,
-			username: user.username,
-		});
-
 		// Return user data
 		const userResponse = userService.toUserResponse(user);
 
@@ -325,7 +295,6 @@ export const logout = async (
 				await userService.revokeRefreshToken(refreshToken);
 			} catch (error) {
 				// Token might not exist, continue with logout
-				console.log('Failed to revoke refresh token:', error);
 			}
 		}
 
@@ -537,7 +506,6 @@ export const forgotPassword = async (
 				user.name
 			);
 		} catch (emailError) {
-			console.error("Failed to send password reset email:", emailError);
 			// Clear the token if email fails
 			await userService.clearResetToken(user.id);
 			res.status(500).json({
@@ -862,7 +830,6 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \\
 		// In production, redirect to frontend dashboard
 		res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
 	} catch (error) {
-		console.error("Google OAuth callback error:", error);
 		res.redirect(
 			`${process.env.FRONTEND_URL}/auth?error=google_auth_failed`
 		);

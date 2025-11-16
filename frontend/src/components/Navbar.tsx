@@ -26,7 +26,6 @@ const Navbar = () => {
           <div className="flex-1"></div>
 
 
-
           {/* Right Side - Authenticated or Guest */}
           <div className="flex items-center gap-3">
             {isAuthenticated ? (

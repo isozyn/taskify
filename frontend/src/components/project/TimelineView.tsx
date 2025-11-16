@@ -32,8 +32,6 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
       try {
         setIsLoading(true);
         const response: any = await api.getTasksByProject(parseInt(projectId));
-        console.log("TimelineView - Fetched tasks:", response);
-        
         // Filter tasks that have both start and end dates
         const tasksWithDates = Array.isArray(response) 
           ? response.filter(task => task.startDate && task.endDate)
@@ -41,7 +39,6 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
         
         setTasks(tasksWithDates);
       } catch (error) {
-        console.error('Failed to fetch tasks:', error);
         setTasks([]);
       } finally {
         setIsLoading(false);
@@ -324,7 +321,6 @@ const TimelineView = ({ projectMembers }: TimelineViewProps) => {
               </div>
             </div>
           </div>
-
 
 
           {/* Executive Timeline Grid */}

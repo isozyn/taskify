@@ -29,14 +29,9 @@ const VerifyEmail = () => {
 
 			try {
 				const response = (await api.verifyEmail(token)) as AuthResponse;
-
-				console.log("✅ Email verification response:", response);
-
 				// Store user data in context (tokens are in HttpOnly cookies)
 				if (response.user) {
 					setUser(response.user);
-					console.log("✅ User set in context:", response.user);
-
 					setStatus("success");
 					setMessage(
 						response.message || "Email verified successfully!"
@@ -54,7 +49,6 @@ const VerifyEmail = () => {
 					throw new Error("No user data returned from verification");
 				}
 			} catch (error: any) {
-				console.error("❌ Email verification error:", error);
 				setStatus("error");
 				setMessage(error.message || "Failed to verify email");
 
@@ -73,9 +67,6 @@ const VerifyEmail = () => {
 	// Separate effect to handle redirect after user is set
 	useEffect(() => {
 		if (shouldRedirect && user) {
-			console.log(
-				"✅ User confirmed in context, redirecting to dashboard..."
-			);
 			const redirectTimer = setTimeout(() => {
 				navigate("/dashboard", { replace: true });
 			}, 500);

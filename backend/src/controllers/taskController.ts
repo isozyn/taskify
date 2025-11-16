@@ -25,7 +25,6 @@ export class TaskController {
       const tasks = await TaskService.getTasksByProjectId(projectId, userId);
       res.status(200).json(tasks);
     } catch (error: any) {
-      console.error('Get tasks error:', error);
       res.status(500).json({ error: error.message || 'Failed to fetch tasks' });
     }
   }
@@ -37,21 +36,12 @@ export class TaskController {
     try {
       const userId = (req as any).user?.id;
       const projectId = parseInt(req.params.projectId);
-      
-      console.log('Create task request:', {
-        userId,
-        projectId,
-        body: req.body
-      });
-      
       if (!userId) {
-        console.log('Unauthorized: No user ID');
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       if (!projectId || isNaN(projectId)) {
-        console.log('Invalid project ID:', req.params.projectId);
         res.status(400).json({ message: 'Invalid project ID' });
         return;
       }
@@ -60,16 +50,8 @@ export class TaskController {
         ...req.body,
         projectId,
       });
-
-      console.log('Task created successfully:', task);
       res.status(201).json(task);
     } catch (error: any) {
-      console.error('Create task error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        code: error.code
-      });
       res.status(400).json({ message: error.message || 'Failed to create task' });
     }
   }
@@ -101,7 +83,6 @@ export class TaskController {
 
       res.status(200).json(task);
     } catch (error: any) {
-      console.error('Get task error:', error);
       res.status(500).json({ message: error.message || 'Failed to fetch task' });
     }
   }
@@ -133,7 +114,6 @@ export class TaskController {
 
       res.status(200).json(task);
     } catch (error: any) {
-      console.error('Update task error:', error);
       res.status(400).json({ message: error.message || 'Failed to update task' });
     }
   }
@@ -173,7 +153,6 @@ export class TaskController {
         columnId: task.columnId 
       });
     } catch (error: any) {
-      console.error('Move task error:', error);
       res.status(400).json({ message: error.message || 'Failed to move task' });
     }
   }
@@ -205,7 +184,6 @@ export class TaskController {
 
       res.status(200).json({ message: 'Task deleted successfully' });
     } catch (error: any) {
-      console.error('Delete task error:', error);
       res.status(500).json({ message: error.message || 'Failed to delete task' });
     }
   }
@@ -231,7 +209,6 @@ export class TaskController {
       const task = await TaskService.markTaskIncomplete(taskId, userId);
       res.status(200).json(task);
     } catch (error: any) {
-      console.error('Mark task incomplete error:', error);
       res.status(400).json({ message: error.message || 'Failed to mark task as incomplete' });
     }
   }

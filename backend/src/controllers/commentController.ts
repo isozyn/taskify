@@ -27,7 +27,6 @@ export class CommentController {
 
       res.json({ comments });
     } catch (error) {
-      console.error('Error fetching comments:', error);
       res.status(500).json({ error: 'Failed to fetch comments' });
     }
   }
@@ -72,7 +71,6 @@ export class CommentController {
 
       res.status(201).json({ comment });
     } catch (error) {
-      console.error('Error creating comment:', error);
       res.status(500).json({ error: 'Failed to create comment' });
     }
   }
@@ -124,7 +122,6 @@ export class CommentController {
 
       res.json({ comment });
     } catch (error) {
-      console.error('Error updating comment:', error);
       res.status(500).json({ error: 'Failed to update comment' });
     }
   }
@@ -163,7 +160,6 @@ export class CommentController {
 
       res.json({ message: 'Comment deleted successfully' });
     } catch (error) {
-      console.error('Error deleting comment:', error);
       res.status(500).json({ error: 'Failed to delete comment' });
     }
   }

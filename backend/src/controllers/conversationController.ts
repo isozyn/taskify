@@ -16,7 +16,6 @@ export class ConversationController {
 
       res.status(200).json(conversations);
     } catch (error: any) {
-      console.error('Get conversations error:', error);
       res.status(error.message.includes('Not authorized') ? 403 : 500)
         .json({ message: error.message || 'Failed to fetch conversations' });
     }
@@ -39,7 +38,6 @@ export class ConversationController {
 
       res.status(200).json(conversation);
     } catch (error: any) {
-      console.error('Get conversation error:', error);
       res.status(error.message.includes('Not authorized') ? 403 : 500)
         .json({ message: error.message || 'Failed to fetch conversation' });
     }
@@ -69,9 +67,6 @@ export class ConversationController {
         projectId,
         memberIds,
       });
-
-      console.log(`🆕 Conversation ${conversation.id} created with members:`, memberIds);
-
       // Notify all members via Socket.IO to join the new conversation room
       try {
         const { getIO } = require('../services/socketService');
@@ -82,16 +77,13 @@ export class ConversationController {
             conversation,
             shouldJoin: true,
           });
-          console.log(`📢 Notified user:${memberId} about new conversation ${conversation.id}`);
         });
       } catch (socketError) {
-        console.error('Failed to notify members via Socket.IO:', socketError);
         // Don't fail the request if socket notification fails
       }
 
       res.status(201).json(conversation);
     } catch (error: any) {
-      console.error('Create conversation error:', error);
       res.status(500).json({ message: error.message || 'Failed to create conversation' });
     }
   }
@@ -114,9 +106,6 @@ export class ConversationController {
         userId,
         otherUserId
       );
-
-      console.log(`💬 Direct conversation ${conversation.id} between users ${userId} and ${otherUserId}`);
-
       // Notify both users to join the conversation room via Socket.IO
       try {
         const { getIO } = require('../services/socketService');
@@ -128,15 +117,12 @@ export class ConversationController {
             conversation,
             shouldJoin: true,
           });
-          console.log(`📢 Notified user:${memberId} about conversation ${conversation.id}`);
         });
       } catch (socketError) {
-        console.error('Failed to notify users via Socket.IO:', socketError);
       }
 
       res.status(200).json(conversation);
     } catch (error: any) {
-      console.error('Get or create direct conversation error:', error);
       res.status(500).json({ message: error.message || 'Failed to get or create conversation' });
     }
   }
@@ -159,7 +145,6 @@ export class ConversationController {
 
       res.status(200).json({ message: 'Member added successfully' });
     } catch (error: any) {
-      console.error('Add member error:', error);
       res.status(error.message.includes('Not authorized') ? 403 : 500)
         .json({ message: error.message || 'Failed to add member' });
     }
@@ -183,7 +168,6 @@ export class ConversationController {
 
       res.status(200).json({ message: 'Member removed successfully' });
     } catch (error: any) {
-      console.error('Remove member error:', error);
       res.status(error.message.includes('Not authorized') ? 403 : 500)
         .json({ message: error.message || 'Failed to remove member' });
     }
@@ -208,9 +192,6 @@ export class ConversationController {
         userId,
         name
       );
-
-      console.log(`🎉 Group chat "${name}" created for project ${projectId} by user ${userId}`);
-
       // Notify all members via Socket.IO
       try {
         const { getIO } = require('../services/socketService');
@@ -221,15 +202,12 @@ export class ConversationController {
             conversation,
             shouldJoin: true,
           });
-          console.log(`📢 Notified user:${member.id} about new group chat ${conversation.id}`);
         });
       } catch (socketError) {
-        console.error('Failed to notify members via Socket.IO:', socketError);
       }
 
       res.status(201).json(conversation);
     } catch (error: any) {
-      console.error('Create project group chat error:', error);
       const statusCode = error.message.includes('Not authorized') ? 403 : 
                          error.message.includes('not found') ? 404 : 500;
       res.status(statusCode).json({ message: error.message || 'Failed to create group chat' });

@@ -146,7 +146,6 @@ export const revokeRefreshToken = async (token: string): Promise<void> => {
 		});
 	} catch (error) {
 		// Token might not exist in database, ignore the error
-		console.log('Token not found in database, skipping revocation');
 	}
 };
 

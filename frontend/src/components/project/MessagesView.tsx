@@ -142,14 +142,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		// Set up socket callbacks - using refs to always get latest values
 		socketService.setCallbacks({
 			onMessageNew: (message: Message) => {
-				console.log("📨 Message received via Socket.IO:", message);
-				console.log(
-					"Current conversation ID:",
-					selectedConversationRef.current?.id
-				);
-				console.log("Current user ID:", userRef.current?.id);
-				console.log("Message sender ID:", message.senderId);
-
 				// Add message to UI if it's for the currently selected conversation
 				if (
 					message.conversationId ===
@@ -162,19 +154,12 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 						);
 						return;
 					}
-
-					console.log(
-						"✅ Adding message from other user to current conversation"
-					);
 					setMessages((prev) => {
 						// Check if message already exists (by real ID)
 						const existingIndex = prev.findIndex(
 							(m) => m.id === message.id
 						);
 						if (existingIndex !== -1) {
-							console.log(
-								"⚠️ Message already exists with real ID, skipping"
-							);
 							return prev;
 						}
 
@@ -189,7 +174,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 					});
 					scrollToBottom();
 				} else {
-					console.log("⏭️ Message is for different conversation");
 					// Still update cache for other conversations
 					const cached =
 						messagesCache.current.get(message.conversationId) || [];
@@ -208,7 +192,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 				conversation: any;
 				shouldJoin: boolean;
 			}) => {
-				console.log("🆕 New conversation created:", data.conversation);
 				// Refresh conversation list to show new conversation
 				fetchConversationsInternal();
 				// Socket service will auto-join the room
@@ -263,9 +246,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		}
 
 		return () => {
-			console.log(
-				"🧹 Cleaning up Socket.IO callbacks and leaving project"
-			);
 			// Clear the callbacks to prevent duplicate listener registrations
 			socketService.setCallbacks({
 				onMessageNew: () => {},
@@ -300,10 +280,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 					socketService.leaveConversation(
 						currentConversationRoomRef.current
 					);
-					console.log(
-						"🚪 Left previous conversation room:",
-						currentConversationRoomRef.current
-					);
 				}
 
 				// Check cache first for instant display
@@ -311,10 +287,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 					!forceRefresh &&
 					messagesCache.current.has(conversationId)
 				) {
-					console.log(
-						"📦 Loading messages from cache for conversation:",
-						conversationId
-					);
 					setMessages(
 						messagesCache.current.get(conversationId) || []
 					);
@@ -327,50 +299,19 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 				// Join new conversation room
 				socketService.joinConversation(conversationId);
 				currentConversationRoomRef.current = conversationId;
-				console.log("🚪 Joined conversation room:", conversationId);
-
 				// Fetch messages in parallel with marking as read
 				const [response] = await Promise.all([
 					api.getConversationMessages(conversationId, 50),
 					socketService.markConversationAsRead(conversationId),
 				]);
 
-				console.log(
-					"📥 API Response for conversation",
-					conversationId,
-					":",
-					response
-				);
-				console.log(
-					"📥 Response type:",
-					typeof response,
-					"Is array:",
-					Array.isArray(response)
-				);
-
 				const fetchedMessages = (response as Message[]) || [];
-				console.log(
-					"📦 Fetched messages count:",
-					fetchedMessages.length
-				);
-
 				// Update cache
 				messagesCache.current.set(conversationId, fetchedMessages);
-				console.log(
-					"💾 Cached messages for conversation:",
-					conversationId
-				);
-
 				// Update UI
 				setMessages(fetchedMessages);
-				console.log(
-					"✅ Updated messages state with",
-					fetchedMessages.length,
-					"messages"
-				);
 				scrollToBottom();
 			} catch (error: any) {
-				console.error("Failed to fetch messages:", error);
 				toast({
 					title: "Error",
 					description: error.message || "Failed to load messages",
@@ -390,27 +331,13 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 
 	// Load messages when conversation is selected
 	useEffect(() => {
-		console.log(
-			"🔄 useEffect triggered, selectedConversation:",
-			selectedConversation
-		);
 		if (selectedConversation) {
-			console.log(
-				"✅ Calling fetchMessages for conversation ID:",
-				selectedConversation.id
-			);
 			fetchMessages(selectedConversation.id);
-		} else {
-			console.log("⚠️ No conversation selected");
 		}
 
 		// Cleanup: leave room when component unmounts or conversation changes
 		return () => {
 			if (currentConversationRoomRef.current) {
-				console.log(
-					"🧹 Cleanup: leaving conversation room:",
-					currentConversationRoomRef.current
-				);
 				socketService.leaveConversation(
 					currentConversationRoomRef.current
 				);
@@ -566,11 +493,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			if (!memberIds.includes(user!.id)) {
 				memberIds.push(user!.id);
 			}
-
-			console.log(
-				`🎉 Creating group chat: "${groupName}" with ${memberIds.length} members`
-			);
-
 			const response: any = await api.createConversation({
 				name: groupName,
 				type: "GROUP",
@@ -592,7 +514,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			fetchConversations();
 			setSelectedConversation(response);
 		} catch (error: any) {
-			console.error("Failed to create group chat:", error);
 			toast({
 				title: "Error",
 				description: error.message || "Failed to create group chat",
@@ -670,19 +591,17 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			.slice(0, 2);
 	};
 
-
 	// Handle clicking on a team member - OPTIMIZED approach
 	// Uses backend API to get or create conversation atomically
 	const handleMemberClick = async (member: Member) => {
-		console.log("👆 Clicked on member:", member.name, "Member ID:", member.id);
-
 		// Check cache first for instant feedback (optimistic)
 		const cachedConversation = conversations.find(
-			(conv) => conv.type === "DIRECT" && conv.members.some((m) => m.id === member.id)
+			(conv) =>
+				conv.type === "DIRECT" &&
+				conv.members.some((m) => m.id === member.id)
 		);
 
 		if (cachedConversation) {
-			console.log("⚡ Found conversation in cache:", cachedConversation.id);
 			setSelectedConversation(cachedConversation);
 			return;
 		}
@@ -690,14 +609,10 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 		// Not in cache - call backend API to get or create conversation
 		// This is a single optimized call that handles both cases atomically
 		try {
-			console.log("🔄 Fetching/creating conversation with backend API...");
-			const conversation = await api.getOrCreateDirectConversation(
+			const conversation = (await api.getOrCreateDirectConversation(
 				parseInt(projectId!),
 				member.id
-			) as Conversation;
-
-			console.log("✅ Got conversation from API:", conversation.id);
-
+			)) as Conversation;
 			// Add to conversations list if not already there
 			setConversations((prev) => {
 				const exists = prev.some((c) => c.id === conversation.id);
@@ -708,7 +623,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 			// Select the conversation (this will trigger fetchMessages via useEffect)
 			setSelectedConversation(conversation);
 		} catch (error: any) {
-			console.error("❌ Failed to get/create conversation:", error);
 			toast({
 				title: "Error",
 				description: error.message || "Failed to open conversation",
@@ -1042,7 +956,11 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 											return (
 												<button
 													key={member.id}
-													onClick={() => handleMemberClick(member)}
+													onClick={() =>
+														handleMemberClick(
+															member
+														)
+													}
 													className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50 relative"
 												>
 													<div className="flex items-center gap-3">
@@ -1095,10 +1013,6 @@ const MessagesView = ({ projectMembers, project }: MessagesViewProps) => {
 									<button
 										key={conversation.id}
 										onClick={() => {
-											console.log(
-												"📱 Switching to group conversation:",
-												conversation.id
-											);
 											setSelectedConversation(
 												conversation
 											);

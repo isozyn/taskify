@@ -131,8 +131,6 @@ app.use((req: Request, res: Response) => {
 
 // Global error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-	console.error("Error:", err);
-
 	const status = err.status || err.statusCode || 500;
 	const message = err.message || "Internal Server Error";
 
@@ -150,30 +148,18 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 const startServer = async () => {
 	try {
 		httpServer.listen(PORT, () => {
-			console.log(`
-        ╔════════════════════════════════════════╗
-        ║   Taskify Backend Server Started       ║
-        ║   Port: ${PORT}                            ║
-        ║   Environment: ${process.env.NODE_ENV}            ║
-        ║   Frontend URL: ${process.env.FRONTEND_URL}   ║
-        ║   Socket.IO: Enabled                   ║
-        ╚════════════════════════════════════════╝
-      `);
 		});
 	} catch (error) {
-		console.error("Failed to start server:", error);
 		process.exit(1);
 	}
 };
 
 // Handle graceful shutdown
 process.on("SIGINT", () => {
-	console.log("\n\nServer shutting down...");
 	process.exit(0);
 });
 
 process.on("SIGTERM", () => {
-	console.log("\n\nServer shutting down...");
 	process.exit(0);
 });
 

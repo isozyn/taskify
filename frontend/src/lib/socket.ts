@@ -26,7 +26,6 @@ class SocketService {
    */
   connect(): Promise<void> {
     if (this.socket?.connected) {
-      console.log('Socket already connected');
       return Promise.resolve();
     }
 
@@ -46,7 +45,6 @@ class SocketService {
       this.setupEventListeners();
 
       this.socket.on('connect', () => {
-        console.log('Socket connected:', this.socket?.id);
         this.connectionPromise = null;
         
         // Process any pending joins
@@ -63,7 +61,6 @@ class SocketService {
       });
 
       this.socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
         this.connectionPromise = null;
         reject(error);
       });
@@ -79,7 +76,6 @@ class SocketService {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
-      console.log('Socket disconnected');
     }
   }
 
@@ -97,45 +93,36 @@ class SocketService {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      console.log('Socket connected:', this.socket?.id);
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('Socket disconnected:', reason);
     });
 
     this.socket.on('error', (error) => {
-      console.error('Socket error:', error);
       this.callbacks.onError?.(error);
     });
 
     this.socket.on('message:new', (message: Message) => {
-      console.log('New message received:', message);
       this.callbacks.onMessageNew?.(message);
     });
 
     this.socket.on('message:edited', (message: Message) => {
-      console.log('Message edited:', message);
       this.callbacks.onMessageEdited?.(message);
     });
 
     this.socket.on('message:deleted', (data: { messageId: number }) => {
-      console.log('Message deleted:', data);
       this.callbacks.onMessageDeleted?.(data);
     });
 
     this.socket.on('typing:user_typing', (data: { userId: number; conversationId: number }) => {
-      console.log('User typing:', data);
       this.callbacks.onUserTyping?.(data);
     });
 
     this.socket.on('typing:user_stopped', (data: { userId: number; conversationId: number }) => {
-      console.log('User stopped typing:', data);
       this.callbacks.onUserStopped?.(data);
     });
 
     this.socket.on('conversation:created', (data: { conversation: any; shouldJoin: boolean }) => {
-      console.log('New conversation created:', data);
       this.callbacks.onConversationCreated?.(data);
       
       // Auto-join the conversation room if instructed
@@ -145,7 +132,6 @@ class SocketService {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
       this.callbacks.onError?.({ message: error.message });
     });
   }
@@ -162,12 +148,10 @@ class SocketService {
    */
   joinProject(projectId: number): void {
     if (!this.socket?.connected) {
-      console.log('Socket not connected yet, queuing project join:', projectId);
       this.pendingJoins.push({ type: 'project', id: projectId });
       return;
     }
     this.socket.emit('project:join', projectId);
-    console.log('Joined project:', projectId);
   }
 
   /**
@@ -176,7 +160,6 @@ class SocketService {
   leaveProject(projectId: number): void {
     if (!this.socket?.connected) return;
     this.socket.emit('project:leave', projectId);
-    console.log('Left project:', projectId);
   }
 
   /**
@@ -184,12 +167,10 @@ class SocketService {
    */
   joinConversation(conversationId: number): void {
     if (!this.socket?.connected) {
-      console.log('Socket not connected yet, queuing conversation join:', conversationId);
       this.pendingJoins.push({ type: 'conversation', id: conversationId });
       return;
     }
     this.socket.emit('conversation:join', conversationId);
-    console.log('Joined conversation:', conversationId);
   }
 
   /**
@@ -198,7 +179,6 @@ class SocketService {
   leaveConversation(conversationId: number): void {
     if (!this.socket?.connected) return;
     this.socket.emit('conversation:leave', conversationId);
-    console.log('Left conversation:', conversationId);
   }
 
   /**
@@ -206,7 +186,6 @@ class SocketService {
    */
   sendMessage(conversationId: number, content: string): void {
     if (!this.socket?.connected) {
-      console.error('Socket not connected');
       return;
     }
     this.socket.emit('message:send', { conversationId, content });
@@ -217,7 +196,6 @@ class SocketService {
    */
   editMessage(messageId: number, content: string): void {
     if (!this.socket?.connected) {
-      console.error('Socket not connected');
       return;
     }
     this.socket.emit('message:edit', { messageId, content });
@@ -228,7 +206,6 @@ class SocketService {
    */
   deleteMessage(messageId: number): void {
     if (!this.socket?.connected) {
-      console.error('Socket not connected');
       return;
     }
     this.socket.emit('message:delete', messageId);

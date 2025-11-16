@@ -77,7 +77,6 @@ const ProjectSetup = () => {
         
         setTeamMembers([currentUserMember]);
       } catch (error) {
-        console.error('Failed to load current user:', error);
         // Fallback if user not authenticated
         setError('You need to be logged in to create a project. Redirecting to login...');
         setTimeout(() => navigate('/login'), 2000);
@@ -699,7 +698,7 @@ const ProjectSetup = () => {
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
-        
+
 
       </div>
     </div>

@@ -45,7 +45,6 @@ const Profile = () => {
     // TODO: Save to backend
     setUserData(formData);
     setIsEditing(false);
-    console.log("Saving user data:", formData);
   };
 
   const handleCancel = () => {
@@ -75,7 +74,6 @@ const Profile = () => {
         setIsCameraActive(true);
       }
     } catch (error) {
-      console.error("Error accessing camera:", error);
       alert("Unable to access camera. Please check permissions.");
     }
   };
@@ -152,7 +150,6 @@ const Profile = () => {
       setCapturedImage(null);
       setIsAvatarDialogOpen(false);
       // TODO: Upload to backend
-      console.log("Saving avatar");
     }
   };
 

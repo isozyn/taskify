@@ -53,8 +53,6 @@ const MeetingModal = ({ open, onClose, selectedDate, selectedSlot, projectMember
             includeGoogleMeet: meetingType === 'meeting', // This tells backend to create real Meet link
             allDay: false,
         };
-        console.log('Creating event:', eventData);
-        
         // Call the parent callback to add event to calendar
         // The real Google Meet link will come from the backend response
         onCreateEvent(eventData);

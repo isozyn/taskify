@@ -47,8 +47,6 @@ export class TaskService {
 	 * Validates dates are required for AUTOMATED workflow
 	 */
 	static async createTask(data: any): Promise<TaskResponse> {
-		console.log("TaskService.createTask called with data:", data);
-
 		// Validate required fields
 		if (!data.title || data.title.trim() === "") {
 			throw new Error("Task title is required");
@@ -58,9 +56,6 @@ export class TaskService {
 		const project = await prisma.project.findUnique({
 			where: { id: data.projectId },
 		});
-
-		console.log("Project found:", project);
-
 		if (!project) {
 			throw new Error("Project not found");
 		}
@@ -68,11 +63,6 @@ export class TaskService {
 		// Validate workflow requirements (temporarily disabled for testing)
 		if (project.workflowType === "AUTOMATED") {
 			if (!data.startDate || !data.endDate) {
-				console.log("Warning: Missing dates for automated workflow:", {
-					startDate: data.startDate,
-					endDate: data.endDate,
-				});
-				console.log("Proceeding anyway for testing...");
 				// throw new Error('Start date and end date are required for automated workflow projects');
 			}
 		}
@@ -102,14 +92,6 @@ export class TaskService {
 
 		const mappedStatus = statusMap[data.status] || data.status || "TODO";
 		const mappedPriority = (data.priority || "MEDIUM").toUpperCase();
-
-		console.log("Mapped values:", {
-			originalStatus: data.status,
-			mappedStatus,
-			originalPriority: data.priority,
-			mappedPriority,
-		});
-
 		const task = await prisma.task.create({
 			data: {
 				title: data.title,
@@ -127,9 +109,6 @@ export class TaskService {
 				order: data.order || 0,
 			},
 		});
-
-		console.log("Task created successfully in database:", task);
-
 		// Log activity
 		await activityService.logTaskCreated(
 			data.projectId,
@@ -162,14 +141,9 @@ export class TaskService {
 							where: { id: task.id },
 							data: { googleCalendarEventId: calendarEvent.id },
 						});
-						console.log(
-							"Task synced to Google Calendar:",
-							calendarEvent.id
-						);
 					}
 				}
 			} catch (error) {
-				console.error("Failed to sync task to calendar:", error);
 				// Don't fail task creation if calendar sync fails
 			}
 		}
@@ -553,7 +527,6 @@ export class TaskService {
 							updatedTask.googleCalendarEventId,
 							updatedTask
 						);
-						console.log("Task updated in Google Calendar");
 					} else {
 						// Create new calendar event
 						const calendarEvent =
@@ -569,12 +542,10 @@ export class TaskService {
 									googleCalendarEventId: calendarEvent.id,
 								},
 							});
-							console.log("Task synced to Google Calendar");
 						}
 					}
 				}
 			} catch (error) {
-				console.error("Failed to sync task update to calendar:", error);
 				// Don't fail task update if calendar sync fails
 			}
 		}
@@ -681,12 +652,7 @@ export class TaskService {
 						task.assigneeId,
 						task.googleCalendarEventId
 					);
-					console.log("Task deleted from Google Calendar");
 				} catch (error) {
-					console.error(
-						"Failed to delete task from calendar:",
-						error
-					);
 					// Continue with task deletion even if calendar delete fails
 				}
 			}
