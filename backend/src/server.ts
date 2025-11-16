@@ -38,6 +38,9 @@ setupSocketIO(httpServer);
 // MIDDLEWARE SETUP
 // ============================================
 
+// Trust proxy - Required for secure cookies behind reverse proxy (Heroku, AWS, etc.)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 app.use(compression());
