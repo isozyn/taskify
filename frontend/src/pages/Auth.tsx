@@ -127,7 +127,7 @@ const Auth = () => {
 			{/* Back Button - Login Page (Blue) */}
 			<div className="fixed top-4 left-4 z-10">
 				<button
-					onClick={() => navigate(-1)}
+					onClick={() => navigate("/")}
 					className="flex items-center gap-2 text-[#0052CC] hover:opacity-80 transition-opacity"
 				>
 					<ArrowLeft className="w-5 h-5" />
