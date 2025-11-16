@@ -143,9 +143,12 @@ const Auth = () => {
 						<div>
 							{/* Logo */}
 							<div className="flex justify-center mb-4">
-								<div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center">
+								<button
+									onClick={() => navigate("/")}
+									className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+								>
 									<CheckSquare className="w-6 h-6 text-white" />
-								</div>
+								</button>
 							</div>
 
 							{/* Title */}
