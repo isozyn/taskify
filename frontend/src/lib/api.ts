@@ -57,6 +57,7 @@ class ApiClient {
 					const authPaths = [
 						"/",
 						"/auth",
+						"/auth/callback",
 						"/login",
 						"/register",
 						"/forgot-password",
