@@ -298,20 +298,18 @@ export const logout = async (
 			}
 		}
 
-		// Clear both cookies regardless of token existence
-		res.clearCookie("refreshToken", {
+		// Cookie options must match exactly what was used when setting the cookies
+		const isProduction = process.env.NODE_ENV === "production";
+		const cookieOptions = {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+			secure: isProduction,
+			sameSite: isProduction ? ("none" as const) : ("lax" as const),
 			path: "/",
-		});
+		};
 
-		res.clearCookie("accessToken", {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-			path: "/",
-		});
+		// Clear both cookies - this removes them completely from the browser
+		res.clearCookie("refreshToken", cookieOptions);
+		res.clearCookie("accessToken", cookieOptions);
 
 		res.status(200).json({
 			message: "Logout successful",
@@ -699,7 +697,10 @@ export const googleCallback = async (
 
 		// In development with debug flag, show token for testing
 		// Set OAUTH_DEBUG=true in .env to enable this page
-		if (process.env.NODE_ENV === "development" && process.env.OAUTH_DEBUG === "true") {
+		if (
+			process.env.NODE_ENV === "development" &&
+			process.env.OAUTH_DEBUG === "true"
+		) {
 			res.send(`
 				<!DOCTYPE html>
 				<html>
