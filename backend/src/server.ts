@@ -42,15 +42,32 @@ setupSocketIO(httpServer);
 app.use(helmet());
 app.use(compression());
 
-// CORS configuration
+// CORS configuration - Production-ready for Render deployment
+const allowedOrigins = [
+	process.env.FRONTEND_URL,
+	"http://localhost:8080",
+	"http://localhost:5173",
+	"https://taskify-1-c9p2.onrender.com", // Production frontend
+].filter(Boolean) as string[];
+
 app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:8080",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    maxAge: 86400, // 24 hours
-  })
+	cors({
+		origin: (origin, callback) => {
+			// Allow requests with no origin (mobile apps, Postman, etc.)
+			if (!origin) return callback(null, true);
+
+			if (allowedOrigins.includes(origin)) {
+				callback(null, true);
+			} else {
+				callback(new Error(`Origin ${origin} not allowed by CORS`));
+			}
+		},
+		credentials: true, // CRITICAL: Allows cookies to be sent
+		methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+		allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+		exposedHeaders: ["Set-Cookie"], // CRITICAL: Expose Set-Cookie to browser
+		maxAge: 86400, // 24 hours - cache preflight requests
+	})
 );
 
 // Body parser middleware
@@ -69,7 +86,7 @@ app.use(morgan("dev"));
 
 // Health check endpoint
 app.get("/api/v1/health", (_req: Request, res: Response) => {
-  res.status(200).json({ status: "OK", message: "Server is running" });
+	res.status(200).json({ status: "OK", message: "Server is running" });
 });
 
 // Auth routes
@@ -108,25 +125,25 @@ app.use("/api/v1", commentRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
-  res.status(404).json({
-    status: "error",
-    message: "Route not found",
-    path: req.originalUrl,
-  });
+	res.status(404).json({
+		status: "error",
+		message: "Route not found",
+		path: req.originalUrl,
+	});
 });
 
 // Global error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error("Error:", err);
+	console.error("Error:", err);
 
-  const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
+	const status = err.status || err.statusCode || 500;
+	const message = err.message || "Internal Server Error";
 
-  res.status(status).json({
-    status: "error",
-    message,
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
-  });
+	res.status(status).json({
+		status: "error",
+		message,
+		...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+	});
 });
 
 // ============================================
@@ -134,9 +151,9 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // ============================================
 
 const startServer = async () => {
-  try {
-    httpServer.listen(PORT, () => {
-      console.log(`
+	try {
+		httpServer.listen(PORT, () => {
+			console.log(`
         ╔════════════════════════════════════════╗
         ║   Taskify Backend Server Started       ║
         ║   Port: ${PORT}                            ║
@@ -145,22 +162,22 @@ const startServer = async () => {
         ║   Socket.IO: Enabled                   ║
         ╚════════════════════════════════════════╝
       `);
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  }
+		});
+	} catch (error) {
+		console.error("Failed to start server:", error);
+		process.exit(1);
+	}
 };
 
 // Handle graceful shutdown
 process.on("SIGINT", () => {
-  console.log("\n\nServer shutting down...");
-  process.exit(0);
+	console.log("\n\nServer shutting down...");
+	process.exit(0);
 });
 
 process.on("SIGTERM", () => {
-  console.log("\n\nServer shutting down...");
-  process.exit(0);
+	console.log("\n\nServer shutting down...");
+	process.exit(0);
 });
 
 // Start the server

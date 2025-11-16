@@ -23,22 +23,16 @@ class ApiClient {
 	): Promise<T> {
 		const url = `${this.baseURL}${endpoint}`;
 
-		// Get token from localStorage for Authorization header (fallback for cross-domain)
-		const accessToken = localStorage.getItem("accessToken");
+		// Headers - no Authorization needed, using httpOnly cookies
 		const headers: HeadersInit = {
 			"Content-Type": "application/json",
 			...options.headers,
 		};
 
-		// Add Authorization header if token exists
-		if (accessToken) {
-			headers["Authorization"] = `Bearer ${accessToken}`;
-		}
-
 		const config: RequestInit = {
 			...options,
 			headers,
-			credentials: "include", // Include cookies for authentication
+			credentials: "include", // CRITICAL: Send cookies with every request
 		};
 
 		try {
@@ -48,10 +42,7 @@ class ApiClient {
 			if (!response.ok) {
 				// Handle 401 Unauthorized - token expired or invalid
 				if (response.status === 401) {
-					// Clear tokens on 401
-					localStorage.removeItem("accessToken");
-					localStorage.removeItem("refreshToken");
-					
+					// Cookies are httpOnly - browser handles them automatically
 					// Only redirect to auth if not already on auth/public pages
 					const currentPath = window.location.pathname;
 					const authPaths = [
@@ -117,14 +108,8 @@ class ApiClient {
 			body: JSON.stringify(data),
 		});
 
-		// Store tokens in localStorage as fallback for cross-domain deployments
-		if (response.accessToken) {
-			localStorage.setItem("accessToken", response.accessToken);
-		}
-		if (response.refreshToken) {
-			localStorage.setItem("refreshToken", response.refreshToken);
-		}
-
+		// Tokens are in httpOnly cookies - no localStorage needed
+		// This is more secure and works properly with CORS
 		return response;
 	}
 
@@ -133,10 +118,7 @@ class ApiClient {
 			method: "POST",
 		});
 
-		// Clear tokens from localStorage
-		localStorage.removeItem("accessToken");
-		localStorage.removeItem("refreshToken");
-
+		// Cookies are cleared by backend - no localStorage to clean
 		return response;
 	}
 

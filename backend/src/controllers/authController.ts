@@ -159,12 +159,11 @@ export const login = async (
 		// Return user info only (tokens are in HTTP-only cookies)
 		const userResponse = userService.toUserResponse(user);
 
-		// Also return tokens in response body as fallback for cross-domain issues
+		// SECURITY: Never send tokens in response body
+		// Tokens are set as httpOnly cookies which JavaScript cannot access
 		res.status(200).json({
 			message: "Login successful",
 			user: userResponse,
-			accessToken,
-			refreshToken,
 		});
 	} catch (error) {
 		next(error);
