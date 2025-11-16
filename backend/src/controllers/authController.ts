@@ -197,7 +197,16 @@ export const getCurrentUser = async (
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const { accessToken } = req.cookies;
+		// Try to get token from Authorization header first (for localStorage tokens)
+		let accessToken = req.cookies.accessToken;
+		
+		const authHeader = req.headers.authorization;
+		if (authHeader && authHeader.startsWith('Bearer ')) {
+			accessToken = authHeader.substring(7); // Remove 'Bearer ' prefix
+			console.log("[Auth Debug] Using token from Authorization header");
+		} else if (accessToken) {
+			console.log("[Auth Debug] Using token from cookie");
+		}
 
 		if (!accessToken) {
 			res.status(401).json({ message: "Not authenticated" });
@@ -256,7 +265,15 @@ export const refresh = async (
 	next: NextFunction
 ): Promise<void> => {
 	try {
-		const { refreshToken } = req.cookies;
+		// Try to get refresh token from cookie or request body
+		let refreshToken = req.cookies.refreshToken;
+		
+		if (!refreshToken && req.body.refreshToken) {
+			refreshToken = req.body.refreshToken;
+			console.log("[Auth Debug] Using refresh token from request body");
+		} else if (refreshToken) {
+			console.log("[Auth Debug] Using refresh token from cookie");
+		}
 
 		if (!refreshToken) {
 			res.status(401).json({ message: "Refresh token not provided" });
@@ -290,10 +307,11 @@ export const refresh = async (
 		const newAccessToken = authService.generateAccessToken(tokenPayload);
 
 		// Set new access token as httpOnly cookie
+		const isProduction = process.env.NODE_ENV === "production";
 		res.cookie("accessToken", newAccessToken, {
 			httpOnly: true,
-			secure: true,
-			sameSite: "none",
+			secure: isProduction,
+			sameSite: isProduction ? "none" : "lax",
 			path: "/",
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
@@ -712,12 +730,24 @@ export const googleCallback = async (
 		);
 
 		// Set tokens as httpOnly cookies
-		const isProduction = process.env.NODE_ENV === "production";
+		// Force production mode for deployed environments
+		const isProduction = process.env.NODE_ENV === "production" || process.env.FRONTEND_URL?.includes("onrender.com");
 		const cookieOptions = {
 			httpOnly: true,
 			secure: isProduction,
 			sameSite: isProduction ? ("none" as const) : ("lax" as const),
+			path: "/",
+			// Remove domain restriction - let browser handle it
 		};
+
+		console.log("[Google OAuth] Environment:", process.env.NODE_ENV);
+		console.log("[Google OAuth] Is Production:", isProduction);
+		console.log("[Google OAuth] Setting cookies with options:", cookieOptions);
+		console.log("[Google OAuth] Request headers:", {
+			origin: req.headers.origin,
+			referer: req.headers.referer,
+			host: req.headers.host,
+		});
 
 		res.cookie("refreshToken", refreshToken, {
 			...cookieOptions,
@@ -729,9 +759,19 @@ export const googleCallback = async (
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 		});
 
+		console.log("[Google OAuth] ✅ Cookies set successfully");
+
+		// Redirect with tokens in URL hash (client-side only, not sent to server)
+		// This works around cookie issues in cross-domain scenarios
+		const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+		const redirectUrl = `${frontendUrl}/auth/callback#access_token=${accessToken}&refresh_token=${refreshToken}`;
+		
+		console.log("[Google OAuth] FRONTEND_URL:", frontendUrl);
+		console.log("[Google OAuth] Redirecting to:", redirectUrl);
+
 		// In development with debug flag, show token for testing
 		// Set OAUTH_DEBUG=true in .env to enable this page
-		if (process.env.NODE_ENV === "development" && process.env.OAUTH_DEBUG === "true") {
+		if (process.env.OAUTH_DEBUG === "true") {
 			res.send(`
 				<!DOCTYPE html>
 				<html>
@@ -859,8 +899,8 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \\
 			return;
 		}
 
-		// In production, redirect to frontend dashboard
-		res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+		// Redirect with tokens in URL hash (works around cookie issues)
+		res.redirect(redirectUrl);
 	} catch (error) {
 		console.error("Google OAuth callback error:", error);
 		res.redirect(

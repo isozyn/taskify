@@ -19,6 +19,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 	// Check if user is authenticated on mount by calling /me endpoint
 	useEffect(() => {
 		const checkAuth = async () => {
+			// Skip auth check on callback pages - they handle auth themselves
+			const currentPath = window.location.pathname;
+			const callbackPaths = ['/auth/callback', '/verify-email'];
+			
+			if (callbackPaths.includes(currentPath)) {
+				console.log("[UserContext] Skipping auth check on callback page");
+				setLoading(false);
+				return;
+			}
+
 			console.log("[UserContext] Checking authentication...");
 
 			try {

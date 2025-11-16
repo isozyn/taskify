@@ -21,6 +21,7 @@ import ProjectSetup from "./pages/ProjectSetup";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import AuthCallback from "./pages/AuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,7 @@ const App = () => (
 						/>
 						<Route path="/verify-email" element={<VerifyEmail />} />
 						<Route path="/check-email" element={<CheckEmail />} />
+						<Route path="/auth/callback" element={<AuthCallback />} />
 						<Route
 							path="/accept-invitation"
 							element={<AcceptInvitation />}

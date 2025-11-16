@@ -16,10 +16,19 @@ console.log(`   API_KEY configured: ${SENDGRID_API_KEY ? "Yes" : "No"}`);
 
 if (!SENDGRID_API_KEY) {
 	console.error("❌ CRITICAL: SENDGRID_API_KEY is not set!");
+	console.error("   API key does not start with \"SG.\".");
+	console.error("   Email functionality will be disabled.");
+	console.error("   To enable emails, add SENDGRID_API_KEY to your .env file.");
+} else if (!SENDGRID_API_KEY.startsWith("SG.")) {
+	console.error("❌ CRITICAL: SENDGRID_API_KEY is invalid!");
+	console.error("   API key does not start with \"SG.\".");
+	console.error("   Email functionality will be disabled.");
+	console.error("   Please check your SENDGRID_API_KEY in .env file.");
+} else {
+	// Initialize SendGrid with API key only if valid
+	sgMail.setApiKey(SENDGRID_API_KEY);
+	console.log("✅ SendGrid API key configured successfully");
 }
-
-// Initialize SendGrid with API key
-sgMail.setApiKey(SENDGRID_API_KEY);
 
 /**
  * Send verification email
@@ -35,8 +44,10 @@ export const sendVerificationEmail = async (
 		);
 
 		// Validate configuration
-		if (!SENDGRID_API_KEY) {
-			throw new Error("SendGrid API key is not configured");
+		if (!SENDGRID_API_KEY || !SENDGRID_API_KEY.startsWith("SG.")) {
+			console.warn("⚠️  SendGrid not configured - skipping email send");
+			console.warn("   Email would have been sent to:", email);
+			return; // Silently skip email sending in development
 		}
 
 		if (!FROM_EMAIL) {
@@ -161,6 +172,13 @@ export const sendProjectInvitationEmail = async (
 	endDate?: Date | null
 ): Promise<void> => {
 	try {
+		// Validate configuration
+		if (!SENDGRID_API_KEY || !SENDGRID_API_KEY.startsWith("SG.")) {
+			console.warn("⚠️  SendGrid not configured - skipping email send");
+			console.warn("   Email would have been sent to:", email);
+			return; // Silently skip email sending in development
+		}
+
 		// Validate email parameter
 		if (!email || !email.includes("@")) {
 			throw new Error(`Invalid email address: ${email}`);
@@ -308,6 +326,13 @@ export const sendPasswordResetEmail = async (
 	userName: string
 ): Promise<void> => {
 	try {
+		// Validate configuration
+		if (!SENDGRID_API_KEY || !SENDGRID_API_KEY.startsWith("SG.")) {
+			console.warn("⚠️  SendGrid not configured - skipping email send");
+			console.warn("   Email would have been sent to:", email);
+			return; // Silently skip email sending in development
+		}
+
 		// Build reset link
 		const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
