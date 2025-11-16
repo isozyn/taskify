@@ -307,9 +307,18 @@ export const logout = async (
 			path: "/",
 		};
 
-		// Clear both cookies - this removes them completely from the browser
-		res.clearCookie("refreshToken", cookieOptions);
-		res.clearCookie("accessToken", cookieOptions);
+		// Clear both cookies - set empty value with maxAge: 0 and expires in past
+		// This is more reliable than clearCookie for cross-origin scenarios
+		res.cookie("refreshToken", "", {
+			...cookieOptions,
+			maxAge: 0,
+			expires: new Date(0),
+		});
+		res.cookie("accessToken", "", {
+			...cookieOptions,
+			maxAge: 0,
+			expires: new Date(0),
+		});
 
 		res.status(200).json({
 			message: "Logout successful",
