@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Calendar, GripVertical, Check, ArrowLeft, Clock, Layout, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useUser } from "@/contexts/UserContext";
 
 const TemplateSelection = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const { user } = useUser();
 	const [selectedTemplate, setSelectedTemplate] = useState<"auto-sync" | "custom" | null>(null);
 	const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null);
 
@@ -21,6 +23,18 @@ const TemplateSelection = () => {
 				},
 			});
 		}
+	};
+
+	const getInitials = () => {
+		if (user?.name) {
+			return user.name
+				.split(' ')
+				.map(n => n[0])
+				.join('')
+				.toUpperCase()
+				.slice(0, 2);
+		}
+		return 'U';
 	};
 
 	return (
@@ -41,9 +55,9 @@ const TemplateSelection = () => {
 						<span className="text-2xl font-bold text-slate-900">Taskify</span>
 					</div>
 					<div className="flex items-center gap-3">
-						<span className="text-sm text-slate-600">Welcome, <span className="text-slate-900 font-medium">Angelique Hilario</span></span>
+						<span className="text-sm text-slate-600">Welcome, <span className="text-slate-900 font-medium">{user?.name || 'User'}</span></span>
 						<div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-semibold text-sm shadow-lg">
-							A
+							{getInitials()}
 						</div>
 					</div>
 				</div>
