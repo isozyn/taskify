@@ -43,9 +43,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 		try {
 			await api.logout();
 		} catch (error) {
+			// Ignore logout errors
 		} finally {
 			// Clear user state
 			setUser(null);
+			// Clear tokens from localStorage
+			localStorage.removeItem("accessToken");
+			localStorage.removeItem("refreshToken");
 		}
 	};
 

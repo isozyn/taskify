@@ -22,6 +22,7 @@ import messageRoutes from "./routes/messageRoutes";
 import conversationRoutes from "./routes/conversationRoutes";
 import activityRoutes from "./routes/activityRoutes";
 import commentRoutes from "./routes/commentRoutes";
+import noteRoutes from "./routes/noteRoutes";
 
 // Import Socket.IO setup
 import { setupSocketIO } from "./services/socketService";
@@ -37,6 +38,9 @@ setupSocketIO(httpServer);
 // ============================================
 // MIDDLEWARE SETUP
 // ============================================
+
+// Trust proxy - Required for secure cookies behind reverse proxy (Heroku, AWS, etc.)
+app.set("trust proxy", 1);
 
 // Security middleware
 app.use(helmet());
@@ -115,6 +119,9 @@ app.use("/api/v1", activityRoutes);
 
 // Comment routes
 app.use("/api/v1", commentRoutes);
+
+// Note routes
+app.use("/api/v1", noteRoutes);
 
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);
