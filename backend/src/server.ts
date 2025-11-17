@@ -23,6 +23,7 @@ import conversationRoutes from "./routes/conversationRoutes";
 import activityRoutes from "./routes/activityRoutes";
 import commentRoutes from "./routes/commentRoutes";
 import noteRoutes from "./routes/noteRoutes";
+import calendarRoutes from "./routes/calendarRoutes";
 
 // Import Socket.IO setup
 import { setupSocketIO } from "./services/socketService";
@@ -105,6 +106,9 @@ app.use("/api/v1", commentRoutes);
 
 // Note routes
 app.use("/api/v1", noteRoutes);
+
+// Calendar routes
+app.use("/api/v1", calendarRoutes);
 
 // User routes (uncomment when ready)
 // app.use("/api/v1/users", userRoutes);

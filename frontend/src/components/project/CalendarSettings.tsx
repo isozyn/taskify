@@ -16,8 +16,8 @@ const CalendarSettings = () => {
 	const [isSyncing, setIsSyncing] = useState(false);
 	const { toast } = useToast();
 	
-	// Calendar sync is disabled - using non-sensitive OAuth scopes only
-	const CALENDAR_SYNC_DISABLED = true;
+	// Calendar sync is enabled - using Google Calendar API
+	const CALENDAR_SYNC_DISABLED = false;
 
 	// Fetch sync status on mount
 	useEffect(() => {
