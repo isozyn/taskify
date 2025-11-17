@@ -80,8 +80,8 @@ const TemplateSelection = () => {
 						)}
 
 						<div className="relative z-10">
-							<h2 className="text-3xl font-bold text-slate-900 mb-2">Calendar-Synced</h2>
-							<p className="text-slate-600 mb-6">Time-based automation</p>
+							<h2 className="text-3xl font-bold text-slate-900 mb-2">Automated Workflow</h2>
+							<p className="text-slate-600 mb-6">Date-based automation</p>
 
 							{/* Icon Illustration */}
 							<div className="mb-6 p-6 rounded-xl bg-blue-50 border border-blue-200">
